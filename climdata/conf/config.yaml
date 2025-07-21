@@ -1,0 +1,23 @@
+
+defaults:
+  - _self_
+  - mappings/parameters
+  
+dataset: dwd
+data_dir: /beegfs/muduchuru/data
+weather:
+  parameter: tas  # standardized variable name (e.g., tas, pr, rsds)
+
+location:
+  lat: 52.5070
+  lon: 14.1372
+  buffer_km: 25
+
+time_range:
+  start_date: "1989-01-01"
+  end_date: "2020-12-31"
+
+output:
+  out_dir: "./backend/data/"
+  filename: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.csv"
+  format: 'standard' # 'standard', 'ICASA', 'simplace', 'monica'
