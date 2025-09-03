@@ -18,6 +18,6 @@ time_range:
   end_date: "2020-12-31"
 
 output:
-  out_dir: "./backend/data/"
+  out_dir: "./climdata/data/"
   filename: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.csv"
-  format: 'standard' # 'standard', 'ICASA', 'simplace', 'monica'
+  fmt: 'standard' # 'standard', 'ICASA', 'simplace', 'monica'

@@ -75,7 +75,7 @@ target/
 
 # pyenv
 .python-version
-
+climdata/data
 # celery beat schedule file
 celerybeat-schedule
 

@@ -612,8 +612,11 @@ def extract_ts_MSWX(cfg: DictConfig):
 
     return ts_all
 
+import os
+from omegaconf import DictConfig
+
 def build_output_filename(cfg: DictConfig) -> str:
-    """Generate output filename from pattern in config."""
+    """Generate full output file path from pattern and config."""
     provider = cfg.dataset.lower()
     parameter = cfg.weather.parameter
     lat = cfg.location.lat
@@ -622,7 +625,7 @@ def build_output_filename(cfg: DictConfig) -> str:
     end = cfg.time_range.end_date
 
     pattern = cfg.output.get("filename", "{provider}_{parameter}_{start}_{end}.csv")
-    return pattern.format(
+    filename = pattern.format(
         provider=provider,
         parameter=parameter,
         lat=lat,
@@ -630,6 +633,12 @@ def build_output_filename(cfg: DictConfig) -> str:
         start=start,
         end=end
     )
+
+    out_dir = cfg.output.out_dir
+    fmt = cfg.output.fmt  # format is a reserved word in Python, so use 'fmt'
+
+    # return os.path.join(out_dir, fmt, filename)
+    return filename
 
 # SPDX-FileCopyrightText: Copyright (c) 2023 - 2024 NVIDIA CORPORATION & AFFILIATES.
 # SPDX-FileCopyrightText: All rights reserved.
