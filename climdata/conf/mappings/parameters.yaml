@@ -107,7 +107,7 @@ mswx:
   type: image
   subsetting: None
   params:
-    google_service_account: /beegfs/muduchuru/codes/python/download/conf/service.json
+    google_service_account: None
   variables:
     tasmin:
       name: air_temperature
