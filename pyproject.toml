@@ -30,7 +30,7 @@ climdata = "climdata.main:run"
 
 [project.optional-dependencies]
 all = [
-    "climdata[extra]",
+    "pandas",
 ]
 
 extra = [
