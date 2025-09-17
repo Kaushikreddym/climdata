@@ -21,9 +21,9 @@ def load_config(config_name="config", overrides=None, verbose=False):
     """
     Load Hydra config using ./conf in cwd.
     """
-    # config_path = _ensure_local_conf()
+    config_path = _ensure_local_conf()
     # import ipdb; ipdb.set_trace()
-    with initialize(config_path="./conf", version_base=None):
+    with initialize(config_path=config_path, version_base=None):
         cfg = compose(config_name=config_name, overrides=overrides or [])
         if verbose:
             print(OmegaConf.to_yaml(cfg))
