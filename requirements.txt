@@ -17,6 +17,7 @@ pymannkendall
 tqdm
 zarr
 ipyleaflet
+wetterdienst
 
 # Workflow + config
 hydra-core
