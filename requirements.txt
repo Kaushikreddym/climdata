@@ -18,6 +18,7 @@ tqdm
 zarr
 ipyleaflet
 wetterdienst
+pint-pandas
 
 # Workflow + config
 hydra-core
@@ -47,3 +48,7 @@ optuna
 
 # Dev tools
 gitpython
+beautifulsoup4
+google-auth
+google-api-python-client
+ipdb
