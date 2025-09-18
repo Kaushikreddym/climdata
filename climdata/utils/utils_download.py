@@ -4,7 +4,6 @@ from wetterdienst import Settings
 from wetterdienst.provider.dwd.observation import DwdObservationRequest
 import geemap
 import ee
-import ipdb
 import geopandas as gpd
 from omegaconf import DictConfig
 import os
