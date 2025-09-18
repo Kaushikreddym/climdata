@@ -9,8 +9,6 @@ copyright: "Copyright &copy; 2024 - 2024 Kaushik Muduchuru"
 theme:
     palette:
         - scheme: default
-          #   primary: blue
-          #   accent: indigo
           toggle:
               icon: material/toggle-switch-off-outline
               name: Switch to dark mode
@@ -23,31 +21,32 @@ theme:
     name: material
     icon:
         repo: fontawesome/brands/github
-    # logo: assets/logo.png
-    # favicon: assets/favicon.png
+    custom_dir: "docs/overrides"
+    font:
+        text: Google Sans
+        code: Regular
     features:
         - navigation.instant
         - navigation.tracking
         - navigation.top
         - search.highlight
         - search.share
-    custom_dir: "docs/overrides"
-    font:
-        text: Google Sans
-        code: Regular
 
 plugins:
     - search
-    - mkdocstrings
+    - mkdocstrings:
+          handlers:
+              python:
+                  options:
+                      show_root_heading: true
     - git-revision-date
     - git-revision-date-localized:
           enable_creation_date: true
           type: timeago
-    # - pdf-export
     - mkdocs-jupyter:
-          include_source: True
-          ignore_h1_titles: True
-          execute: True
+          include_source: true
+          ignore_h1_titles: true
+          execute: true
           allow_errors: false
           ignore: ["conf.py"]
           execute_ignore: ["*ignore.ipynb"]
@@ -66,11 +65,6 @@ markdown_extensions:
     - toc:
           permalink: true
 
-# extra:
-#     analytics:
-#         provider: google
-#         property: UA-XXXXXXXXX-X
-
 nav:
     - Home: index.md
     - Installation: installation.md
@@ -80,7 +74,9 @@ nav:
     - Changelog: changelog.md
     - Report Issues: https://github.com/Kaushikreddym/climdata/issues
     - Examples:
-        - examples/intro.ipynb
+        - Intro Notebook: examples/intro.ipynb
+        - Downloader Notebook: examples/run_downloader.ipynb
     - API Reference:
-          - climdata module: climdata.md
-          - common module: common.md
+        - climdata package: climdata   # points to top-level package, not climdata.climdata
+        - utils module: climdata.utils
+        - datasets module: climdata.datasets
