@@ -2,11 +2,25 @@
 defaults:
   - _self_
   - mappings/parameters
-  
+  - mappings/variables 
 dataset: dwd
 data_dir: /beegfs/muduchuru/data
 weather:
   parameter: tas  # standardized variable name (e.g., tas, pr, rsds)
+
+region: europe
+
+bounds:
+  global:
+    lat_min: -90.0
+    lat_max: 90.0
+    lon_min: -180.0
+    lon_max: 180.0
+  europe:
+    lat_min: 34.0     # Southern Europe (e.g., southern Greece)
+    lat_max: 71.0     # Northern Europe (e.g., northern Norway)
+    lon_min: -25.0    # Western Europe (e.g., Azores)
+    lon_max: 45.0     # Eastern Europe (Ural Mountains, excludes most of Russia)
 
 location:
   lat: 52.5070

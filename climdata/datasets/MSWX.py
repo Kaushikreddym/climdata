@@ -1,71 +1,106 @@
+import pandas as pd
+import numpy as np
+from wetterdienst import Settings
+from wetterdienst.provider.dwd.observation import DwdObservationRequest
+import geemap
+import ee
+import ipdb
+import geopandas as gpd
+from omegaconf import DictConfig
+import os
+import yaml
+import time
+from tqdm import tqdm
+import warnings
+from datetime import datetime, timedelta
+import xarray as xr
+import hydra
+from omegaconf import DictConfig
+import pint
+import pint_pandas
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-import datetime
-from omegaconf import DictConfig
+
+import io
+import requests
+from scipy.spatial import cKDTree
+import argparse
+import re
+
+import requests
+from bs4 import BeautifulSoup
+import concurrent.futures
+
+import gzip
+# from utils.utils import *
+# from datasets.datasets import *
+import rioxarray
+from shapely.geometry import mapping
+
+warnings.filterwarnings("ignore", category=Warning)
+
+import cf_xarray
 
 class MSWXmirror:
-    def __init__(self,cfg):
-        self.cfg = cfg
-        self.provider = cfg.dataset.lower()
-        self.parameter_key = cfg.weather.parameter
-        self.lat = cfg.location.lat
-        self.lon = cfg.location.lon
-        self.start_date = datetime.fromisoformat(cfg.time_range.start_date)
-        self.end_date = datetime.fromisoformat(cfg.time_range.end_date)
-        self.output_dir = cfg.data_dir
+    def __init__(self, var_cfg: DictConfig):
+        self.var_cfg = var_cfg
+        self.files = []
+        self.dataset = None
 
-        provider_cfg = cfg.mappings[self.provider]
-        self.param_info = provider_cfg['variables'][self.parameter_key]
-        self.folder_id = self.param_info['folder_id']
-        self.units = self.param_info.get("units", "")
-        self.service = self._build_drive_service(provider_cfg.params.google_service_account)
-
-    def _list_drive_files(folder_id, service):
+    def _fix_coords(self, ds: xr.Dataset | xr.DataArray) -> xr.Dataset | xr.DataArray:
         """
-        List all files in a Google Drive folder, handling pagination.
+        Ensure latitude is ascending and longitude is in the range [0, 360].
+
+        Parameters
+        ----------
+        ds : xr.Dataset or xr.DataArray
+            Input dataset or dataarray with latitude and longitude coordinates.
+
+        Returns
+        -------
+        xr.Dataset or xr.DataArray
+            Dataset with latitude ascending and longitude wrapped to [0, 360].
         """
-        files = []
-        page_token = None
+        # Flip latitude to ascending
+        ds = ds.cf.sortby("latitude")
 
-        while True:
-            results = service.files().list(
-                q=f"'{folder_id}' in parents and trashed = false",
-                fields="files(id, name), nextPageToken",
-                pageToken=page_token
-            ).execute()
+        # Wrap longitude into [0, 360]
+        lon_name = ds.cf["longitude"].name
+        ds = ds.assign_coords({lon_name: ds.cf["longitude"] % 360})
 
-            files.extend(results.get("files", []))
-            page_token = results.get("nextPageToken", None)
+        # Sort by longitude
+        ds = ds.sortby(lon_name)
 
-            if not page_token:
-                break
+        return ds
 
-        return files
-    def _download_drive_file(file_id, local_path, service):
-        """
-        Download a single file from Drive to a local path.
-        """
-        request = service.files().get_media(fileId=file_id)
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
-        with io.FileIO(local_path, 'wb') as fh:
-            downloader = MediaIoBaseDownload(fh, request)
+    def fetch(self):
+        param_mapping = self.var_cfg.mappings
+        provider = self.var_cfg.dataset.lower()
+        parameter_key = self.var_cfg.weather.parameter
 
-            done = False
-            while not done:
-                status, done = downloader.next_chunk()
-                print(f"   → Download {int(status.progress() * 100)}% complete")
-    def fetch():
+        param_info = param_mapping[provider]['variables'][parameter_key]
+        folder_id = param_info["folder_id"]
+
+        start_date = self.var_cfg.time_range.start_date
+        end_date = self.var_cfg.time_range.end_date
+
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+
         expected_files = []
-        current = self.start_date
-        while current <= self.end_date:
+        current = start
+        while current <= end:
             doy = current.timetuple().tm_yday
             basename = f"{current.year}{doy:03d}.nc"
             expected_files.append(basename)
             current += timedelta(days=1)
 
-        output_dir = var_cfg.data_dir
+        output_dir = self.var_cfg.data_dir
+        provider = self.var_cfg.dataset.lower()
+        parameter_key = self.var_cfg.weather.parameter
         local_files = []
         missing_files = []
 
@@ -78,28 +113,26 @@ class MSWXmirror:
 
         if not missing_files:
             print(f"✅ All {len(expected_files)} files already exist locally. No download needed.")
+            self.files = local_files
             return local_files
 
         print(f"📂 {len(local_files)} exist, {len(missing_files)} missing — fetching from Drive...")
 
-        # === 2) Connect to Drive ===
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = service_account.Credentials.from_service_account_file(
             param_mapping[provider].params.google_service_account, scopes=SCOPES
         )
         service = build('drive', 'v3', credentials=creds)
 
-        # === 3) List all Drive files ===
         drive_files = list_drive_files(folder_id, service)
         valid_filenames = set(missing_files)
-
         files_to_download = [f for f in drive_files if f['name'] in valid_filenames]
 
         if not files_to_download:
             print(f"⚠️ None of the missing files found in Drive. Check folder & date range.")
+            self.files = local_files
             return local_files
 
-        # === 4) Download missing ===
         for file in files_to_download:
             filename = file['name']
             local_path = os.path.join(output_dir, provider, parameter_key, filename)
@@ -107,91 +140,161 @@ class MSWXmirror:
             download_drive_file(file['id'], local_path, service)
             local_files.append(filename)
 
+        self.files = local_files
         return local_files
 
-def extract_ts_MSWX(cfg: DictConfig):
-    parameter = cfg.weather.parameter
-    param_mapping = cfg.mappings
-    provider = cfg.dataset.lower()
-    parameter_key = cfg.weather.parameter
-    # Validate provider and parameter
+    def load(self):
+        param_mapping = self.var_cfg.mappings
+        provider = self.var_cfg.dataset.lower()
+        parameter_key = self.var_cfg.weather.parameter
+        region = self.var_cfg.region
+        bounds = self.var_cfg.bounds[region]
 
-    param_info = param_mapping[provider]['variables'][parameter_key]
+        param_info = param_mapping[provider]['variables'][parameter_key]
+        output_dir = self.var_cfg.data_dir
+        valid_dsets = []
 
-    base_dir = cfg.data_dir
+        for f in self.files:
+            local_path = os.path.join(output_dir, provider, parameter_key, f)
+            try:
+                ds = xr.open_dataset(local_path, chunks='auto', engine='netcdf4')[param_info.name]
+                valid_dsets.append(ds)
+            except Exception as e:
+                print(f"Skipping file due to error: {f}\n{e}")
 
-    target_lat = cfg.location.lat
-    target_lon = cfg.location.lon
+        dset = xr.concat(valid_dsets, dim='time')
+        dset = dset.transpose('time', 'lat', 'lon')
+        self.dataset = self._fix_coords(dset)
+        return dset
 
-    start_date = pd.to_datetime(cfg.time_range.start_date)
-    end_date = pd.to_datetime(cfg.time_range.end_date)
+    def to_zarr(self, zarr_filename):
+        if self.dataset is None:
+            raise ValueError("No dataset loaded. Call `load()` before `to_zarr()`.")
 
-    # === 1) Rebuild exact basenames ===
-    current = start_date
-    basenames = []
-    while current <= end_date:
-        doy = current.timetuple().tm_yday
-        basename = f"{current.year}{doy:03d}.nc"
-        basenames.append(basename)
-        current += timedelta(days=1)
+        var_name = self.var_cfg.weather.parameter
+        dataset_name = self.var_cfg.dataset
+        region = self.var_cfg.region
 
-    # === 2) Process only those files ===
-    ts_list = []
-    missing = []
+        # Add standard units metadata
+        if var_name == 'pr':
+            self.dataset.attrs['units'] = 'mm/day'
+        elif var_name in ['tas', 'tasmax', 'tasmin']:
+            self.dataset.attrs['units'] = 'degC'
 
-    for basename in basenames:
-        file_path = os.path.join(base_dir, provider, parameter, basename)
+        zarr_path = os.path.join("data/MSWX/", zarr_filename)
+        os.makedirs(os.path.dirname(zarr_path), exist_ok=True)
 
-        if not os.path.exists(file_path):
-            missing.append(basename)
-            continue
+        print(f"💾 Saving {var_name} to Zarr: {zarr_path}")
+        self.dataset.to_zarr(zarr_path, mode="w")
 
-        print(f"📂 Opening: {file_path}")
-        ds = xr.open_dataset(file_path)
+    def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
+        """
+        Extract a subset of the dataset by point, bounding box, or shapefile.
 
-        time_name = [x for x in ds.coords if "time" in x.lower()][0]
-        data_var = [v for v in ds.data_vars][0]
+        Parameters
+        ----------
+        point : tuple(float, float), optional
+            (lon, lat) coordinates for a single point.
+        box : tuple(float, float, float, float), optional
+            (min_lon, min_lat, max_lon, max_lat) bounding box.
+        shapefile : str or geopandas.GeoDataFrame, optional
+            Path to shapefile or a GeoDataFrame.
+        buffer_km : float, optional
+            Buffer distance in kilometers (for point or shapefile).
+        
+        Returns
+        -------
+        xarray.Dataset or xarray.DataArray
+            Subset of the dataset.
+        """
+        if self.dataset is None:
+            raise ValueError("No dataset loaded. Call `load()` first.")
 
-        ts = ds[data_var].sel(
-            lat=target_lat,
-            lon=target_lon,
-            method='nearest'
-        )
+        ds = self.dataset.rio.write_crs("EPSG:4326", inplace=False)
 
-        df = ts.to_dataframe().reset_index()[[time_name, data_var]]
-        ts_list.append(df)
+        if point is not None:
+            lon, lat = point
+            if buffer_km > 0:
+                # buffer around point
+                buffer_deg = buffer_km / 111  # rough conversion km→degrees
+                ds_subset = ds.sel(
+                    lon=slice(lon-buffer_deg, lon+buffer_deg),
+                    lat=slice(lat-buffer_deg, lat+buffer_deg)
+                )
+            else:
+                ds_subset = ds.sel(lon=lon, lat=lat, method="nearest")
 
-    if missing:
-        print(f"⚠️ Warning: {len(missing)} files were missing and skipped:")
-        for m in missing:
-            print(f"   - {m}")
+        elif box is not None:
+            min_lon, min_lat, max_lon, max_lat = box
+            ds_subset = ds.sel(
+                lon=slice(min_lon, max_lon),
+                lat=slice(min_lat, max_lat)
+            )
 
-    if not ts_list:
-        raise RuntimeError("❌ No valid files were found. Cannot extract time series.")
+        elif shapefile is not None:
+            if isinstance(shapefile, str):
+                gdf = gpd.read_file(shapefile)
+            else:
+                gdf = shapefile
+            if buffer_km > 0:
+                gdf = gdf.to_crs(epsg=3857)  # project to meters
+                gdf["geometry"] = gdf.buffer(buffer_km * 1000)
+                gdf = gdf.to_crs(epsg=4326)
 
-    # === 3) Combine and slice (for safety) ===
-    ts_all = pd.concat(ts_list).sort_values(by=time_name).reset_index(drop=True)
+            geom = [mapping(g) for g in gdf.geometry]
+            ds_subset = ds.rio.clip(geom, gdf.crs, drop=True)
 
-    ts_all[time_name] = pd.to_datetime(ts_all[time_name])
-    ts_all = ts_all[
-        (ts_all[time_name] >= start_date) &
-        (ts_all[time_name] <= end_date)
-    ].reset_index(drop=True)
+        else:
+            raise ValueError("Must provide either point, box, or shapefile.")
 
-    out_dir = hydra.utils.to_absolute_path(cfg.output.out_dir)
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, cfg.output.filename)
-
-    ts_all["variable"] = param_info['name']
-    ts_all["latitude"] = target_lat
-    ts_all["longitude"] = target_lon
-    ts_all['source'] = provider.upper()
-    ts_all['units'] = ts.attrs['units']
-    ts_all.rename(columns={param_info['name']: 'value'}, inplace=True)
-    ts_all = ts_all[["latitude", "longitude", "time", "source", "variable", "value",'units']]
+        return ds_subset
     
-    ts_all.to_csv(out_path, index=False)
-    print(f"✅ Saved MSWX time series to: {out_path}")
+    def to_dataframe(self, ds=None):
+        """
+        Convert extracted xarray dataset to a tidy dataframe.
 
-    return ts_all
+        Parameters
+        ----------
+        ds : xr.DataArray or xr.Dataset, optional
+            Dataset to convert. If None, use self.dataset.
 
+        Returns
+        -------
+        pd.DataFrame
+        """
+        if ds is None:
+            if self.dataset is None:
+                raise ValueError("No dataset loaded. Call `load()` first or pass `ds`.")
+            ds = self.dataset
+
+        # If Dataset, pick first variable
+        if isinstance(ds, xr.Dataset):
+            if len(ds.data_vars) != 1:
+                raise ValueError("Dataset has multiple variables. Please select one.")
+            ds = ds[list(ds.data_vars)[0]]
+
+        df = ds.to_dataframe().reset_index()
+
+        # Keep only relevant cols
+        df = df[["time", "lat", "lon", ds.name]]
+
+        # Rename
+        df = df.rename(columns={
+            "lat": "latitude",
+            "lon": "longitude",
+            ds.name: "value"
+        })
+        return df
+
+    def format(self, df):
+        """
+        Format dataframe into standard schema.
+        """
+        df = df.copy()
+        df["variable"] = self.var_cfg.weather.parameter
+        df["source"] = self.var_cfg.dataset.upper()
+        df["units"] = self.dataset.attrs.get("units", "unknown")
+
+        df = df[["latitude", "longitude", "time", "source", "variable", "value", "units"]]
+        return df
+    
