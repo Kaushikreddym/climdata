@@ -1,4 +1,4 @@
 
 # climdata module
 
-::: climdata.climdata
+::: climdata
