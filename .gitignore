@@ -108,3 +108,5 @@ ENV/
 climdata/conf/service.json
 outputs
 *.csv
+*.zarr
+*.nc

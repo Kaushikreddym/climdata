@@ -8,4 +8,5 @@ from .utils.utils_download import * # etc.
 from .utils.config import load_config
 from .datasets.DWD import DWDmirror as DWD
 from .datasets.MSWX import MSWXmirror as MSWX
+from .datasets.ERA5 import ERA5Mirror as ERA5
 

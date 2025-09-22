@@ -4,7 +4,7 @@ defaults:
   - mappings/parameters
   - mappings/variables 
 dataset: dwd
-data_dir: /beegfs/muduchuru/data
+data_dir: ./data
 weather:
   parameter: tas  # standardized variable name (e.g., tas, pr, rsds)
 

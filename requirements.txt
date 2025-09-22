@@ -19,6 +19,7 @@ zarr
 ipyleaflet
 wetterdienst
 pint-pandas
+cdsapi
 
 # Workflow + config
 hydra-core
