@@ -14,7 +14,7 @@ from xclim.core import units
 warnings.filterwarnings("ignore", category=Warning)
 
 
-class CMIP:
+class CMIPmirror:
     def __init__(self, var_cfg: DictConfig, experiments):
         self.var_cfg = var_cfg
         self.files = []

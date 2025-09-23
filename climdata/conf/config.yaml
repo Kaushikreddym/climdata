@@ -33,5 +33,6 @@ time_range:
 
 output:
   out_dir: "./climdata/data/"
-  filename: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.csv"
+  filename_csv: "{provider}_{parameter}_LAT_{lat}_LON_{lon}_{start}_{end}.csv"
+  filename_zarr: "{provider}_{parameter}_LAT{lat_range}_LON{lon_range}_{start}_{end}.zarr"
   fmt: 'standard' # 'standard', 'ICASA', 'simplace', 'monica'
