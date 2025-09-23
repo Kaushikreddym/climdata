@@ -131,12 +131,12 @@ class CMIPCloud:
         )
 
         # Add metadata columns if missing
-        df_long["source_id"] = self.source_id
-        df_long["experiment_id"] = self.experiment_id
-        df_long["table_id"] = self.table_id
+        df_long["source"] = self.source_id
+        df_long["experiment"] = self.experiment_id
+        df_long["table"] = self.table_id
 
         # Reorder columns
-        cols = ["source_id", "experiment_id", "table_id", "time", "lat", "lon", "variable", "value", "units"]
+        cols = ["source", "experiment", "table", "time", "lat", "lon", "variable", "value", "units"]
         df_long = df_long[[c for c in cols if c in df_long.columns]]
 
         return df_long
