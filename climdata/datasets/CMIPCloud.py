@@ -113,8 +113,37 @@ class CMIPCloud:
             self.ds.to_zarr(store_path, mode="w")
             print(f"Saved Zarr to {store_path}")
 
+    def _format(self, df):
+        """
+        Format the dataframe for standardized output:
+        - Adds source_id, experiment_id, table_id, variable, value, units columns.
+        - Stacks variables into long format.
+        """
+        # Melt the dataframe to long format: variable, value
+        value_vars = [v for v in self.variables if v in df.columns]
+        id_vars = [c for c in df.columns if c not in value_vars]
+        df_long = df.melt(id_vars=id_vars, value_vars=value_vars,
+                          var_name="variable", value_name="value")
+
+        # Add units column (from attrs)
+        df_long["units"] = df_long["variable"].map(
+            lambda v: self.ds[v].attrs.get("units", "unknown") if v in self.ds.data_vars else "unknown"
+        )
+
+        # Add metadata columns if missing
+        df_long["source_id"] = self.source_id
+        df_long["experiment_id"] = self.experiment_id
+        df_long["table_id"] = self.table_id
+
+        # Reorder columns
+        cols = ["source_id", "experiment_id", "table_id", "time", "lat", "lon", "variable", "value", "units"]
+        df_long = df_long[[c for c in cols if c in df_long.columns]]
+
+        return df_long
+
     def save_csv(self, filename):
         if self.ds is not None:
             df = self.ds.to_dataframe().reset_index()
+            df = self._format(df)
             df.to_csv(filename, index=False)
             print(f"Saved CSV to {filename}")
