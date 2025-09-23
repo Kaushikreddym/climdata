@@ -1,6 +1,6 @@
 [project]
 name = "climdata"
-version = "0.0.7"
+version = "0.1.0"
 dynamic = [
     "dependencies",
 ]
@@ -52,7 +52,7 @@ universal = true
 
 
 [tool.bumpversion]
-current_version = "0.0.7"
+current_version = "0.1.0"
 commit = true
 tag = true
 
