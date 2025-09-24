@@ -160,6 +160,8 @@ class MSWXmirror:
             local_path = os.path.join(output_dir, provider, parameter_key, f)
             try:
                 ds = xr.open_dataset(local_path, chunks='auto', engine='netcdf4')[param_info.name]
+                # Rename DataArray to parameter_key
+                ds = ds.rename(parameter_key)
                 valid_dsets.append(ds)
             except Exception as e:
                 print(f"Skipping file due to error: {f}\n{e}")
@@ -167,7 +169,7 @@ class MSWXmirror:
         dset = xr.concat(valid_dsets, dim='time')
         dset = dset.transpose('time', 'lat', 'lon')
         self.dataset = self._fix_coords(dset)
-        return dset
+        return self.dataset
 
     def to_zarr(self, zarr_filename):
         if self.dataset is None:
@@ -227,10 +229,10 @@ class MSWXmirror:
                 ds_subset = ds.sel(lon=lon, lat=lat, method="nearest")
 
         elif box is not None:
-            min_lon, min_lat, max_lon, max_lat = box
+            # Accept dict: {'lat_min': ..., 'lat_max': ..., 'lon_min': ..., 'lon_max': ...}
             ds_subset = ds.sel(
-                lon=slice(min_lon, max_lon),
-                lat=slice(min_lat, max_lat)
+                lon=slice(box['lon_min'], box['lon_max']),
+                lat=slice(box['lat_min'], box['lat_max'])
             )
 
         elif shapefile is not None:
@@ -248,7 +250,8 @@ class MSWXmirror:
 
         else:
             raise ValueError("Must provide either point, box, or shapefile.")
-
+        self.dataset = ds_subset
+        self.dataset = self.dataset.to_dataset()
         return ds_subset
     
     def to_dataframe(self, ds=None):
@@ -287,6 +290,12 @@ class MSWXmirror:
             ds.name: "value"
         })
         return df
+    def save_netcdf(self, filename):
+        if self.dataset is not None:
+            if "time" in self.dataset.variables:
+                self.dataset["time"].encoding.clear()
+            self.dataset.to_netcdf(filename)
+            # print(f"Saved NetCDF to {filename}")
 
     def format(self, df):
         """
@@ -299,4 +308,4 @@ class MSWXmirror:
 
         df = df[["latitude", "longitude", "time", "source", "variable", "value", "units"]]
         return df
-    
+

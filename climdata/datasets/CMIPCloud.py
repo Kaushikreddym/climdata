@@ -27,6 +27,7 @@ class CMIPCloud:
             if len(col_subset.df) == 0:
                 continue
             self.col_subsets.append(col_subset)
+            self.col = col
         return self.col_subsets
 
     def load(self):
