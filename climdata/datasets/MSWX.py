@@ -1,96 +1,42 @@
 import pandas as pd
-import numpy as np
-from wetterdienst import Settings
-from wetterdienst.provider.dwd.observation import DwdObservationRequest
-import geemap
-import ee
-import ipdb
 import geopandas as gpd
-from omegaconf import DictConfig
 import os
-import yaml
-import time
 from tqdm import tqdm
 import warnings
 from datetime import datetime, timedelta
 import xarray as xr
-import hydra
 from omegaconf import DictConfig
-import pint
-import pint_pandas
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
 
 from climdata.utils.utils_download import list_drive_files, download_drive_file
-
-import io
-import requests
-from scipy.spatial import cKDTree
-import argparse
-import re
-
-import requests
-from bs4 import BeautifulSoup
-import concurrent.futures
-
-import gzip
-# from utils.utils import *
-# from datasets.datasets import *
-import rioxarray
 from shapely.geometry import mapping
+import cf_xarray
 
 warnings.filterwarnings("ignore", category=Warning)
 
-import cf_xarray
 
 class MSWXmirror:
-    def __init__(self, var_cfg: DictConfig):
-        self.var_cfg = var_cfg
-        self.files = []
+    def __init__(self, cfg: DictConfig):
+        self.cfg = cfg
         self.dataset = None
+        self.variables = cfg.variables
+        self.files = []
 
-    def _fix_coords(self, ds: xr.Dataset | xr.DataArray) -> xr.Dataset | xr.DataArray:
-        """
-        Ensure latitude is ascending and longitude is in the range [0, 360].
-
-        Parameters
-        ----------
-        ds : xr.Dataset or xr.DataArray
-            Input dataset or dataarray with latitude and longitude coordinates.
-
-        Returns
-        -------
-        xr.Dataset or xr.DataArray
-            Dataset with latitude ascending and longitude wrapped to [0, 360].
-        """
-        # Flip latitude to ascending
+    def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
+        """Ensure latitude is ascending and longitude is in the range [0, 360]."""
         ds = ds.cf.sortby("latitude")
-
-        # Wrap longitude into [0, 360]
         lon_name = ds.cf["longitude"].name
         ds = ds.assign_coords({lon_name: ds.cf["longitude"] % 360})
+        return ds.sortby(lon_name)
 
-        # Sort by longitude
-        ds = ds.sortby(lon_name)
-
-        return ds
-
-
-    def fetch(self):
-        param_mapping = self.var_cfg.mappings
-        provider = self.var_cfg.dataset.lower()
-        parameter_key = self.var_cfg.weather.parameter
-
-        param_info = param_mapping[provider]['variables'][parameter_key]
-        folder_id = param_info["folder_id"]
-
-        start_date = self.var_cfg.time_range.start_date
-        end_date = self.var_cfg.time_range.end_date
-
-        start = datetime.fromisoformat(start_date)
-        end = datetime.fromisoformat(end_date)
+    def fetch(self, folder_id: str, variable: str):
+        """
+        Fetch MSWX files from Google Drive for a given variable.
+        """
+        start = datetime.fromisoformat(self.cfg.time_range.start_date)
+        end = datetime.fromisoformat(self.cfg.time_range.end_date)
 
         expected_files = []
         current = start
@@ -100,29 +46,25 @@ class MSWXmirror:
             expected_files.append(basename)
             current += timedelta(days=1)
 
-        output_dir = self.var_cfg.data_dir
-        provider = self.var_cfg.dataset.lower()
-        parameter_key = self.var_cfg.weather.parameter
-        local_files = []
-        missing_files = []
+        output_dir = self.cfg.data_dir
+        local_files, missing_files = [], []
 
         for basename in expected_files:
-            local_path = os.path.join(output_dir, provider, parameter_key, basename)
+            local_path = os.path.join(output_dir,self.cfg.dataset, variable, basename)
             if os.path.exists(local_path):
                 local_files.append(basename)
             else:
                 missing_files.append(basename)
 
         if not missing_files:
-            print(f"✅ All {len(expected_files)} files already exist locally. No download needed.")
-            self.files = local_files
+            print(f"✅ All {len(expected_files)} {variable} files already exist locally.")
             return local_files
 
-        print(f"📂 {len(local_files)} exist, {len(missing_files)} missing — fetching from Drive...")
+        print(f"📂 {len(local_files)} exist, {len(missing_files)} missing — fetching {variable} from Drive...")
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = service_account.Credentials.from_service_account_file(
-            param_mapping[provider].params.google_service_account, scopes=SCOPES
+            self.cfg.google_service_account, scopes=SCOPES
         )
         service = build('drive', 'v3', credentials=creds)
 
@@ -131,86 +73,63 @@ class MSWXmirror:
         files_to_download = [f for f in drive_files if f['name'] in valid_filenames]
 
         if not files_to_download:
-            print(f"⚠️ None of the missing files found in Drive. Check folder & date range.")
-            self.files = local_files
+            print(f"⚠️ No {variable} files found in Drive for requested dates.")
             return local_files
 
         for file in files_to_download:
             filename = file['name']
-            local_path = os.path.join(output_dir, provider, parameter_key, filename)
+            local_path = os.path.join(output_dir, self.cfg.dataset, variable, filename)
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
             print(f"⬇️ Downloading {filename} ...")
             download_drive_file(file['id'], local_path, service)
             local_files.append(filename)
 
-        self.files = local_files
         return local_files
 
-    def load(self):
-        param_mapping = self.var_cfg.mappings
-        provider = self.var_cfg.dataset.lower()
-        parameter_key = self.var_cfg.weather.parameter
-        region = self.var_cfg.region
-        bounds = self.var_cfg.bounds[region]
+    def load(self, variable: str):
+        """
+        Load MSWX NetCDFs for a given variable into a single xarray Dataset.
+        """
+        folder_id = self.cfg.mappings["mswx"]["variables"][variable]["folder_id"]
+        files = self.fetch(folder_id, variable)
+        datasets = []
 
-        param_info = param_mapping[provider]['variables'][parameter_key]
-        output_dir = self.var_cfg.data_dir
-        valid_dsets = []
-
-        for f in self.files:
-            local_path = os.path.join(output_dir, provider, parameter_key, f)
+        for f in files:
+            local_path = os.path.join(self.cfg.data_dir, self.cfg.dataset, variable, f)
             try:
-                ds = xr.open_dataset(local_path, chunks='auto', engine='netcdf4')[param_info.name]
-                # Rename DataArray to parameter_key
-                ds = ds.rename(parameter_key)
-                valid_dsets.append(ds)
+                ds = xr.open_dataset(local_path, chunks="auto", engine="netcdf4")[self.cfg.mappings[self.cfg.dataset].variables[variable].name]
+                ds = ds.rename(variable)
+                datasets.append(ds)
             except Exception as e:
-                print(f"Skipping file due to error: {f}\n{e}")
+                print(f"Skipping file {f} due to error: {e}")
 
-        dset = xr.concat(valid_dsets, dim='time')
-        dset = dset.transpose('time', 'lat', 'lon')
-        self.dataset = self._fix_coords(dset)
+        if not datasets:
+            raise RuntimeError(f"No datasets could be loaded for {variable}.")
+
+        dset = xr.concat(datasets, dim="time")
+        dset = dset.transpose("time", "lat", "lon")
+        dset = self._fix_coords(dset)
+
+        self.dataset = dset
         return self.dataset
 
-    def to_zarr(self, zarr_filename):
+    def to_zarr(self, zarr_filename: str):
         if self.dataset is None:
-            raise ValueError("No dataset loaded. Call `load()` before `to_zarr()`.")
+            raise ValueError("No dataset loaded. Call `load()` first.")
 
-        var_name = self.var_cfg.weather.parameter
-        dataset_name = self.var_cfg.dataset
-        region = self.var_cfg.region
-
-        # Add standard units metadata
+        var_name = self.dataset.name
         if var_name == 'pr':
             self.dataset.attrs['units'] = 'mm/day'
         elif var_name in ['tas', 'tasmax', 'tasmin']:
             self.dataset.attrs['units'] = 'degC'
 
-        zarr_path = os.path.join("data/MSWX/", zarr_filename)
+        zarr_path = os.path.join("data/MSWX", zarr_filename)
         os.makedirs(os.path.dirname(zarr_path), exist_ok=True)
 
         print(f"💾 Saving {var_name} to Zarr: {zarr_path}")
         self.dataset.to_zarr(zarr_path, mode="w")
 
     def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
-        """
-        Extract a subset of the dataset by point, bounding box, or shapefile.
-
-        Parameters
-        ----------
-        point : tuple(float, float), optional
-            (lon, lat) coordinates for a single point.
-        box : tuple(float, float, float, float), optional
-            (min_lon, min_lat, max_lon, max_lat) bounding box.
-        shapefile : str or geopandas.GeoDataFrame, optional
-            Path to shapefile or a GeoDataFrame.
-        buffer_km : float, optional
-            Buffer distance in kilometers (for point or shapefile).
-        
-        Returns
-        -------
-        xarray.Dataset or xarray.DataArray
-            Subset of the dataset.
-        """
         if self.dataset is None:
             raise ValueError("No dataset loaded. Call `load()` first.")
 
@@ -219,20 +138,18 @@ class MSWXmirror:
         if point is not None:
             lon, lat = point
             if buffer_km > 0:
-                # buffer around point
-                buffer_deg = buffer_km / 111  # rough conversion km→degrees
+                buffer_deg = buffer_km / 111
                 ds_subset = ds.sel(
                     lon=slice(lon-buffer_deg, lon+buffer_deg),
-                    lat=slice(lat-buffer_deg, lat+buffer_deg)
+                    lat=slice(lat-buffer_deg, lat+buffer_deg),
                 )
             else:
                 ds_subset = ds.sel(lon=lon, lat=lat, method="nearest")
 
         elif box is not None:
-            # Accept dict: {'lat_min': ..., 'lat_max': ..., 'lon_min': ..., 'lon_max': ...}
             ds_subset = ds.sel(
-                lon=slice(box['lon_min'], box['lon_max']),
-                lat=slice(box['lat_min'], box['lat_max'])
+                lon=slice(box["lon_min"], box["lon_max"]),
+                lat=slice(box["lat_min"], box["lat_max"]),
             )
 
         elif shapefile is not None:
@@ -241,71 +158,71 @@ class MSWXmirror:
             else:
                 gdf = shapefile
             if buffer_km > 0:
-                gdf = gdf.to_crs(epsg=3857)  # project to meters
+                gdf = gdf.to_crs(epsg=3857)
                 gdf["geometry"] = gdf.buffer(buffer_km * 1000)
                 gdf = gdf.to_crs(epsg=4326)
-
             geom = [mapping(g) for g in gdf.geometry]
             ds_subset = ds.rio.clip(geom, gdf.crs, drop=True)
 
         else:
             raise ValueError("Must provide either point, box, or shapefile.")
-        self.dataset = ds_subset
-        self.dataset = self.dataset.to_dataset()
+
+        self.dataset = ds_subset.to_dataset()
         return ds_subset
-    
-    def to_dataframe(self, ds=None):
-        """
-        Convert extracted xarray dataset to a tidy dataframe.
 
-        Parameters
-        ----------
-        ds : xr.DataArray or xr.Dataset, optional
-            Dataset to convert. If None, use self.dataset.
+    # def to_dataframe(self, ds=None):
+    #     if ds is None:
+    #         if self.dataset is None:
+    #             raise ValueError("No dataset loaded. Call `load()` first or pass `ds`.")
+    #         ds = self.dataset
 
-        Returns
-        -------
-        pd.DataFrame
-        """
-        if ds is None:
-            if self.dataset is None:
-                raise ValueError("No dataset loaded. Call `load()` first or pass `ds`.")
-            ds = self.dataset
+    #     if isinstance(ds, xr.Dataset):
+    #         if len(ds.data_vars) != 1:
+    #             raise ValueError("Dataset has multiple variables. Please select one.")
+    #         ds = ds[list(ds.data_vars)[0]]
 
-        # If Dataset, pick first variable
-        if isinstance(ds, xr.Dataset):
-            if len(ds.data_vars) != 1:
-                raise ValueError("Dataset has multiple variables. Please select one.")
-            ds = ds[list(ds.data_vars)[0]]
+    #     df = ds.to_dataframe().reset_index()
+    #     df = df[["time", "lat", "lon", ds.name]]
+    #     df = df.rename(columns={"lat": "latitude", "lon": "longitude", ds.name: "value"})
+    #     return df
 
-        df = ds.to_dataframe().reset_index()
+    def _format(self, df):
+        """Format dataframe for standardized output."""
+        value_vars = [v for v in self.variables if v in df.columns]
+        id_vars = [c for c in df.columns if c not in value_vars]
 
-        # Keep only relevant cols
-        df = df[["time", "lat", "lon", ds.name]]
+        df_long = df.melt(
+            id_vars=id_vars,
+            value_vars=value_vars,
+            var_name="variable",
+            value_name="value",
+        )
 
-        # Rename
-        df = df.rename(columns={
-            "lat": "latitude",
-            "lon": "longitude",
-            ds.name: "value"
-        })
-        return df
-    def save_netcdf(self, filename):
+        df_long["units"] = df_long["variable"].map(
+            lambda v: self.dataset[v].attrs.get("units", "unknown")
+            if v in self.dataset.data_vars
+            else "unknown"
+        )
+
+        df_long["source"] = self.cfg.dataset
+
+        cols = [
+            "source",
+            "table",
+            "time",
+            "lat",
+            "lon",
+            "variable",
+            "value",
+            "units",
+        ]
+        df_long = df_long[[c for c in cols if c in df_long.columns]]
+
+        return df_long
+
+    def save_csv(self, filename):
         if self.dataset is not None:
-            if "time" in self.dataset.variables:
-                self.dataset["time"].encoding.clear()
-            self.dataset.to_netcdf(filename)
-            # print(f"Saved NetCDF to {filename}")
-
-    def format(self, df):
-        """
-        Format dataframe into standard schema.
-        """
-        df = df.copy()
-        df["variable"] = self.var_cfg.weather.parameter
-        df["source"] = self.var_cfg.dataset.upper()
-        df["units"] = self.dataset.attrs.get("units", "unknown")
-
-        df = df[["latitude", "longitude", "time", "source", "variable", "value", "units"]]
-        return df
-
+            df = self.dataset.to_dataframe().reset_index()
+            df = self._format(df)
+            df.to_csv(filename, index=False)
+            print(f"Saved CSV to {filename}")

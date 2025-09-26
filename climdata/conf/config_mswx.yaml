@@ -1,0 +1,6 @@
+defaults:
+  - config_base
+
+dataset: mswx
+variables: [tasmax, tasmin, pr]
+google_service_account: /home/muduchuru/.climdata_conf/service.json

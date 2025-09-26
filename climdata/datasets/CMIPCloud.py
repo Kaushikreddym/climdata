@@ -1,20 +1,32 @@
 import intake
 import xarray as xr
 import pandas as pd
+from omegaconf import DictConfig
+import intake
+import xarray as xr
+import pandas as pd
+from omegaconf import DictConfig
+
 
 class CMIPCloud:
-    def __init__(self, experiment_id, source_id, table_id, variables, region_bounds=None):
-        self.experiment_id = experiment_id
-        self.source_id = source_id
-        self.table_id = table_id
-        self.variables = variables
-        self.region_bounds = region_bounds
+    def __init__(self, cfg: DictConfig):
+        # Directly read from flat config
+        self.experiment_id = cfg.experiment_id
+        self.source_id = cfg.source_id
+        self.table_id = cfg.table_id
+        self.variables = cfg.variables
+        self.start_date = cfg.time_range.start_date
+        self.end_date = cfg.time_range.end_date
+
         self.col_subsets = []
         self.ds = None
+        self.col = None
 
     def fetch(self):
         """Collect intake catalog subsets for each variable."""
-        col = intake.open_esm_datastore("https://storage.googleapis.com/cmip6/pangeo-cmip6.json")
+        col = intake.open_esm_datastore(
+            "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
+        )
         self.col_subsets = []
         for var in self.variables:
             query = dict(
@@ -34,7 +46,9 @@ class CMIPCloud:
         """Load and merge datasets from collected col_subsets."""
         datasets = []
         for col_subset in self.col_subsets:
-            zstore_path = col_subset.df.zstore.values[0].replace('gs:/', "https://storage.googleapis.com")
+            zstore_path = col_subset.df.zstore.values[0].replace(
+                "gs:/", "https://storage.googleapis.com"
+            )
             ds_var = xr.open_zarr(zstore_path)
             datasets.append(ds_var)
         if datasets:
@@ -52,25 +66,25 @@ class CMIPCloud:
 
         if self.ds is None:
             raise ValueError("No dataset loaded. Call `load()` first.")
-
+        
+        self._subset_time(self.start_date, self.end_date) 
+        
         ds = self.ds
-
         if point is not None:
             lon, lat = point
             if buffer_km > 0:
                 buffer_deg = buffer_km / 111
                 ds_subset = ds.sel(
-                    lon=slice(lon-buffer_deg, lon+buffer_deg),
-                    lat=slice(lat-buffer_deg, lat+buffer_deg)
+                    lon=slice(lon - buffer_deg, lon + buffer_deg),
+                    lat=slice(lat - buffer_deg, lat + buffer_deg),
                 )
             else:
                 ds_subset = ds.sel(lon=lon, lat=lat, method="nearest")
 
         elif box is not None:
-            # Accept dict: {'lat_min': ..., 'lat_max': ..., 'lon_min': ..., 'lon_max': ...}
             ds_subset = ds.sel(
-                lon=slice(box['lon_min'], box['lon_max']),
-                lat=slice(box['lat_min'], box['lat_max'])
+                lon=slice(box["lon_min"], box["lon_max"]),
+                lat=slice(box["lat_min"], box["lat_max"]),
             )
 
         elif shapefile is not None:
@@ -84,6 +98,7 @@ class CMIPCloud:
                 gdf = gdf.to_crs(epsg=4326)
             geom = [mapping(g) for g in gdf.geometry]
             import rioxarray
+
             ds = ds.rio.write_crs("EPSG:4326", inplace=False)
             ds_subset = ds.rio.clip(geom, gdf.crs, drop=True)
 
@@ -91,11 +106,9 @@ class CMIPCloud:
             raise ValueError("Must provide either point, box, or shapefile.")
         self.ds = ds_subset
         return ds_subset
+
     def _subset_time(self, start_date, end_date):
-        """
-        Subset the dataset by time range.
-        Dates should be strings in 'YYYY-MM-DD' format.
-        """
+        """Subset the dataset by time range."""
         if self.ds is None:
             return None
         ds_time = self.ds.sel(time=slice(start_date, end_date))
@@ -115,29 +128,38 @@ class CMIPCloud:
             print(f"Saved Zarr to {store_path}")
 
     def _format(self, df):
-        """
-        Format the dataframe for standardized output:
-        - Adds source_id, experiment_id, table_id, variable, value, units columns.
-        - Stacks variables into long format.
-        """
-        # Melt the dataframe to long format: variable, value
+        """Format dataframe for standardized output."""
         value_vars = [v for v in self.variables if v in df.columns]
         id_vars = [c for c in df.columns if c not in value_vars]
-        df_long = df.melt(id_vars=id_vars, value_vars=value_vars,
-                          var_name="variable", value_name="value")
 
-        # Add units column (from attrs)
-        df_long["units"] = df_long["variable"].map(
-            lambda v: self.ds[v].attrs.get("units", "unknown") if v in self.ds.data_vars else "unknown"
+        df_long = df.melt(
+            id_vars=id_vars,
+            value_vars=value_vars,
+            var_name="variable",
+            value_name="value",
         )
 
-        # Add metadata columns if missing
+        df_long["units"] = df_long["variable"].map(
+            lambda v: self.ds[v].attrs.get("units", "unknown")
+            if v in self.ds.data_vars
+            else "unknown"
+        )
+
         df_long["source"] = self.source_id
         df_long["experiment"] = self.experiment_id
         df_long["table"] = self.table_id
 
-        # Reorder columns
-        cols = ["source", "experiment", "table", "time", "lat", "lon", "variable", "value", "units"]
+        cols = [
+            "source",
+            "experiment",
+            "table",
+            "time",
+            "lat",
+            "lon",
+            "variable",
+            "value",
+            "units",
+        ]
         df_long = df_long[[c for c in cols if c in df_long.columns]]
 
         return df_long

@@ -1,0 +1,5 @@
+defaults:
+  - config_base
+
+dataset: dwd
+variables: [tasmax, tasmin, pr]

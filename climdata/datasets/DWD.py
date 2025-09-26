@@ -9,17 +9,11 @@ class DWDmirror:
     def __init__(self, cfg):
         self.cfg = cfg
         self.param_mapping = cfg.mappings
-        self.provider = cfg.dataset.lower()
-        self.parameter_key = cfg.weather.parameter
-        self.lat = cfg.location.lat
-        self.lon = cfg.location.lon
-        self.distance = cfg.location.buffer_km
         self.start_date = cfg.time_range.start_date
         self.end_date = cfg.time_range.end_date
-        self.units = self.param_mapping[self.provider]['variables'][self.parameter_key].get("unit", None)
         self.df = None
-    def fetch(self):
-        param_info = self.param_mapping[self.provider]['variables'][self.parameter_key]
+    def load(self, variable, lat_loc, lon_loc, buffer_km = 50):
+        param_info = self.param_mapping.dwd.variables[variable]
         resolution = param_info["resolution"]
         dataset = param_info["dataset"]
         variable_name = param_info["name"]
@@ -31,8 +25,8 @@ class DWDmirror:
             end_date=self.end_date,
             settings=settings
         ).filter_by_distance(
-            latlon=(self.lat, self.lon),
-            distance=self.distance,
+            latlon=(lat_loc, lon_loc),
+            distance=buffer_km,
             unit="km"
         )
 
@@ -40,7 +34,7 @@ class DWDmirror:
         self.df = df
         return self.df
 
-    def format(self):
+    def format(self, variable, lat_loc, lon_loc):
         self.df['date'] = pd.to_datetime(self.df['date'])
         self.df = self.df.groupby(['date']).agg({
             'value': 'mean',
@@ -56,18 +50,17 @@ class DWDmirror:
             "value": "value",
             "station_id": "frequent_station",
         })
-        self.df["variable"] = self.parameter_key
-        self.df["latitude"] = self.lat
-        self.df["longitude"] = self.lon
+        self.df["variable"] = variable
+        self.df["lat"] = lat_loc
+        self.df["lon"] = lon_loc
         self.df['source'] = 'DWD'
-        self.df['units'] = self.units
-        self.df = self.df[["latitude", "longitude", "time", "source", "variable", "value", "units"]]
+        self.df['units'] = self.param_mapping.dwd.variables[variable].unit
+        self.df = self.df[["lat", "lon", "time", "source", "variable", "value", "units"]]
         # self.df = df
         return self.df
 
-    def save(self):
-        filename = build_output_filename(self.cfg)
-        self.df.to_csv(self.cfg.output.out_dir+filename, index=False)
+    def save_csv(self,filename):
+        self.df.to_csv(filename, index=False)
         print(f"✅ Saved time series to: {filename}")
         return filename
     

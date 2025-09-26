@@ -1,0 +1,8 @@
+defaults:
+  - config_base
+
+dataset: cmip
+experiment_id: historical
+source_id: MIROC6
+table_id: day
+variables: [tasmax, tasmin, pr]

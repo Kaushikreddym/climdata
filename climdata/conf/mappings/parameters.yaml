@@ -21,7 +21,7 @@ dwd:
       resolution: daily
       dataset: climate_summary
       name: precipitation_height
-      unit: mm
+      unit: mm d-1
     rsds:
       resolution: daily
       dataset: solar
