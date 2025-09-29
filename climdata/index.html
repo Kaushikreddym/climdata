@@ -698,15 +698,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#climdata.utils.utils_download.build_output_filename" class="md-nav__link">
-    <span class="md-ellipsis">
-      build_output_filename()
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#climdata.utils.utils_download.download_drive_file" class="md-nav__link">
     <span class="md-ellipsis">
       download_drive_file()
@@ -728,6 +719,15 @@
   <a href="#climdata.utils.utils_download.find_nearest_xy" class="md-nav__link">
     <span class="md-ellipsis">
       find_nearest_xy()
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#climdata.utils.utils_download.get_output_filename" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_output_filename()
     </span>
   </a>
   
@@ -946,54 +946,6 @@
 
 
 
-<h5 id="climdata.utils.utils_download.build_output_filename" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">build_output_filename</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span></code>
-
-
-<a href="#climdata.utils.utils_download.build_output_filename" class="headerlink" title="Permanent link">&para;</a></h5>
-
-    <div class="doc doc-contents ">
-
-      <p>Generate full output file path from pattern and config.</p>
-
-        <details class="quote">
-          <summary>Source code in <code>climdata/utils/utils_download.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_output_filename</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate full output file path from pattern and config.&quot;&quot;&quot;</span>
-    <span class="n">provider</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="n">parameter</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">parameter</span>
-    <span class="n">lat</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">lat</span>
-    <span class="n">lon</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">lon</span>
-    <span class="n">start</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">time_range</span><span class="o">.</span><span class="n">start_date</span>
-    <span class="n">end</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">time_range</span><span class="o">.</span><span class="n">end_date</span>
-
-    <span class="n">pattern</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;filename&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{provider}</span><span class="s2">_</span><span class="si">{parameter}</span><span class="s2">_</span><span class="si">{start}</span><span class="s2">_</span><span class="si">{end}</span><span class="s2">.csv&quot;</span><span class="p">)</span>
-    <span class="n">filename</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
-        <span class="n">parameter</span><span class="o">=</span><span class="n">parameter</span><span class="p">,</span>
-        <span class="n">lat</span><span class="o">=</span><span class="n">lat</span><span class="p">,</span>
-        <span class="n">lon</span><span class="o">=</span><span class="n">lon</span><span class="p">,</span>
-        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
-        <span class="n">end</span><span class="o">=</span><span class="n">end</span>
-    <span class="p">)</span>
-
-    <span class="n">out_dir</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_dir</span>
-    <span class="n">fmt</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">fmt</span>  <span class="c1"># format is a reserved word in Python, so use &#39;fmt&#39;</span>
-
-    <span class="c1"># return os.path.join(out_dir, fmt, filename)</span>
-    <span class="k">return</span> <span class="n">filename</span>
-</code></pre></div>
-        </details>
-    </div>
-
-  </div>
-
-
-
-  <div class="doc doc-object doc-function">
-
-
-
 <h5 id="climdata.utils.utils_download.download_drive_file" class="doc doc-heading">
 <code class="highlight language-python"><span class="n">download_drive_file</span><span class="p">(</span><span class="n">file_id</span><span class="p">,</span> <span class="n">local_path</span><span class="p">,</span> <span class="n">service</span><span class="p">)</span></code>
 
@@ -1034,7 +986,7 @@
 
 
 <h5 id="climdata.utils.utils_download.fetch_dwd" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">fetch_dwd</span><span class="p">(</span><span class="n">var_cfg</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">fetch_dwd</span><span class="p">(</span><span class="n">var_cfg</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span></code>
 
 
 <a href="#climdata.utils.utils_download.fetch_dwd" class="headerlink" title="Permanent link">&para;</a></h5>
@@ -1045,11 +997,11 @@
 
         <details class="quote">
           <summary>Source code in <code>climdata/utils/utils_download.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_dwd</span><span class="p">(</span><span class="n">var_cfg</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_dwd</span><span class="p">(</span><span class="n">var_cfg</span><span class="p">,</span><span class="n">var</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Download HYRAS data for one variable and a list of years.&quot;&quot;&quot;</span>
     <span class="n">param_mapping</span> <span class="o">=</span> <span class="n">var_cfg</span><span class="o">.</span><span class="n">mappings</span>
     <span class="n">provider</span> <span class="o">=</span> <span class="n">var_cfg</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="n">parameter_key</span> <span class="o">=</span> <span class="n">var_cfg</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">parameter</span>
+    <span class="n">parameter_key</span> <span class="o">=</span> <span class="n">var</span>
     <span class="c1"># Validate provider and parameter</span>
 
     <span class="n">param_info</span> <span class="o">=</span> <span class="n">param_mapping</span><span class="p">[</span><span class="n">provider</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">][</span><span class="n">parameter_key</span><span class="p">]</span>
@@ -1134,6 +1086,65 @@
     <span class="n">iy</span><span class="p">,</span> <span class="n">ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">lat</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">iy</span><span class="p">,</span> <span class="n">ix</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h5 id="climdata.utils.utils_download.get_output_filename" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_output_filename</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">output_type</span><span class="o">=</span><span class="s1">&#39;nc&#39;</span><span class="p">,</span> <span class="n">lat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+
+<a href="#climdata.utils.utils_download.get_output_filename" class="headerlink" title="Permanent link">&para;</a></h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Generate output filename based on config, output type, and extraction mode.
+output_type: "nc", "csv", or "zarr"</p>
+
+        <details class="quote">
+          <summary>Source code in <code>climdata/utils/utils_download.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_output_filename</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">output_type</span><span class="o">=</span><span class="s2">&quot;nc&quot;</span><span class="p">,</span> <span class="n">lat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lon</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate output filename based on config, output type, and extraction mode.</span>
+<span class="sd">    output_type: &quot;nc&quot;, &quot;csv&quot;, or &quot;zarr&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">output_type</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">filename_csv</span>
+    <span class="k">elif</span> <span class="n">output_type</span> <span class="o">==</span> <span class="s2">&quot;zarr&quot;</span><span class="p">:</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">filename_zarr</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">filename_nc</span>
+
+    <span class="c1"># If lat/lon are provided, use point template</span>
+    <span class="k">if</span> <span class="n">lat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">provider</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">parameter</span><span class="o">=</span><span class="s2">&quot;surface&quot;</span><span class="p">,</span>
+            <span class="n">lat</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">lon</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">time_range</span><span class="o">.</span><span class="n">start_date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">end</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">time_range</span><span class="o">.</span><span class="n">end_date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Use region bounds</span>
+        <span class="n">region_bounds</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="n">cfg</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">provider</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+            <span class="n">parameter</span><span class="o">=</span><span class="s2">&quot;surface&quot;</span><span class="p">,</span>
+            <span class="n">lat_range</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region_bounds</span><span class="p">[</span><span class="s1">&#39;lat_min&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">region_bounds</span><span class="p">[</span><span class="s1">&#39;lat_max&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">lon_range</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region_bounds</span><span class="p">[</span><span class="s1">&#39;lon_min&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">region_bounds</span><span class="p">[</span><span class="s1">&#39;lon_max&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">time_range</span><span class="o">.</span><span class="n">start_date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">end</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">time_range</span><span class="o">.</span><span class="n">end_date</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">filename</span>
 </code></pre></div>
         </details>
     </div>
