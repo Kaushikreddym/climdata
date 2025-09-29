@@ -3,7 +3,6 @@ import pandas as pd
 import hydra
 from wetterdienst import Settings
 from wetterdienst.provider.dwd.observation import DwdObservationRequest
-from climdata.utils.utils_download import build_output_filename
 
 class DWDmirror:
     def __init__(self, cfg):

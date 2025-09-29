@@ -3,8 +3,18 @@ defaults:
   - mappings/parameters
   - mappings/variables 
 
+dataset: MSWX
+lat: null
+lon: null
+
+variables: ["tasmin","tasmax","pr"]
+
 data_dir: ./data
-region: europe
+region: None
+
+experiment_id: historical
+source_id: MIROC6
+table_id: day
 
 bounds:
   europe:

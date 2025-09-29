@@ -124,7 +124,7 @@ mswx:
     rsds:
       name: downward_shortwave_radiation
       folder_id: 1usXbIOi4_jBUdDaZbzPKXznx9PTYzHRv
-dwd_hyras:
+hyras:
   variables:
     tasmin:
       name: tasmin

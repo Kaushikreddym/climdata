@@ -11,4 +11,5 @@ from .datasets.MSWX import MSWXmirror as MSWX
 from .datasets.ERA5 import ERA5Mirror as ERA5
 from .datasets.CMIPlocal import CMIPmirror as CMIPlocal
 from .datasets.CMIPCloud import CMIPCloud as CMIP
+from .datasets.HYRAS import HYRASmirror as HYRAS
 

@@ -64,7 +64,7 @@ class MSWXmirror:
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = service_account.Credentials.from_service_account_file(
-            self.cfg.google_service_account, scopes=SCOPES
+            self.cfg.mappings.mswx.params.google_service_account, scopes=SCOPES
         )
         service = build('drive', 'v3', credentials=creds)
 
@@ -95,7 +95,7 @@ class MSWXmirror:
         datasets = []
 
         for f in files:
-            local_path = os.path.join(self.cfg.data_dir, self.cfg.dataset, variable, f)
+            local_path = os.path.join(self.cfg.data_dir, self.cfg.dataset.lower(), variable, f)
             try:
                 ds = xr.open_dataset(local_path, chunks="auto", engine="netcdf4")[self.cfg.mappings[self.cfg.dataset].variables[variable].name]
                 ds = ds.rename(variable)

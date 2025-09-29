@@ -64,11 +64,11 @@ def download_drive_file(file_id, local_path, service):
             status, done = downloader.next_chunk()
             print(f"   → Download {int(status.progress() * 100)}% complete")
 
-def fetch_dwd(var_cfg):
+def fetch_dwd(var_cfg,var):
     """Download HYRAS data for one variable and a list of years."""
     param_mapping = var_cfg.mappings
     provider = var_cfg.dataset.lower()
-    parameter_key = var_cfg.weather.parameter
+    parameter_key = var
     # Validate provider and parameter
 
     param_info = param_mapping[provider]['variables'][parameter_key]
@@ -205,27 +205,37 @@ def extract_ts_dwd(cfg: DictConfig):
 import os
 from omegaconf import DictConfig
 
-def build_output_filename(cfg: DictConfig) -> str:
-    """Generate full output file path from pattern and config."""
-    provider = cfg.dataset.lower()
-    parameter = cfg.weather.parameter
-    lat = cfg.location.lat
-    lon = cfg.location.lon
-    start = cfg.time_range.start_date
-    end = cfg.time_range.end_date
+def get_output_filename(cfg, output_type="nc", lat=None, lon=None):
+    """
+    Generate output filename based on config, output type, and extraction mode.
+    output_type: "nc", "csv", or "zarr"
+    """
+    if output_type == "csv":
+        template = cfg.output.filename_csv
+    elif output_type == "zarr":
+        template = cfg.output.filename_zarr
+    else:
+        template = cfg.output.filename_nc
 
-    pattern = cfg.output.get("filename", "{provider}_{parameter}_{start}_{end}.csv")
-    filename = pattern.format(
-        provider=provider,
-        parameter=parameter,
-        lat=lat,
-        lon=lon,
-        start=start,
-        end=end
-    )
-
-    out_dir = cfg.output.out_dir
-    fmt = cfg.output.fmt  # format is a reserved word in Python, so use 'fmt'
-
-    # return os.path.join(out_dir, fmt, filename)
+    # If lat/lon are provided, use point template
+    if lat is not None and lon is not None:
+        filename = template.format(
+            provider=cfg.dataset,
+            parameter="surface",
+            lat=f"{lat}",
+            lon=f"{lon}",
+            start=cfg.time_range.start_date.replace("-", ""),
+            end=cfg.time_range.end_date.replace("-", ""),
+        )
+    else:
+        # Use region bounds
+        region_bounds = cfg.bounds[cfg.region]
+        filename = template.format(
+            provider=cfg.dataset,
+            parameter="surface",
+            lat_range=f"{region_bounds['lat_min']}-{region_bounds['lat_max']}",
+            lon_range=f"{region_bounds['lon_min']}-{region_bounds['lon_max']}",
+            start=cfg.time_range.start_date.replace("-", ""),
+            end=cfg.time_range.end_date.replace("-", ""),
+        )
     return filename
