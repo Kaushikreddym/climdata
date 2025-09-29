@@ -4,83 +4,172 @@
 [![image](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
 [![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata)
 
-
-**This project automates the fetching and extraction of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.**
-
-
--   Free software: MIT License
--   Documentation: https://Kaushikreddym.github.io/climdata
-    
-
-## 📦 Data Sources
-
-This project utilizes climate and weather datasets from a variety of data sources:
-
-- **DWD Station Data**  
-  Retrieved using the [DWD API](https://wetterdienst.readthedocs.io/en/latest/index.html). Provides high-resolution observational data from Germany's national meteorological service.
-
-- **MSWX (Multi-Source Weather)**  
-  Accessed via [GloH2O's Google Drive](https://www.gloh2o.org/mswx/). Combines multiple satellite and reanalysis datasets for global gridded weather variables.
-
-- **DWD HYRAS**  
-  Downloaded from the [DWD Open Data FTP Server](https://opendata.dwd.de/). Offers gridded observational data for Central Europe, useful for hydrological applications.
-
-- **ERA5, ERA5-Land**  
-  Accessed through the [Google Earth Engine](https://developers.google.com/earth-engine/datasets/catalog). Provides reanalysis datasets from ECMWF with high temporal and spatial resolution.
-
-- **NASA NEX-GDDP**  
-  Also retrieved via Earth Engine. Downscaled CMIP5/CMIP6 climate projections developed by NASA for local-scale impact assessment.
-
-- **CMIP6**  
-  Obtained using [ESGPull](https://esgf.github.io/esgf-download/) from the ESGF data nodes. Includes multi-model climate simulations following various future scenarios.
-
-It supports:
-✅ Automatic file download (e.g., from Google Drive or online servers)  
-✅ Flexible configuration via `config.yaml`  
-✅ Time series extraction for a user-specified latitude/longitude  
-✅ Batch processing for many locations from a CSV file
-
-
-## 🚀 How to Run and Explore Configurations
-
-### ✅ Run a download job with custom overrides
-
-You can run the data download script and override any configuration value directly in the command line using [Hydra](https://hydra.cc/).
-
-For example, to download **ERA5-Land** data for **January 1–4, 2020**, run:
-
-```bash
-python download_location.py dataset='era5-land' \
-  time_range.start_date='2020-01-01' \
-  time_range.end_date='2020-01-04' \
-  location.lat=52.5200 \
-  location.lon=13.4050
-```
-
-For downloading multiple locations from a csv file `locations.csv`, run:
-
-```bash
-python download_csv.py dataset='era5-land' \
-  time_range.start_date='2020-01-01' \
-  time_range.end_date='2020-01-04' \
-```
-
-an example `locations.csv` can be
-
-```csv
-lat,lon,city
-52.5200,13.4050,berlin
-48.1351,11.5820,munich
-53.5511,9.9937,hamburg
-```
-
-**What this does:**
-
-- `dataset='era5-land'` tells the script which dataset to use.
-- `time_range.start_date` and `time_range.end_date` override the default dates in your YAML config.
-- All other settings use your existing `config.yaml` in the `conf` folder.
+`climdata` is a Python package designed to automate fetching, extraction, and processing of climate data from various sources, including MSWX, DWD HYRAS, ERA5-Land, and NASA-NEX-GDDP. It provides tools to retrieve data for specific locations and time ranges, facilitating climate analysis and research.
 
 ---
+
+## 📄 Table of Contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Command-Line Interface (CLI)](#command-line-interface-cli)
+  - [Python API](#python-api)
+- [Configuration](#configuration)
+- [Datasets](#datasets)
+  - [MSWX](#mswx)
+  - [DWD HYRAS](#dwd-hyras)
+  - [ERA5-Land](#era5-land)
+  - [NASA-NEX-GDDP](#nasa-nex-gddp)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## 🛠️ Installation
+
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/Kaushikreddym/climdata.git
+cd climdata
+pip install -r requirements.txt
+````
+
+---
+
+## 🧭 Usage
+
+### Command-Line Interface (CLI)
+
+The `climdata_cli.py` script allows fetching and processing climate data via CLI:
+
+```bash
+python examples/climdata_cli.py dataset=MSWX lat=52.507 lon=13.137 time_range.start_date=2000-01-01 time_range.end_date=2000-12-31
+```
+
+This command retrieves data from the MSWX dataset for the specified latitude, longitude, and date range.
+
+### Python API
+
+You can also use `climdata` programmatically:
+
+```python
+from climdata import MSWX
+
+mswx = MSWX(cfg)
+mswx.fetch()
+mswx.load()
+df = mswx.extract(point=(13.137, 52.507))
+mswx.save_csv("output.csv", df)
+```
+
+---
+
+## ⚙️ Configuration
+
+Configuration is managed via Hydra. A sample configuration (`config_mswx.yaml`) might look like:
+
+```yaml
+defaults:
+  - _self_
+  - mappings/parameters
+  - mappings/variables
+
+dataset: MSWX
+lat: null
+lon: null
+variables: ["tasmin", "tasmax", "pr"]
+
+data_dir: ./data
+region: europe
+
+experiment_id: historical
+source_id: MIROC6
+table_id: day
+
+bounds:
+  europe:
+    lat_min: 34.0
+    lat_max: 71.0
+    lon_min: -25.0
+    lon_max: 45.0
+
+time_range:
+  start_date: "1989-01-01"
+  end_date: "2020-12-31"
+
+output:
+  out_dir: "./climdata/data/"
+  filename_csv: "{provider}_{parameter}_LAT_{lat}_LON_{lon}_{start}_{end}.csv"
+  filename_zarr: "{provider}_{parameter}_LAT{lat_range}_LON{lon_range}_{start}_{end}.zarr"
+  filename_nc: "{provider}_{parameter}_LAT{lat_range}_LON{lon_range}_{start}_{end}.nc"
+  fmt: "standard"
+```
+
+CLI overrides are automatically injected into the Hydra config.
+
+---
+
+## 📚 Datasets
+
+### MSWX
+
+The `MSWX` class interacts with the MSWX dataset. Key methods:
+
+* `fetch()`: Download required data files.
+* `load()`: Load data into an xarray Dataset.
+* `extract()`: Extract data for a point or region.
+* `save_csv()`: Save extracted data to CSV.
+
+### DWD HYRAS
+
+The `HYRASmirror` class manages DWD HYRAS data:
+
+* `fetch(variable)`: Download NetCDF files for the variable and time range (only if not already present locally).
+* `load(variable)`: Load NetCDF files into a single xarray Dataset.
+* `extract(point, box, shapefile, buffer_km)`: Extract data at a point, bounding box, or shapefile area.
+* `save_csv(filename, df)`: Save extracted data to CSV.
+
+Supports **point extraction**, **box extraction**, and **shapefile-based clipping**.
+
+### ERA5-Land
+
+The `ERA5Land` class provides access to ERA5-Land reanalysis data:
+
+* `fetch()`: Download specified variables and time ranges.
+* `load()`: Load into xarray Dataset.
+* `extract()`: Extract for location or region.
+* `save_csv()`: Save extracted data to CSV.
+
+### NASA-NEX-GDDP
+
+The `NEXGDDP` class handles NASA-NEX GDDP climate projections:
+
+* `fetch()`: Download necessary data files.
+* `load()`: Load into xarray Dataset.
+* `extract()`: Extract for point or region.
+* `save_csv()`: Save to CSV.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Fork the repo, make changes, and submit a pull request. Ensure code style and tests match existing patterns.
+
+---
+
+## 📄 License
+
+`climdata` is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+```
+
+---
+
+I can also create a **`docs/` folder structure** in Markdown for each `datasets/*.py` file with detailed class and method documentation, similar to a Sphinx-style doc, if you want.  
+
+Do you want me to do that next?
+```
 
 ### ✅ List all available datasets defined in your configuration
 
