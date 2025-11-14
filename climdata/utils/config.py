@@ -15,14 +15,14 @@ def _ensure_local_conf(package="climdata", local_dir="conf"):
         # Get conf inside the installed package
         conf_src = resources.files(package).joinpath("conf")
         shutil.copytree(conf_src, local_dir_path)
-    return local_dir_path.name  # relative for Hydra
+    return local_dir  # relative for Hydra
 
 def load_config(config_name="config", overrides=None, verbose=False):
     """
     Load Hydra config using ./conf in cwd.
     """
     config_path = _ensure_local_conf()
-    # import ipdb; ipdb.set_trace()
+    print(config_path+config_name)
     with initialize(config_path=config_path, version_base=None):
         cfg = compose(config_name=config_name, overrides=overrides or [])
         if verbose:
