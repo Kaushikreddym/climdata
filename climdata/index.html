@@ -993,7 +993,7 @@
 <span class="sd">    Load Hydra config using ./conf in cwd.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config_path</span> <span class="o">=</span> <span class="n">_ensure_local_conf</span><span class="p">()</span>
-    <span class="c1"># import ipdb; ipdb.set_trace()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">config_path</span><span class="o">+</span><span class="n">config_name</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">initialize</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="n">config_path</span><span class="p">,</span> <span class="n">version_base</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">compose</span><span class="p">(</span><span class="n">config_name</span><span class="o">=</span><span class="n">config_name</span><span class="p">,</span> <span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span> <span class="ow">or</span> <span class="p">[])</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
