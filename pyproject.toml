@@ -39,6 +39,7 @@ extra = [
 
 
 [tool]
+
 [tool.setuptools.packages.find]
 include = ["climdata*"]
 exclude = ["docs*"]
@@ -46,6 +47,11 @@ exclude = ["docs*"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+climdata = ["conf/**/*"]
 
 [tool.distutils.bdist_wheel]
 universal = true

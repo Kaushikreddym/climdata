@@ -6,13 +6,25 @@ import hydra
 from omegaconf import DictConfig
 from climdata.utils.utils_download import get_output_filename
 
+## uncomment the below snippet for parallel processing 
+# import dask
+# from dask.distributed import Client
+
+# # Configure Dask
+# client = Client(
+#     n_workers=20,        # or match number of physical cores
+#     threads_per_worker=2,
+#     memory_limit="10GB"  # per worker (8 * 10GB = 80GB total)
+# )
+# from multiprocessing import freeze_support
 
 @hydra.main(config_path="../climdata/conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
+    
     # Extraction box or point
     extract_kwargs = {}
     filename = None
-
+    # import ipdb; ipdb.set_trace()
     # Use config values (CLI overrides work automatically with Hydra)
     if cfg.lat is not None and cfg.lon is not None:
         extract_kwargs["point"] = (cfg.lon, cfg.lat)
@@ -20,6 +32,9 @@ def main(cfg: DictConfig) -> None:
     elif cfg.region is not None:
         extract_kwargs["box"] = cfg.bounds[cfg.region]
         filename = get_output_filename(cfg, output_type="nc")
+    elif cfg.shapefile is not None:
+        extract_kwargs["shapefile"] = cfg.shapefile
+        filename = get_output_filename(cfg, output_type="nc",shp_name=cfg.shp_name)
 
     # MSWX
     if cfg.dataset.upper() == "MSWX":

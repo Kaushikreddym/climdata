@@ -50,12 +50,12 @@ class MSWXmirror:
         local_files, missing_files = [], []
 
         for basename in expected_files:
-            local_path = os.path.join(output_dir,self.cfg.dataset, variable, basename)
+            local_path = os.path.join(output_dir,self.cfg.dataset.lower(), variable, basename)
             if os.path.exists(local_path):
                 local_files.append(basename)
             else:
                 missing_files.append(basename)
-
+        
         if not missing_files:
             print(f"✅ All {len(expected_files)} {variable} files already exist locally.")
             return local_files
@@ -133,8 +133,15 @@ class MSWXmirror:
         if self.dataset is None:
             raise ValueError("No dataset loaded. Call `load()` first.")
 
-        ds = self.dataset.rio.write_crs("EPSG:4326", inplace=False)
+        ds = self.dataset
 
+        # Ensure CRS and spatial dimensions
+        if "x" not in ds.dims or "y" not in ds.dims:
+            ds = ds.rio.set_spatial_dims(x_dim="lon", y_dim="lat", inplace=False)
+        if not ds.rio.crs:
+            ds = ds.rio.write_crs("EPSG:4326", inplace=False)
+
+        # ---- Point extraction ----
         if point is not None:
             lon, lat = point
             if buffer_km > 0:
@@ -146,29 +153,47 @@ class MSWXmirror:
             else:
                 ds_subset = ds.sel(lon=lon, lat=lat, method="nearest")
 
+        # ---- Box extraction ----
         elif box is not None:
             ds_subset = ds.sel(
                 lon=slice(box["lon_min"], box["lon_max"]),
                 lat=slice(box["lat_min"], box["lat_max"]),
             )
 
+        # ---- Shapefile extraction ----
         elif shapefile is not None:
+            # Read shapefile if path provided
             if isinstance(shapefile, str):
                 gdf = gpd.read_file(shapefile)
             else:
                 gdf = shapefile
+
+            # Optional buffer in km
             if buffer_km > 0:
                 gdf = gdf.to_crs(epsg=3857)
                 gdf["geometry"] = gdf.buffer(buffer_km * 1000)
                 gdf = gdf.to_crs(epsg=4326)
-            geom = [mapping(g) for g in gdf.geometry]
-            ds_subset = ds.rio.clip(geom, gdf.crs, drop=True)
+
+            # Create a new dimension for each geometry
+            clipped_list = []
+            for i, geom in enumerate(gdf.geometry):
+                clipped = ds.rio.clip([mapping(geom)], gdf.crs, drop=True)
+                clipped = clipped.expand_dims(geom_id=[i])
+                if "geometry_name" in gdf.columns:
+                    clipped = clipped.assign_coords(
+                        geom_name=("geom_id", [gdf.loc[i, "geometry_name"]])
+                    )
+                clipped_list.append(clipped)
+
+            # Concatenate along new "geom_id" dimension
+            ds_subset = xr.concat(clipped_list, dim="geom_id")
 
         else:
             raise ValueError("Must provide either point, box, or shapefile.")
 
         self.dataset = ds_subset.to_dataset()
         return ds_subset
+
 
     # def to_dataframe(self, ds=None):
     #     if ds is None:

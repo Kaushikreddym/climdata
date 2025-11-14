@@ -205,7 +205,7 @@ def extract_ts_dwd(cfg: DictConfig):
 import os
 from omegaconf import DictConfig
 
-def get_output_filename(cfg, output_type="nc", lat=None, lon=None):
+def get_output_filename(cfg, output_type="nc", lat=None, lon=None, shp_name = None):
     """
     Generate output filename based on config, output type, and extraction mode.
     output_type: "nc", "csv", or "zarr"
@@ -224,6 +224,15 @@ def get_output_filename(cfg, output_type="nc", lat=None, lon=None):
             parameter="surface",
             lat=f"{lat}",
             lon=f"{lon}",
+            start=cfg.time_range.start_date.replace("-", ""),
+            end=cfg.time_range.end_date.replace("-", ""),
+        )
+    elif shp_name is not None:
+        filename = template.format(
+            provider=cfg.dataset,
+            parameter="surface",
+            lat_range=f"{shp_name}",
+            lon_range=f"{shp_name}",
             start=cfg.time_range.start_date.replace("-", ""),
             end=cfg.time_range.end_date.replace("-", ""),
         )

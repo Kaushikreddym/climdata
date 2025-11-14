@@ -3,14 +3,16 @@ defaults:
   - mappings/parameters
   - mappings/variables 
 
-dataset: MSWX
+dataset: mswx
 lat: null
 lon: null
+
+shapefile: null
 
 variables: ["tasmin","tasmax","pr"]
 
 data_dir: ./data
-region: None
+region: null
 
 experiment_id: historical
 source_id: MIROC6
