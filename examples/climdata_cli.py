@@ -47,7 +47,7 @@ def main(cfg: DictConfig) -> None:
         ds = xr.merge(ds_vars)
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(
-                ds[var], cfg.mappings["info"][var].units
+                ds[var], cfg.varinfo[var].units
             )
         if filename.endswith(".nc"):
             ds.to_netcdf(filename)

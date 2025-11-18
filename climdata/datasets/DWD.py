@@ -7,7 +7,7 @@ from wetterdienst.provider.dwd.observation import DwdObservationRequest
 class DWDmirror:
     def __init__(self, cfg):
         self.cfg = cfg
-        self.param_mapping = cfg.mappings
+        self.param_mapping = cfg.dsinfo
         self.start_date = cfg.time_range.start_date
         self.end_date = cfg.time_range.end_date
         self.df = None

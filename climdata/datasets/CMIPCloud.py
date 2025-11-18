@@ -28,6 +28,7 @@ class CMIPCloud:
             "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
         )
         self.col_subsets = []
+
         for var in self.variables:
             query = dict(
                 experiment_id=[self.experiment_id],
@@ -36,10 +37,23 @@ class CMIPCloud:
                 variable_id=var,
             )
             col_subset = col.search(require_all_on=["source_id"], **query)
+
             if len(col_subset.df) == 0:
                 continue
+
             self.col_subsets.append(col_subset)
             self.col = col
+
+        # ✔ raise error if nothing found
+        if not self.col_subsets:
+            raise ValueError(
+                f"No matching CMIP6 data found for: "
+                f"experiment_id={self.experiment_id}, "
+                f"source_id={self.source_id}, "
+                f"table_id={self.table_id}, "
+                f"variables={self.variables}"
+            )
+
         return self.col_subsets
 
     def load(self):

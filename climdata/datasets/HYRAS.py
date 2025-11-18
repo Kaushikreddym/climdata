@@ -19,7 +19,7 @@ class HYRASmirror:
         """
         fetch_dwd(self.cfg,variable)
         # Build file list for the variable and time range
-        param_mapping = self.cfg.mappings
+        param_mapping = self.cfg.dsinfo
         provider = self.cfg.dataset.lower()
         parameter_key = variable
         param_info = param_mapping[provider]['variables'][parameter_key]
@@ -86,33 +86,55 @@ class HYRASmirror:
 
         # Box extraction
         elif box is not None:
+            # Validate box keys
             if not all(k in box for k in ["lat_min", "lat_max", "lon_min", "lon_max"]):
                 raise ValueError("Box must contain lat_min, lat_max, lon_min, lon_max.")
-            dset_box = ds.sel(
-                y=slice(box["lat_max"], box["lat_min"]),  # y usually decreasing (north -> south)
-                x=slice(box["lon_min"], box["lon_max"])
-            )
-            print(f"📦 Extracted box with shape: {dset_box.dims}")
+
+            # Find nearest indices for box boundaries
+            iy_min, ix_min = find_nearest_xy(ds, box["lat_min"], box["lon_min"])
+            iy_max, ix_max = find_nearest_xy(ds, box["lat_max"], box["lon_max"])
+            # print(iy_min,ix_min,iy_max,ix_max)
+            # Ensure proper ordering
+            y_start, y_end = sorted([iy_min, iy_max])
+            x_start, x_end = sorted([ix_min, ix_max])
+
+            # Extract subset using indices
+            dset_box = ds.isel(y=slice(y_start, y_end + 1), x=slice(x_start, x_end + 1))
+
+            print(f"📦 Extracted curvilinear box with shape: {dset_box.dims}")
             self.dataset = dset_box
             return dset_box
 
         # Shapefile extraction
         elif shapefile is not None:
+            """
+            Clip a curvilinear xarray dataset using a shapefile with optional buffer in km.
+            Works for 2D lat/lon coordinates.
+            """
+            # Read shapefile
             gdf = gpd.read_file(shapefile)
-
+            
+            # Apply buffer if needed
             if buffer_km > 0:
-                gdf = gdf.to_crs(epsg=3857)  # project to meters
-                gdf["geometry"] = gdf.buffer(buffer_km * 1000)  # buffer in meters
-                gdf = gdf.to_crs(epsg=4326)  # back to lat/lon
-
-            # Ensure dataset has CRS info for clipping
-            if not ds.rio.crs:
-                ds = ds.rio.write_crs("EPSG:4326")
-
-            dset_clipped = ds.rio.clip(gdf.geometry, gdf.crs, drop=True)
-            print(f"🗺️ Extracted shapefile area with dims: {dset_clipped.dims}")
-            self.dataset = dset_clipped
-            return dset_clipped
+                gdf = gdf.to_crs(epsg=3857)
+                gdf["geometry"] = gdf.buffer(buffer_km * 1000)
+                gdf = gdf.to_crs(epsg=4326)
+            
+            # Flatten 2D lat/lon arrays
+            lat_vals = ds['lat'].values
+            lon_vals = ds['lon'].values
+            
+            # Create mask: True inside shapefile
+            mask = np.zeros_like(lat_vals, dtype=bool)
+            for polygon in gdf.geometry:
+                # vectorized check for points inside polygon
+                inside = np.array([polygon.contains(Point(lon, lat)) 
+                                for lon, lat in zip(lon_vals.ravel(), lat_vals.ravel())])
+                mask |= inside.reshape(lat_vals.shape)
+            
+            # Apply mask
+            ds_clipped = ds.where(mask)
+            return ds_clipped
 
         else:
             raise NotImplementedError("Must provide either point, box, or shapefile.")

@@ -64,7 +64,7 @@ class MSWXmirror:
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = service_account.Credentials.from_service_account_file(
-            self.cfg.mappings.mswx.params.google_service_account, scopes=SCOPES
+            self.cfg.dsinfo.mswx.params.google_service_account, scopes=SCOPES
         )
         service = build('drive', 'v3', credentials=creds)
 
@@ -90,14 +90,14 @@ class MSWXmirror:
         """
         Load MSWX NetCDFs for a given variable into a single xarray Dataset.
         """
-        folder_id = self.cfg.mappings["mswx"]["variables"][variable]["folder_id"]
+        folder_id = self.cfg.dsinfo["mswx"]["variables"][variable]["folder_id"]
         files = self.fetch(folder_id, variable)
         datasets = []
 
         for f in files:
             local_path = os.path.join(self.cfg.data_dir, self.cfg.dataset.lower(), variable, f)
             try:
-                ds = xr.open_dataset(local_path, chunks="auto", engine="netcdf4")[self.cfg.mappings[self.cfg.dataset].variables[variable].name]
+                ds = xr.open_dataset(local_path, chunks="auto", engine="netcdf4")[self.cfg.dsinfo[self.cfg.dataset].variables[variable].name]
                 ds = ds.rename(variable)
                 datasets.append(ds)
             except Exception as e:

@@ -1,0 +1,172 @@
+dwd:
+  type: in-situ 
+  subsetting: None
+  variables:
+    tas: 
+      resolution: daily
+      dataset: climate_summary
+      name: temperature_air_mean_2m
+      unit: degC
+    tasmax:
+      resolution: daily
+      dataset: climate_summary
+      name: temperature_air_max_2m
+      unit: degC
+    tasmin:
+      resolution: daily
+      dataset: climate_summary
+      name: temperature_air_min_2m
+      unit: degC
+    pr:
+      resolution: daily
+      dataset: climate_summary
+      name: precipitation_height
+      unit: mm d-1
+    rsds:
+      resolution: daily
+      dataset: solar
+      name: radiation_sky_short_wave_diffuse
+      unit: J/cm2
+    sfcWind:
+      resolution: daily
+      dataset: climate_summary
+      name: wind_speed
+      unit: m/s
+era5-land:
+  type: image
+  subsetting: point
+  params:
+    collection: ECMWF/ERA5_LAND/DAILY_AGGR
+    scale: 11132
+  variables:
+    tas:
+      name: temperature_2m
+      unit: K
+    tasmax:
+      name: temperature_2m_max
+      unit: K
+    tasmin:
+      name: temperature_2m_min
+      unit: K
+    pr:
+      name: total_precipitation_sum
+      unit: m
+    rsds:
+      name: surface_solar_radiation_downwards_sum
+      unit: J/m2
+era5:
+  type: image
+  subsetting: point
+  params:
+    collection: ECMWF/ERA5/DAILY
+    scale: 27830
+  variables:
+    tas:
+      name: mean_2m_air_temperature
+      unit: K
+    tasmax:
+      name: maximum_2m_air_temperature
+      unit: K
+    tasmin:
+      name: minimum_2m_air_temperature
+      unit: K
+    pr:
+      name: total_precipitation
+      unit: m
+gddp:
+  type: image
+  subsetting: point
+  params:
+    collection: NASA/GDDP-CMIP6
+    model: ACCESS-CM2
+    scenario: historical
+    scale: 27830
+  variables:
+    tas:
+      name: tas
+      unit: K
+    tasmax:
+      name: tasmax
+      unit: K
+    tasmin:
+      name: tasmin
+      unit: K
+    pr:
+      name: pr
+      unit: kg m-2 s-1
+    rsds:
+      name: rsds
+      unit: W/m2
+    sfcWind:
+      name: sfcWind
+      unit: m/s
+    hurs:
+      name: hurs
+      unit: "%"
+mswx:
+  type: image
+  subsetting: None
+  params:
+    google_service_account: None
+  variables:
+    tasmin:
+      name: air_temperature
+      folder_id: 1_h0hgJThJLXhVOk905IJ7EFpkFV5KDSC
+    tasmax:
+      name: air_temperature
+      folder_id: 1BKvHhO1JsBKKzMPCbzl5UpvqpRXHTj9c
+    tas:
+      name: air_temperature
+      folder_id: 10l3ThTEkabK0yfk7DvpEcNgXkhbF9NNt
+    pr:
+      name: precipitation
+      folder_id: 1gWoZ2bK2u5osJ8Iw-dvguZ56Kmz2QWrL
+    rsds:
+      name: downward_shortwave_radiation
+      folder_id: 1usXbIOi4_jBUdDaZbzPKXznx9PTYzHRv
+hyras:
+  variables:
+    tasmin:
+      name: tasmin
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/"
+      prefix: "tasmin_hyras_1"
+      version: "v6-0"
+    tasmax:
+      name: tasmax
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_max/"
+      prefix: "tasmax_hyras_1"
+      version: "v6-0"
+    tas:
+      name: tas
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_mean/"
+      prefix: "tas_hyras_1"
+      version: "v6-0"
+    pr:
+      name: pr
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/precipitation/"
+      prefix: "pr_hyras_1"
+      version: "v6-0"
+    rsds:
+      name: rsds
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/radiation_global/"
+      prefix: "rsds_hyras_5"
+      version: "v3-1"
+    hurs:
+      name: hurs
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/humidity/"
+      prefix: "hurs_hyras_1"
+      version: "v6-0"
+era5_cds:
+  params:
+    dataset: derived-era5-single-levels-daily-statistics
+  variables:
+    tas:
+      name: 2m_temperature
+    tasmax:
+      name: maximum_2m_temperature_since_previous_post_processing
+    tasmin:
+      name: minimum_2m_temperature_since_previous_post_processing
+    pr:
+      name: total_precipitation
+    rsds:
+      name: surface_solar_radiation_downwards

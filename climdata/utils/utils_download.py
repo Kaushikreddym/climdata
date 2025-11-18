@@ -66,7 +66,7 @@ def download_drive_file(file_id, local_path, service):
 
 def fetch_dwd(var_cfg,var):
     """Download HYRAS data for one variable and a list of years."""
-    param_mapping = var_cfg.mappings
+    param_mapping = var_cfg.dsinfo
     provider = var_cfg.dataset.lower()
     parameter_key = var
     # Validate provider and parameter
