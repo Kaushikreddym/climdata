@@ -1100,7 +1100,7 @@
           <summary>Source code in <code>climdata/utils/utils_download.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_dwd</span><span class="p">(</span><span class="n">var_cfg</span><span class="p">,</span><span class="n">var</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Download HYRAS data for one variable and a list of years.&quot;&quot;&quot;</span>
-    <span class="n">param_mapping</span> <span class="o">=</span> <span class="n">var_cfg</span><span class="o">.</span><span class="n">mappings</span>
+    <span class="n">param_mapping</span> <span class="o">=</span> <span class="n">var_cfg</span><span class="o">.</span><span class="n">dsinfo</span>
     <span class="n">provider</span> <span class="o">=</span> <span class="n">var_cfg</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="n">parameter_key</span> <span class="o">=</span> <span class="n">var</span>
     <span class="c1"># Validate provider and parameter</span>
@@ -1316,6 +1316,7 @@ output_type: "nc", "csv", or "zarr"</p>
     </div>
 
   </div>
+
 
 
 
