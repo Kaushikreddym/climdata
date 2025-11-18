@@ -1,5 +1,7 @@
 # configuration imports
 from hydra import initialize, compose
+from hydra.core.global_hydra import GlobalHydra
+
 from omegaconf import DictConfig
 # climdata imports
 import climdata
@@ -26,8 +28,19 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
     conf_dir = _ensure_local_conf()  # copies conf/ to cwd
     rel_conf_dir = os.path.relpath(conf_dir, os.path.dirname(__file__))
     print(rel_conf_dir)
-    # 2. Initialize Hydra with local conf path
-    with initialize(config_path=rel_conf_dir, version_base=None):
+    # 2. Initialize Hydra only if not already initialized
+    if not GlobalHydra.instance().is_initialized():
+        hydra_context = initialize(config_path=rel_conf_dir, version_base=None)
+    else:
+        # If already initialized, just set context to None for clarity
+        hydra_context = None
+
+    # Use compose within context manager if newly initialized
+    if hydra_context is not None:
+        with hydra_context:
+            cfg: DictConfig = compose(config_name=cfg_name, overrides=overrides)
+    else:
+        # Already initialized: compose directly
         cfg: DictConfig = compose(config_name=cfg_name, overrides=overrides)
     extract_kwargs = {}
     filename = None

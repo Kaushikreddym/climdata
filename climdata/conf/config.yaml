@@ -24,6 +24,11 @@ bounds:
     lat_max: 71.0
     lon_min: -25.0
     lon_max: 45.0
+  custom:
+    lat_min: null
+    lat_max: null
+    lon_min: null
+    lon_max: null
 
 time_range:
   start_date: "1989-01-01"
