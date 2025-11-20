@@ -88,30 +88,58 @@ class MSWXmirror:
 
     def load(self, variable: str):
         """
-        Load MSWX NetCDFs for a given variable into a single xarray Dataset.
+        Load MSWX NetCDF files for a given variable into a single xarray Dataset using open_mfdataset.
+        This method supports lazy loading, parallel processing, and large numbers of files efficiently.
+
+        Args:
+            variable (str): Variable name as defined in cfg.variables.
+
+        Returns:
+            xr.Dataset: Concatenated dataset along the 'time' dimension with fixed coordinates.
         """
+        # Get folder ID and list of files
         folder_id = self.cfg.dsinfo["mswx"]["variables"][variable]["folder_id"]
         files = self.fetch(folder_id, variable)
-        datasets = []
+        if not files:
+            raise RuntimeError(f"No files found for variable '{variable}' in Drive or local directory.")
 
-        for f in files:
-            local_path = os.path.join(self.cfg.data_dir, self.cfg.dataset.lower(), variable, f)
-            try:
-                ds = xr.open_dataset(local_path, chunks="auto", engine="netcdf4")[self.cfg.dsinfo[self.cfg.dataset].variables[variable].name]
-                ds = ds.rename(variable)
-                datasets.append(ds)
-            except Exception as e:
-                print(f"Skipping file {f} due to error: {e}")
+        # Full paths
+        file_paths = [
+            os.path.join(self.cfg.data_dir, self.cfg.dataset.lower(), variable, f)
+            for f in files
+        ]
 
-        if not datasets:
-            raise RuntimeError(f"No datasets could be loaded for {variable}.")
+        # MSWX internal variable name
+        varname = self.cfg.dsinfo[self.cfg.dataset].variables[variable].name
 
-        dset = xr.concat(datasets, dim="time")
+        # Optional: preprocess each file (e.g., rename variable)
+        def preprocess(ds):
+            return ds[[varname]].rename({varname: variable})
+
+        # Open all files as a single dataset
+        try:
+            dset = xr.open_mfdataset(
+                file_paths,
+                combine="nested",
+                concat_dim="time",
+                parallel=True,            # uses Dask for parallel reading
+                engine="h5netcdf",       # faster than netcdf4
+                chunks = {"time": 90, "lat": 200, "lon": 200},  # quarterly chunks
+                preprocess=preprocess
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to load dataset for variable '{variable}': {e}")
+
+        # Ensure consistent dimension order
         dset = dset.transpose("time", "lat", "lon")
+
+        # Fix latitude and longitude coordinates
         dset = self._fix_coords(dset)
 
+        # Store in the class
         self.dataset = dset
-        return self.dataset
+        return dset
+
 
     def to_zarr(self, zarr_filename: str):
         if self.dataset is None:
@@ -191,7 +219,7 @@ class MSWXmirror:
         else:
             raise ValueError("Must provide either point, box, or shapefile.")
 
-        self.dataset = ds_subset.to_dataset()
+        self.dataset = ds_subset#.to_dataset()
         return ds_subset
 
 

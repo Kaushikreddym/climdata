@@ -1,0 +1,42 @@
+defaults:
+  - _self_
+  - mappings/parameters@dsinfo
+  - mappings/variables@varinfo 
+
+dataset: mswx
+lat: null
+lon: null
+
+shapefile: null
+
+variables: ["tasmin","tasmax","pr"]
+
+data_dir: ./data
+region: null
+
+experiment_id: historical
+source_id: MIROC6
+table_id: day
+
+bounds:
+  europe:
+    lat_min: 34.0
+    lat_max: 71.0
+    lon_min: -25.0
+    lon_max: 45.0
+  custom:
+    lat_min: null
+    lat_max: null
+    lon_min: null
+    lon_max: null
+
+time_range:
+  start_date: "1989-01-01"
+  end_date: "2020-12-31"
+
+output:
+  out_dir: "./climdata/data/"
+  filename_csv: "{provider}_{parameter}_LAT_{lat}_LON_{lon}_{start}_{end}.csv"
+  filename_zarr: "{provider}_{parameter}_LAT{lat_range}_LON{lon_range}_{start}_{end}.zarr"
+  filename_nc: "{provider}_{parameter}_LAT{lat_range}_LON{lon_range}_{start}_{end}.nc"
+  fmt: "standard"

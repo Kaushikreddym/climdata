@@ -66,7 +66,7 @@ class CMIPCloud:
             ds_var = xr.open_zarr(zstore_path)
             datasets.append(ds_var)
         if datasets:
-            self.ds = xr.merge(datasets)
+            self.ds = xr.merge(datasets,compat='override')
         else:
             self.ds = None
         return self.ds
