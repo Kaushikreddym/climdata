@@ -47,6 +47,8 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
     # Determine extraction type
     if cfg.lat is not None and cfg.lon is not None:
         extract_kwargs["point"] = (cfg.lon, cfg.lat)
+        if cfg.dataset=="dwd":
+            extract_kwargs["buffer_km"] = 50
         filename = get_output_filename(cfg, output_type="csv", lat=cfg.lat, lon=cfg.lon)
     elif cfg.region is not None:
         extract_kwargs["box"] = cfg.bounds[cfg.region]
@@ -93,7 +95,6 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
         ds_vars = []
         for var in cfg.variables:
             dwd = climdata.DWD(cfg)
-            lat_val, lon_val = lat, lon
             extract_kwargs['variable'] = var
             ds = dwd.extract(**extract_kwargs)
             # dwd.format(var, lat_val, lon_val)
