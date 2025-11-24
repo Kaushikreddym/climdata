@@ -21,9 +21,93 @@ import os
 #     "lon=10",
 #     "variables=[tasmax,tasmin]"
 # ]
+
+import json
+from shapely.geometry import shape, Polygon, Point
+
+def preprocess_aoi(cfg):
+    """
+    Normalize AOI in cfg:
+    - Converts string AOI → dict
+    - Extracts shapely geometry from FeatureCollection, Feature, or raw geometry
+    - Detects type: point, bbox, or polygon
+    - Updates cfg with:
+        cfg.aoi_type: "point" | "bbox" | "polygon"
+        cfg.lat, cfg.lon: for point
+        cfg.bounds: [minx, miny, maxx, maxy] for bbox/polygon
+        cfg.geometry: shapely geometry object
+    """
+    # -----------------------------
+    # 1) Load AOI value from string
+    # -----------------------------
+    if not hasattr(cfg, "aoi") or cfg.aoi is None:
+        return cfg
+
+    if isinstance(cfg.aoi, str):
+        try:
+            cfg.aoi = json.loads(cfg.aoi)
+        except json.JSONDecodeError:
+            raise ValueError(f"AOI string is not valid JSON: {cfg.aoi}")
+
+    aoi = cfg.aoi
+
+    # -----------------------------
+    # 2) Extract shapely geometry
+    # -----------------------------
+    if aoi.get("type") == "FeatureCollection":
+        if not aoi.get("features"):
+            raise ValueError("FeatureCollection contains no features")
+        geom = shape(aoi["features"][0]["geometry"])
+    elif aoi.get("type") == "Feature":
+        geom = shape(aoi["geometry"])
+    elif "type" in aoi and "coordinates" in aoi:
+        geom = shape(aoi)
+    else:
+        raise ValueError(f"Unsupported AOI format: {aoi}")
+    print(isinstance(geom, Polygon))
+    # -----------------------------
+    # 3) Determine AOI type
+    # -----------------------------
+    if isinstance(geom, Point):
+        # cfg.aoi_type = "point"
+        cfg.lat = geom.y
+        cfg.lon = geom.x
+        cfg.bounds = None
+    elif isinstance(geom, Polygon):
+        # Check if axis-aligned bbox
+        coords = list(geom.exterior.coords)
+        is_bbox = len(coords) == 5 and len({c[0] for c in coords}) == 2 and len({c[1] for c in coords}) == 2
+
+        # if is_bbox:
+        #     cfg.aoi_type = "bbox"
+        # else:
+        #     cfg.aoi_type = "polygon"
+
+        minx, miny, maxx, maxy = geom.bounds
+        cfg.bounds['custom'] = {
+                "lat_min": miny,
+                "lat_max": maxy,
+                "lon_min": minx,
+                "lon_max": maxx
+            }
+        cfg.region='custom'
+        cfg.lat = None
+        cfg.lon = None
+    else:
+        raise ValueError(f"Unsupported geometry type: {geom.geom_type}")
+
+    # -----------------------------
+    # 4) Store geometry itself
+    # -----------------------------
+    # cfg.shapefile = geom
+
+    return cfg
+
+
+
 def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
     overrides = overrides or []
-
+    
     # 1. Ensure local configs are available
     conf_dir = _ensure_local_conf()  # copies conf/ to cwd
     rel_conf_dir = os.path.relpath(conf_dir, os.path.dirname(__file__))
@@ -42,6 +126,7 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
     else:
         # Already initialized: compose directly
         cfg: DictConfig = compose(config_name=cfg_name, overrides=overrides)
+    cfg = preprocess_aoi(cfg)
     extract_kwargs = {}
     filename = None
     # Determine extraction type

@@ -6,7 +6,7 @@ defaults:
 dataset: mswx
 lat: null
 lon: null
-
+aoi: null
 shapefile: null
 
 variables: ["tasmin","tasmax","pr"]
