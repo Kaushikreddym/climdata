@@ -12,6 +12,8 @@ class HYRASmirror:
         self.dataset = None
         self.variables = cfg.variables
         self.files = []
+        self._extract_mode = None
+        self._extract_params = None
 
     def fetch(self, variable: str):
         """
@@ -35,110 +37,102 @@ class HYRASmirror:
         return files
 
     def load(self, variable: str):
-        """
-        Load HYRAS NetCDFs for a given variable into a single xarray Dataset.
-        """
         files = self.fetch(variable)
-        datasets = []
-        for f in files:
-            if not os.path.exists(f):
-                print(f"File not found: {f}")
-                continue
-            try:
-                ds = xr.open_dataset(f)
-                datasets.append(ds)
-            except Exception as e:
-                print(f"Skipping file {f} due to error: {e}")
-        if not datasets:
-            raise RuntimeError(f"No datasets could be loaded for {variable}.")
-        dset = xr.concat(datasets, dim="time")
-        dset[variable] = dset[variable].transpose("time", "y", "x")
+
+        def preprocess(ds):
+            # force transpose first
+            if variable in ds:
+                ds[variable] = ds[variable].transpose("time", "y", "x")
+
+            # apply spatial extraction here
+            ds = self._extract_preprocess(ds)
+
+            return ds
+
+        # Open files with preprocess
+        dset = xr.open_mfdataset(
+            files,
+            combine="nested",
+            concat_dim="time",
+            preprocess=preprocess,
+            engine="netcdf4",
+            parallel=False,
+        )
+
         self.dataset = dset
-        return self.dataset
+        return dset
+
 
     def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
-        """
-        Extract data from the loaded HYRAS dataset.
+        """Store extraction instructions; extraction happens per-file in preprocess()."""
 
-        Parameters
-        ----------
-        point : tuple (lon, lat), optional
-            Extracts a time series at the nearest grid point.
-        box : dict with lat/lon bounds, optional
-            Example: {"lat_min": 47, "lat_max": 49, "lon_min": 10, "lon_max": 12}
-        shapefile : str, optional
-            Path to a shapefile to clip the dataset spatially.
-        buffer_km : float, optional
-            Buffer distance (in kilometers) applied to the shapefile before clipping.
-        """
-        if self.dataset is None:
-            raise ValueError("No dataset loaded. Call `load()` first.")
-        ds = self.dataset
-
-        # Point extraction
         if point is not None:
-            lat, lon = point[1], point[0]
-            iy, ix = find_nearest_xy(ds, lat, lon)
-            print(f"📌 Nearest grid point at (y,x)=({iy},{ix})")
-            ts = ds.isel(x=ix, y=iy)
-            self.dataset = ts
-            return ts
+            lon, lat = point
+            self._extract_mode = "point"
+            self._extract_params = (lon, lat)
 
-        # Box extraction
         elif box is not None:
-            # Validate box keys
-            if not all(k in box for k in ["lat_min", "lat_max", "lon_min", "lon_max"]):
-                raise ValueError("Box must contain lat_min, lat_max, lon_min, lon_max.")
+            self._extract_mode = "box"
+            self._extract_params = box
 
-            # Find nearest indices for box boundaries
-            iy_min, ix_min = find_nearest_xy(ds, box["lat_min"], box["lon_min"])
-            iy_max, ix_max = find_nearest_xy(ds, box["lat_max"], box["lon_max"])
-            # print(iy_min,ix_min,iy_max,ix_max)
-            # Ensure proper ordering
-            y_start, y_end = sorted([iy_min, iy_max])
-            x_start, x_end = sorted([ix_min, ix_max])
-
-            # Extract subset using indices
-            dset_box = ds.isel(y=slice(y_start, y_end + 1), x=slice(x_start, x_end + 1))
-
-            print(f"📦 Extracted curvilinear box with shape: {dset_box.dims}")
-            self.dataset = dset_box
-            return dset_box
-
-        # Shapefile extraction
         elif shapefile is not None:
-            """
-            Clip a curvilinear xarray dataset using a shapefile with optional buffer in km.
-            Works for 2D lat/lon coordinates.
-            """
-            # Read shapefile
-            gdf = gpd.read_file(shapefile)
-            
-            # Apply buffer if needed
+            gdf = gpd.read_file(shapefile) if isinstance(shapefile, str) else shapefile
+
             if buffer_km > 0:
                 gdf = gdf.to_crs(epsg=3857)
                 gdf["geometry"] = gdf.buffer(buffer_km * 1000)
                 gdf = gdf.to_crs(epsg=4326)
-            
-            # Flatten 2D lat/lon arrays
-            lat_vals = ds['lat'].values
-            lon_vals = ds['lon'].values
-            
-            # Create mask: True inside shapefile
-            mask = np.zeros_like(lat_vals, dtype=bool)
-            for polygon in gdf.geometry:
-                # vectorized check for points inside polygon
-                inside = np.array([polygon.contains(Point(lon, lat)) 
-                                for lon, lat in zip(lon_vals.ravel(), lat_vals.ravel())])
-                mask |= inside.reshape(lat_vals.shape)
-            
-            # Apply mask
-            ds_clipped = ds.where(mask)
-            return ds_clipped
+
+            self._extract_mode = "shapefile"
+            self._extract_params = gdf
 
         else:
-            raise NotImplementedError("Must provide either point, box, or shapefile.")
-        
+            raise ValueError("Must provide point, box, or shapefile.")
+
+        return self
+    def _extract_preprocess(self, ds):
+        """Apply point/box/shapefile extraction to a single HYRAS file."""
+
+        mode = self._extract_mode
+        params = self._extract_params
+
+        if mode is None:
+            return ds   # no extraction requested
+
+        # ---- point extraction ----
+        if mode == "point":
+            lon, lat = params
+            iy, ix = find_nearest_xy(ds, lat, lon)
+            return ds.isel(x=ix, y=iy)
+
+        # ---- box extraction ----
+        elif mode == "box":
+            box = params
+            iy_min, ix_min = find_nearest_xy(ds, box["lat_min"], box["lon_min"])
+            iy_max, ix_max = find_nearest_xy(ds, box["lat_max"], box["lon_max"])
+            y0, y1 = sorted([iy_min, iy_max])
+            x0, x1 = sorted([ix_min, ix_max])
+            return ds.isel(y=slice(y0, y1 + 1), x=slice(x0, x1 + 1))
+
+        # ---- shapefile extraction ----
+        elif mode == "shapefile":
+            gdf = params
+            # flatten coords
+            latv = ds["lat"].values
+            lonv = ds["lon"].values
+            mask = np.zeros_like(latv, dtype=bool)
+
+            for geom in gdf.geometry:
+                inside = np.array([
+                    geom.contains(Point(lon, lat))
+                    for lon, lat in zip(lonv.ravel(), latv.ravel())
+                ])
+                mask |= inside.reshape(latv.shape)
+
+            return ds.where(mask)
+
+        return ds
+
     def save_csv(self, filename, df=None):
         """
         Save the extracted time series to CSV.

@@ -23,6 +23,8 @@ class MSWXmirror:
         self.dataset = None
         self.variables = cfg.variables
         self.files = []
+        self._extract_mode = None
+        self._extract_params = None
 
     def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
         """Ensure latitude is ascending and longitude is in the range [0, 360]."""
@@ -85,6 +87,74 @@ class MSWXmirror:
             local_files.append(filename)
 
         return local_files
+    def _extract_preprocess(self, ds):
+        """Apply extraction to a single-daily dataset during preprocessing."""
+        
+        # Fix coords first
+        ds = self._fix_coords(ds)
+
+        # ---- Point extraction ----
+        if self._extract_mode == "point":
+            lon, lat, buffer_deg = self._extract_params
+            if buffer_deg > 0:
+                ds = ds.sel(
+                    lon=slice(lon-buffer_deg, lon+buffer_deg),
+                    lat=slice(lat-buffer_deg, lat+buffer_deg),
+                )
+            else:
+                ds = ds.sel(lon=lon, lat=lat, method="nearest")
+
+        # ---- Box extraction ----
+        elif self._extract_mode == "box":
+            box = self._extract_params
+            ds = ds.sel(
+                lon=slice(box["lon_min"], box["lon_max"]),
+                lat=slice(box["lat_min"], box["lat_max"]),
+            )
+
+        # ---- Shapefile extraction ----
+        elif self._extract_mode == "shapefile":
+            gdf = self._extract_params
+
+            clipped_list = []
+            for geom in gdf.geometry:
+                clipped = ds.rio.clip([mapping(geom)], gdf.crs, drop=True)
+                clipped_list.append(clipped)
+
+            ds = xr.concat(clipped_list, dim="geom_id")
+
+        return ds
+    def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
+        """Store extraction instructions; the actual extraction happens during load()."""
+
+        if point is not None:
+            lon, lat = point
+            buffer_deg = buffer_km / 111.0
+            self._extract_mode = "point"
+            self._extract_params = (lon, lat, buffer_deg)
+
+        elif box is not None:
+            self._extract_mode = "box"
+            self._extract_params = box
+
+        elif shapefile is not None:
+            if isinstance(shapefile, str):
+                gdf = gpd.read_file(shapefile)
+            else:
+                gdf = shapefile
+            
+            if buffer_km > 0:
+                gdf = gdf.to_crs(epsg=3857)
+                gdf["geometry"] = gdf.buffer(buffer_km * 1000)
+                gdf = gdf.to_crs(epsg=4326)
+
+            self._extract_mode = "shapefile"
+            self._extract_params = gdf
+
+        else:
+            raise ValueError("Must provide point, box, or shapefile.")
+
+        return self
 
     def load(self, variable: str):
         """
@@ -114,6 +184,7 @@ class MSWXmirror:
 
         # Optional: preprocess each file (e.g., rename variable)
         def preprocess(ds):
+            ds = self._extract_preprocess(ds)
             return ds[[varname]].rename({varname: variable})
 
         # Open all files as a single dataset
@@ -124,7 +195,7 @@ class MSWXmirror:
                 concat_dim="time",
                 parallel=True,            # uses Dask for parallel reading
                 engine="h5netcdf",       # faster than netcdf4
-                chunks = {"time": 90, "lat": 200, "lon": 200},  # quarterly chunks
+                # chunks = {"time": 90, "lat": 200, "lon": 200},  # quarterly chunks
                 preprocess=preprocess
             )
         except Exception as e:
@@ -132,9 +203,6 @@ class MSWXmirror:
 
         # Ensure consistent dimension order
         dset = dset.transpose("time", "lat", "lon")
-
-        # Fix latitude and longitude coordinates
-        dset = self._fix_coords(dset)
 
         # Store in the class
         self.dataset = dset

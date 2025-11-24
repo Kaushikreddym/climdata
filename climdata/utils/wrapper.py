@@ -133,7 +133,7 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
     if cfg.lat is not None and cfg.lon is not None:
         extract_kwargs["point"] = (cfg.lon, cfg.lat)
         if cfg.dataset=="dwd":
-            extract_kwargs["buffer_km"] = cfg.buffer_km
+            extract_kwargs["buffer_km"] = 50
         filename = get_output_filename(cfg, output_type="csv", lat=cfg.lat, lon=cfg.lon)
     elif cfg.region is not None:
         extract_kwargs["box"] = cfg.bounds[cfg.region]
@@ -148,8 +148,8 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
         ds_vars = []
         for var in cfg.variables:
             mswx = climdata.MSWX(cfg)
-            mswx.load(var)
             mswx.extract(**extract_kwargs)
+            mswx.load(var) 
             ds_vars.append(mswx.dataset)
         ds = xr.merge(ds_vars)
         for var in ds.data_vars:
@@ -195,8 +195,8 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
         hyras = climdata.HYRAS(cfg)
         ds_vars = []
         for var in cfg.variables:
-            hyras.load(var)
-            ds = hyras.extract(**extract_kwargs)
+            hyras.extract(**extract_kwargs)
+            ds = hyras.load(var)
             ds_vars.append(ds[[var]])
         ds = xr.merge(ds_vars, compat="override")
         hyras.dataset = ds
