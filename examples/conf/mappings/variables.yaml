@@ -1,0 +1,76 @@
+tas:
+  cf_name: air_temperature
+  long_name: Daily mean near-surface air temperature
+  units: degC
+tasmax:
+  cf_name: air_temperature
+  long_name: Daily maximum near-surface air temperature
+  units: degC
+tasmin:
+  cf_name: air_temperature
+  long_name: Daily minimum near-surface air temperature
+  units: degC
+pr:
+  cf_name: precipitation_flux
+  long_name: Precipitation
+  units: mm/day
+pracc:
+  cf_name: precipitation_amount
+  long_name: Accumulated precipitation
+  units: mm
+ps:
+  cf_name: surface_air_pressure
+  long_name: Surface air pressure
+  units: Pa
+hurs:
+  cf_name: relative_humidity
+  long_name: Near-surface relative humidity
+  units: '%'
+huss:
+  cf_name: specific_humidity
+  long_name: Near-surface specific humidity
+  units: 1            # kg/kg
+uas:
+  cf_name: eastward_wind
+  long_name: Eastward near-surface wind
+  units: m s-1
+vas:
+  cf_name: northward_wind
+  long_name: Northward near-surface wind
+  units: m s-1
+sfcWind:
+  cf_name: wind_speed
+  long_name: Near-surface wind speed
+  units: m s-1
+rsds:
+  cf_name: surface_downwelling_shortwave_flux_in_air
+  long_name: Surface downwelling shortwave radiation
+  units: W m-2
+rlds:
+  cf_name: surface_downwelling_longwave_flux_in_air
+  long_name: Surface downwelling longwave radiation
+  units: W m-2
+rlus:
+  cf_name: surface_upwelling_longwave_flux_in_air
+  long_name: Surface upwelling longwave radiation
+  units: W m-2
+rlut:
+  cf_name: toa_outgoing_longwave_flux
+  long_name: Top-of-atmosphere outgoing longwave radiation
+  units: W m-2
+psml:
+  cf_name: mean_sea_level_pressure
+  long_name: Mean sea level pressure
+  units: Pa
+evspsbl:
+  cf_name: water_evapotranspiration_flux
+  long_name: Evaporation including sublimation and transpiration
+  units: mm/day
+snd:
+  cf_name: surface_snow_thickness
+  long_name: Snow depth
+  units: m
+snw:
+  cf_name: surface_snow_amount
+  long_name: Snow water equivalent
+  units: mm

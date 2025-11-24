@@ -105,7 +105,7 @@ def preprocess_aoi(cfg):
 
 
 
-def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
+def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file = True) -> str:
     overrides = overrides or []
     
     # 1. Ensure local configs are available
@@ -154,11 +154,12 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
         ds = xr.merge(ds_vars)
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
-        if filename.endswith(".nc"):
-            ds.to_netcdf(filename)
-        else:
-            mswx.dataset = ds
-            mswx.save_csv(filename)
+        if save_to_file:
+            if filename.endswith(".nc"):
+                ds.to_netcdf(filename)
+            else:
+                mswx.dataset = ds
+                mswx.save_csv(filename)
 
     elif dataset_upper == "CMIP":
         ds_vars = []
@@ -170,10 +171,11 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
         ds = cmip.ds
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
-        if filename.endswith(".nc"):
-            cmip.save_netcdf(filename)
-        else:
-            cmip.save_csv(filename)
+        if save_to_file:  
+            if filename.endswith(".nc"):
+                cmip.save_netcdf(filename)
+            else:
+                cmip.save_csv(filename)
     elif dataset_upper == "DWD":
         # if "box" in extract_kwargs:
         #     raise ValueError("Region extraction is not supported for DWD. Please provide lat and lon.")
@@ -185,8 +187,9 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
             # dwd.format(var, lat_val, lon_val)
             ds_vars.append(ds)
         ds = xr.merge(ds_vars)
-        # dwd.df = df
-        # dwd.save_csv(filename)
+        if save_to_file:
+            dwd.df = ds.mean("station_id").to_dataframe()
+            dwd.save_csv(filename)
 
     elif dataset_upper == "HYRAS":
         hyras = climdata.HYRAS(cfg)
@@ -197,11 +200,14 @@ def extract_data(cfg_name: str = "config", overrides: list = None) -> str:
             ds_vars.append(ds[[var]])
         ds = xr.merge(ds_vars, compat="override")
         hyras.dataset = ds
-        if filename.endswith(".nc"):
-            ds.to_netcdf(filename)
-        else:
-            hyras.save_csv(filename)
+        if save_to_file:
+            if filename.endswith(".nc"):
+                ds.to_netcdf(filename)
+            else:
+                hyras.save_csv(filename)
 
-    print(f"✅ Saved output to {filename}")
-    
-    return cfg, filename, ds
+    if save_to_file:
+        print(f"✅ Saved output to {filename}")
+        return cfg, filename, ds
+    else:
+        return cfg, ds
