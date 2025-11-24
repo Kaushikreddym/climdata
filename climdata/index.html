@@ -847,6 +847,34 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#climdata.utils.wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wrapper
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="wrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#climdata.utils.wrapper.preprocess_aoi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        preprocess_aoi()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1317,6 +1345,151 @@ output_type: "nc", "csv", or "zarr"</p>
 
   </div>
 
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h4 id="climdata.utils.wrapper" class="doc doc-heading">
+        <code>wrapper</code>
+
+
+
+<a href="#climdata.utils.wrapper" class="headerlink" title="Permanent link">&para;</a></h4>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h5 id="climdata.utils.wrapper.preprocess_aoi" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">preprocess_aoi</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span></code>
+
+
+<a href="#climdata.utils.wrapper.preprocess_aoi" class="headerlink" title="Permanent link">&para;</a></h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Normalize AOI in cfg:
+- Converts string AOI → dict
+- Extracts shapely geometry from FeatureCollection, Feature, or raw geometry
+- Detects type: point, bbox, or polygon
+- Updates cfg with:
+    cfg.aoi_type: "point" | "bbox" | "polygon"
+    cfg.lat, cfg.lon: for point
+    cfg.bounds: [minx, miny, maxx, maxy] for bbox/polygon
+    cfg.geometry: shapely geometry object</p>
+
+        <details class="quote">
+          <summary>Source code in <code>climdata/utils/wrapper.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">preprocess_aoi</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize AOI in cfg:</span>
+<span class="sd">    - Converts string AOI → dict</span>
+<span class="sd">    - Extracts shapely geometry from FeatureCollection, Feature, or raw geometry</span>
+<span class="sd">    - Detects type: point, bbox, or polygon</span>
+<span class="sd">    - Updates cfg with:</span>
+<span class="sd">        cfg.aoi_type: &quot;point&quot; | &quot;bbox&quot; | &quot;polygon&quot;</span>
+<span class="sd">        cfg.lat, cfg.lon: for point</span>
+<span class="sd">        cfg.bounds: [minx, miny, maxx, maxy] for bbox/polygon</span>
+<span class="sd">        cfg.geometry: shapely geometry object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># -----------------------------</span>
+    <span class="c1"># 1) Load AOI value from string</span>
+    <span class="c1"># -----------------------------</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;aoi&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">aoi</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cfg</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">aoi</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">aoi</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">aoi</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AOI string is not valid JSON: </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">aoi</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">aoi</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">aoi</span>
+
+    <span class="c1"># -----------------------------</span>
+    <span class="c1"># 2) Extract shapely geometry</span>
+    <span class="c1"># -----------------------------</span>
+    <span class="k">if</span> <span class="n">aoi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">aoi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;features&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;FeatureCollection contains no features&quot;</span><span class="p">)</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">shape</span><span class="p">(</span><span class="n">aoi</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;geometry&quot;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">aoi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Feature&quot;</span><span class="p">:</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">shape</span><span class="p">(</span><span class="n">aoi</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="s2">&quot;type&quot;</span> <span class="ow">in</span> <span class="n">aoi</span> <span class="ow">and</span> <span class="s2">&quot;coordinates&quot;</span> <span class="ow">in</span> <span class="n">aoi</span><span class="p">:</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">shape</span><span class="p">(</span><span class="n">aoi</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported AOI format: </span><span class="si">{</span><span class="n">aoi</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">))</span>
+    <span class="c1"># -----------------------------</span>
+    <span class="c1"># 3) Determine AOI type</span>
+    <span class="c1"># -----------------------------</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">Point</span><span class="p">):</span>
+        <span class="c1"># cfg.aoi_type = &quot;point&quot;</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">y</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">x</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+        <span class="c1"># Check if axis-aligned bbox</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">exterior</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+        <span class="n">is_bbox</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">({</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">})</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">({</span><span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">})</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="c1"># if is_bbox:</span>
+        <span class="c1">#     cfg.aoi_type = &quot;bbox&quot;</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     cfg.aoi_type = &quot;polygon&quot;</span>
+
+        <span class="n">minx</span><span class="p">,</span> <span class="n">miny</span><span class="p">,</span> <span class="n">maxx</span><span class="p">,</span> <span class="n">maxy</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">bounds</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="s1">&#39;custom&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;lat_min&quot;</span><span class="p">:</span> <span class="n">miny</span><span class="p">,</span>
+                <span class="s2">&quot;lat_max&quot;</span><span class="p">:</span> <span class="n">maxy</span><span class="p">,</span>
+                <span class="s2">&quot;lon_min&quot;</span><span class="p">:</span> <span class="n">minx</span><span class="p">,</span>
+                <span class="s2">&quot;lon_max&quot;</span><span class="p">:</span> <span class="n">maxx</span>
+            <span class="p">}</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">region</span><span class="o">=</span><span class="s1">&#39;custom&#39;</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported geometry type: </span><span class="si">{</span><span class="n">geom</span><span class="o">.</span><span class="n">geom_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># -----------------------------</span>
+    <span class="c1"># 4) Store geometry itself</span>
+    <span class="c1"># -----------------------------</span>
+    <span class="c1"># cfg.shapefile = geom</span>
+
+    <span class="k">return</span> <span class="n">cfg</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
 
 
 
