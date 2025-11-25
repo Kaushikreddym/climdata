@@ -11,7 +11,7 @@ aoi: null
 shapefile: null
 
 variables: ["tasmin","tasmax","pr"]
-
+index: null
 data_dir: ./data
 region: null
 

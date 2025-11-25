@@ -7,6 +7,8 @@ from omegaconf import DictConfig
 import climdata
 from climdata.utils.config import _ensure_local_conf
 from climdata.utils.utils_download import get_output_filename
+from climdata.extremes.indices import extreme_index
+from pathlib import Path
 #data processing
 import xarray as xr
 import xclim
@@ -14,13 +16,6 @@ import pandas as pd
 
 # system imports
 import os
-
-# overrides=[
-#     "dataset=CMIP",
-#     "lat=50",
-#     "lon=10",
-#     "variables=[tasmax,tasmin]"
-# ]
 
 import json
 from shapely.geometry import shape, Polygon, Point
@@ -205,9 +200,36 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
                 ds.to_netcdf(filename)
             else:
                 hyras.save_csv(filename)
+    ds = ds.compute()
+    index=None
+    if cfg.index is not None:
+        try:
+            # Initialize only when needed
+            indices = extreme_index(cfg, ds)
+
+            # Calculate the index
+            print(f"Calculating index: {cfg.index}")
+            index = indices.calculate(cfg.index).compute()
+
+            if index is None:
+                raise ValueError(f"Index calculation returned None for '{cfg.index}'")
+
+            # Prepare output path
+            out_path = Path(f"{cfg.index}.nc")
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Save to NetCDF
+            index.to_netcdf(out_path)
+            print(f"Saved index to: {out_path}")
+
+        except Exception as e:
+            print(f"❌ Failed to compute or save index '{cfg.index}': {e}")
+
+    else:
+        print("ℹ️ No index selected (cfg.index is None). Skipping index computation.")
 
     if save_to_file:
         print(f"✅ Saved output to {filename}")
-        return cfg, filename, ds
+        return cfg, filename, ds, index
     else:
-        return cfg, ds
+        return cfg, ds, index
