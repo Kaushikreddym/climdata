@@ -9,6 +9,8 @@ from climdata.utils.config import _ensure_local_conf
 from climdata.utils.utils_download import get_output_filename
 from climdata.extremes.indices import extreme_index
 from pathlib import Path
+from warnings import warn
+
 #data processing
 import xarray as xr
 import xclim
@@ -59,7 +61,6 @@ def preprocess_aoi(cfg):
         geom = shape(aoi)
     else:
         raise ValueError(f"Unsupported AOI format: {aoi}")
-    print(isinstance(geom, Polygon))
     # -----------------------------
     # 3) Determine AOI type
     # -----------------------------
@@ -106,7 +107,7 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
     # 1. Ensure local configs are available
     conf_dir = _ensure_local_conf()  # copies conf/ to cwd
     rel_conf_dir = os.path.relpath(conf_dir, os.path.dirname(__file__))
-    print(rel_conf_dir)
+
     # 2. Initialize Hydra only if not already initialized
     if not GlobalHydra.instance().is_initialized():
         hydra_context = initialize(config_path=rel_conf_dir, version_base=None)
@@ -161,7 +162,6 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
 
     elif dataset_upper == "CMIP":
         ds_vars = []
-        print(cfg.variables)
         cmip = climdata.CMIP(cfg)
         cmip.fetch()
         cmip.load()
@@ -204,13 +204,33 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
             else:
                 hyras.save_csv(filename)
     ds = ds.compute()
-    index=None
+    index = None
     if cfg.index is not None:
         try:
-            # Initialize only when needed
+            # ----------------------------------------
+            # CHECK FOR MINIMUM 30 YEARS OF DATA
+            # ----------------------------------------
+            if "time" not in ds.coords:
+                warn(
+                    "Dataset has no 'time' coordinate; cannot determine number of years.",
+                    UserWarning
+                )
+            else:
+                time_index = pd.to_datetime(ds.time.values)
+                n_years = len(pd.unique(time_index.year))
+
+                if n_years < 30:
+                    warn(
+                        f"Index '{cfg.index}' typically requires ≥30 years of data, "
+                        f"but dataset contains only {n_years} years. Proceeding anyway.",
+                        UserWarning
+                    )
+
+            # ----------------------------------------
+            # Compute the index
+            # ----------------------------------------
             indices = extreme_index(cfg, ds)
 
-            # Calculate the index
             print(f"Calculating index: {cfg.index}")
             index = indices.calculate(cfg.index).compute()
 
@@ -221,18 +241,23 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
             out_path = Path(f"{filename_index}")
             out_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Save to NetCDF
-            index.to_netcdf(out_path)
-            print(f"Saved index to: {out_path}")
+            # Save to file
+            if save_to_file:
+                if filename_index.endswith(".nc"):
+                    index.to_netcdf(out_path)
+                else:
+                    df = index.to_dataframe().reset_index()
+                    df.to_csv(out_path)
+
+                print(f"Saved index to: {out_path}")
 
         except Exception as e:
             print(f"❌ Failed to compute or save index '{cfg.index}': {e}")
 
     else:
         print("ℹ️ No index selected (cfg.index is None). Skipping index computation.")
-
     if save_to_file:
         print(f"✅ Saved output to {filename}")
-        return cfg, filename, ds, index
+        return {'cfg':cfg, 'filename': filename, 'dataset':ds, 'index_filename': filename_index, 'index': index}
     else:
-        return cfg, ds, index
+        return {'cfg':cfg, 'dataset':ds, 'index': index}
