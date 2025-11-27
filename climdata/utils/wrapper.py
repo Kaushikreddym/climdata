@@ -130,12 +130,15 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
         if cfg.dataset=="dwd":
             extract_kwargs["buffer_km"] = 50
         filename = get_output_filename(cfg, output_type="csv", lat=cfg.lat, lon=cfg.lon)
+        filename_index = get_output_filename(cfg, output_type="csv", lat=cfg.lat, lon=cfg.lon, param=cfg.index)
     elif cfg.region is not None:
         extract_kwargs["box"] = cfg.bounds[cfg.region]
         filename = get_output_filename(cfg, output_type="nc")
+        filename_index = get_output_filename(cfg, output_type="nc", param=cfg.index)
     elif cfg.shapefile is not None:
         extract_kwargs["shapefile"] = cfg.shapefile
         filename = get_output_filename(cfg, output_type="nc", shp_name=cfg.shp_name)
+        filename_index = get_output_filename(cfg, output_type="nc", shp_name=cfg.shp_name, param=cfg.index)
 
     dataset_upper = cfg.dataset.upper()
 
@@ -215,7 +218,7 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
                 raise ValueError(f"Index calculation returned None for '{cfg.index}'")
 
             # Prepare output path
-            out_path = Path(f"{cfg.index}.nc")
+            out_path = Path(f"{filename_index}")
             out_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Save to NetCDF

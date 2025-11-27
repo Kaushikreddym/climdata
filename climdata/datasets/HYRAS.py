@@ -380,6 +380,7 @@ class HYRASmirror:
                 if variable in ds:
                     try:
                         ds[variable] = ds[variable].transpose("time", "y", "x")
+                        ds["time"] = ds["time"].dt.floor("D")
                     except Exception:
                         pass
                 # point selection via nearest index (fast)
@@ -424,6 +425,7 @@ class HYRASmirror:
                 if variable in ds:
                     try:
                         ds[variable] = ds[variable].transpose("time", "y", "x")
+                        ds["time"] = ds["time"].dt.floor("D")
                     except Exception:
                         pass
 
@@ -459,6 +461,7 @@ class HYRASmirror:
                 if variable in ds:
                     try:
                         ds[variable] = ds[variable].transpose("time", "y", "x")
+                        ds["time"] = ds["time"].dt.floor("D")
                     except Exception:
                         pass
                 return ds

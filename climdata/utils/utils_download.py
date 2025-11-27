@@ -205,7 +205,7 @@ def extract_ts_dwd(cfg: DictConfig):
 import os
 from omegaconf import DictConfig
 
-def get_output_filename(cfg, output_type="nc", lat=None, lon=None, shp_name = None):
+def get_output_filename(cfg, output_type="nc", lat=None, lon=None, shp_name = None, param="surface"):
     """
     Generate output filename based on config, output type, and extraction mode.
     output_type: "nc", "csv", or "zarr"
@@ -221,7 +221,7 @@ def get_output_filename(cfg, output_type="nc", lat=None, lon=None, shp_name = No
     if lat is not None and lon is not None:
         filename = template.format(
             provider=cfg.dataset,
-            parameter="surface",
+            parameter=param,
             lat=f"{lat}",
             lon=f"{lon}",
             start=cfg.time_range.start_date.replace("-", ""),
@@ -230,7 +230,7 @@ def get_output_filename(cfg, output_type="nc", lat=None, lon=None, shp_name = No
     elif shp_name is not None:
         filename = template.format(
             provider=cfg.dataset,
-            parameter="surface",
+            parameter=param,
             lat_range=f"{shp_name}",
             lon_range=f"{shp_name}",
             start=cfg.time_range.start_date.replace("-", ""),
@@ -241,7 +241,7 @@ def get_output_filename(cfg, output_type="nc", lat=None, lon=None, shp_name = No
         region_bounds = cfg.bounds[cfg.region]
         filename = template.format(
             provider=cfg.dataset,
-            parameter="surface",
+            parameter=param,
             lat_range=f"{region_bounds['lat_min']}-{region_bounds['lat_max']}",
             lon_range=f"{region_bounds['lon_min']}-{region_bounds['lon_max']}",
             start=cfg.time_range.start_date.replace("-", ""),
