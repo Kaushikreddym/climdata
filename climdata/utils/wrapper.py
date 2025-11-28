@@ -129,7 +129,7 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
     if cfg.lat is not None and cfg.lon is not None:
         extract_kwargs["point"] = (cfg.lon, cfg.lat)
         if cfg.dataset=="dwd":
-            extract_kwargs["buffer_km"] = 50
+            extract_kwargs["buffer_km"] = 30
         filename = get_output_filename(cfg, output_type="csv", lat=cfg.lat, lon=cfg.lon)
         filename_index = get_output_filename(cfg, output_type="csv", lat=cfg.lat, lon=cfg.lon, param=cfg.index)
     elif cfg.region is not None:

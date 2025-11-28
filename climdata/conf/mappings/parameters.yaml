@@ -32,6 +32,11 @@ dwd:
       dataset: climate_summary
       name: wind_speed
       unit: m/s
+    hurs:
+      resolution: daily
+      dataset: climate_summary
+      name: humidity
+      unit: "%"
 # era5-land_ee:
 #   type: image
 #   subsetting: point
@@ -124,6 +129,12 @@ mswx:
     rsds:
       name: downward_shortwave_radiation
       folder_id: 1usXbIOi4_jBUdDaZbzPKXznx9PTYzHRv
+    hurs:
+      name: relative_humidity
+      folder_id: 1EcBx7pdD23P7G2V8-HDrk0Sr7uJm9uvc
+    sfcWind:
+      name: wind_speed
+      folder_id: 1ZaL1-1SitnlovSdnYdbNecC0dnlN3Qou
 hyras:
   variables:
     tasmin:

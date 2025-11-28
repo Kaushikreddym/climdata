@@ -76,7 +76,7 @@ class DWDmirror:
                 subset = stations_df.copy()
                 subset["distance"] = ((subset.longitude - lon)**2 + (subset.latitude - lat)**2)**0.5
                 subset = subset.nsmallest(1, "distance")
-
+            
         # ---- Box extraction ----
         elif box is not None:
             subset = stations_df[
@@ -117,7 +117,7 @@ class DWDmirror:
             start_date=self.start_date,
             end_date=self.end_date,
         ).filter_by_station_id(station_id=station_ids)
-
+        print(point)
         data = request.values.all().df.to_pandas()  # pandas DataFrame
 
         # Convert to xarray
