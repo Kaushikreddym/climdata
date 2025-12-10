@@ -186,18 +186,33 @@ class MSWXmirror:
         def preprocess(ds):
             ds = self._extract_preprocess(ds)
             return ds[[varname]].rename({varname: variable})
-
+        import dask
         # Open all files as a single dataset
         try:
-            dset = xr.open_mfdataset(
-                file_paths,
-                combine="nested",
-                concat_dim="time",
-                parallel=True,            # uses Dask for parallel reading
-                engine="h5netcdf",       # faster than netcdf4
-                # chunks = {"time": 90, "lat": 200, "lon": 200},  # quarterly chunks
-                preprocess=preprocess
-            )
+            @dask.delayed
+            def open_point(f):
+                ds = preprocess(xr.open_dataset(f, engine="h5netcdf"))
+                return ds
+            batch_size = 500  # process 500 files at a time
+            dsets = []
+
+            for i in range(0, len(file_paths), batch_size):
+                batch_files = file_paths[i:i+batch_size]
+                delayed_batch = [dask.delayed(open_point)(f) for f in batch_files]
+                batch_ds = list(dask.compute(*delayed_batch))
+                dsets.extend(batch_ds)
+
+            dset = xr.concat(dsets, dim="time")
+
+            # dset = xr.open_mfdataset(
+            #     file_paths,
+            #     combine="nested",
+            #     concat_dim="time",
+            #     parallel=True,            # uses Dask for parallel reading
+            #     engine="h5netcdf",       # faster than netcdf4
+            #     # chunks = {"time": 90, "lat": 200, "lon": 200},  # quarterly chunks
+            #     preprocess=preprocess
+            # )
         except Exception as e:
             raise RuntimeError(f"Failed to load dataset for variable '{variable}': {e}")
 

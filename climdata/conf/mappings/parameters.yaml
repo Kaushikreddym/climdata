@@ -201,7 +201,47 @@ cmip:
       name: precipitation_flux
       long_name: Precipitation
       units: kg m-2 s-1
-    
+power:
+  community: AG
+  temporal_resolution: daily
+
+  variables:
+    tas:
+      api_id: T2M
+      name: air_temperature
+      long_name: Near-Surface Air Temperature (2m)
+      units: degC
+
+    tasmax:
+      api_id: T2M_MAX
+      name: air_temperature_maximum
+      long_name: Daily Maximum 2m Air Temperature
+      units: degC
+
+    tasmin:
+      api_id: T2M_MIN
+      name: air_temperature_minimum
+      long_name: Daily Minimum 2m Air Temperature
+      units: degC
+
+    rsds:
+      api_id: ALLSKY_SFC_SW_DWN
+      name: surface_downwelling_shortwave_flux_in_air
+      long_name: Surface Downwelling Shortwave Radiation
+      units: MJ m-2 d-1
+
+    sfcWind:
+      api_id: WS2M
+      name: wind_speed
+      long_name: 2m Wind Speed
+      units: m s-1
+
+    pr:
+      api_id: PRECTOTCORR
+      name: precipitation_flux
+      long_name: Precipitation (Corrected Total)
+      units: mm d-1
+
 # era5_cds:
 #   params:
 #     dataset: derived-era5-single-levels-daily-statistics

@@ -354,7 +354,21 @@ class HYRASmirror:
         iy = np.abs(y - lat).argmin()
         ds.close()
         return ix, iy
-
+    def _apply_time_subset(self, ds):
+        start = getattr(self.cfg.time_range, "start_date", None)
+        end = getattr(self.cfg.time_range, "end_date", None)
+        if start or end:
+            try:
+                ds = ds.sel(time=slice(start, end))
+            except Exception:
+                # If time coord not decoded yet, try forcing decode then slice
+                try:
+                    ds = xr.decode_cf(ds)
+                    ds = ds.sel(time=slice(start, end))
+                except Exception:
+                    # fallback: return ds unchanged
+                    pass
+        return ds
     def load(self, variable: str, use_dask: bool = True, chunking: dict = None):
         """
         Load variable with extraction applied.
@@ -394,7 +408,7 @@ class HYRASmirror:
                 engine="netcdf4",
                 parallel=False,  # point preproc is tiny; parallel could be True on dask cluster
             )
-
+            dset = self._apply_time_subset(dset)
             if use_dask and chunking:
                 dset = dset.chunk(chunking)
 

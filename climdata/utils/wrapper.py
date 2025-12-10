@@ -174,9 +174,56 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
                 cmip.save_netcdf(filename)
             else:
                 cmip.save_csv(filename)
+
+    elif dataset_upper == 'POWER':
+        if "box" in extract_kwargs:
+            raise ValueError("Region extraction is not supported for DWD. Please provide point.")
+        
+        power = climdata.POWER(cfg)
+        power.fetch()
+        power.load()
+
+        ds = power.ds
+
+        for var in ds.data_vars:
+            ds[var] = xclim.core.units.convert_units_to(
+                ds[var],
+                cfg.varinfo[var].units
+            )
+        if save_to_file:
+            if filename.endswith(".nc"):
+                ds.to_netcdf(filename)
+            else:
+                df = ds.to_dataframe().reset_index()
+                id_vars = [c for c in ("time", "latitude", "longitude") if c in df.columns]
+                value_vars = [v for v in cfg.variables if v in df.columns]
+                if not value_vars:
+                    # fallback to any non-id columns as variables
+                    value_vars = [c for c in df.columns if c not in id_vars]
+
+                df_long = df.melt(
+                    id_vars=id_vars,
+                    value_vars=value_vars,
+                    var_name="variable",
+                    value_name="value",
+                )
+
+                # attach units from dataset attrs when available
+                units_map = {
+                    v: (ds[v].attrs.get("units", "unknown") if v in getattr(ds, "data_vars", {}) else "unknown")
+                    for v in value_vars
+                }
+                df_long["units"] = df_long["variable"].map(units_map)
+                df_long["source"] = "NASA-POWER"
+
+                # reorder columns
+                cols = ["source", "time", "latitude", "longitude", "variable", "value", "units"]
+                df_long = df_long[[c for c in cols if c in df_long.columns]]
+
+                df_long.to_csv(filename, index=False)
     elif dataset_upper == "DWD":
         # if "box" in extract_kwargs:
-        #     raise ValueError("Region extraction is not supported for DWD. Please provide lat and lon.")
+            # raise ValueError("Region extraction is not supported for DWD. Please provide point.")
         ds_vars = []
         for var in cfg.variables:
             dwd = climdata.DWD(cfg)
@@ -202,7 +249,33 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
             if filename.endswith(".nc"):
                 ds.to_netcdf(filename)
             else:
-                hyras.save_csv(filename)
+                df = ds.to_dataframe().reset_index()
+                id_vars = [c for c in ("time", "lat", "lon") if c in df.columns]
+                value_vars = [v for v in cfg.variables if v in df.columns]
+                if not value_vars:
+                    # fallback to any non-id columns as variables
+                    value_vars = [c for c in df.columns if c not in id_vars]
+
+                df_long = df.melt(
+                    id_vars=id_vars,
+                    value_vars=value_vars,
+                    var_name="variable",
+                    value_name="value",
+                )
+
+                # attach units from dataset attrs when available
+                units_map = {
+                    v: (ds[v].attrs.get("units", "unknown") if v in getattr(ds, "data_vars", {}) else "unknown")
+                    for v in value_vars
+                }
+                df_long["units"] = df_long["variable"].map(units_map)
+                df_long["source"] = "HYRAS"
+
+                # reorder columns
+                cols = ["source", "time", "lat", "lon", "variable", "value", "units"]
+                df_long = df_long[[c for c in cols if c in df_long.columns]]
+
+                df_long.to_csv(filename, index=False)
     ds = ds.compute()
     index = None
     if cfg.index is not None:
@@ -261,3 +334,94 @@ def extract_data(cfg_name: str = "config", overrides: list = None, save_to_file 
         return {'cfg':cfg, 'filename': filename, 'dataset':ds, 'index_filename': filename_index, 'index': index}
     else:
         return {'cfg':cfg, 'dataset':ds, 'index': index}
+    
+
+import pandas as pd
+import xarray as xr
+from hydra import initialize, compose
+from dask.distributed import Client
+import climdata
+
+climdata.utils.config._ensure_local_conf()
+
+def extract_index(
+    csv_path: str,
+    cfg_name: str = "config",
+    extra_overrides: list = None,       # Only additional overrides (e.g., "index=tx90p")
+    save_to_file: bool = True,
+    output_path: str = "output_index.csv",
+):
+    """
+    Load climate CSV → generate dataset + time_range overrides automatically →
+    convert to xarray → compute extreme index.
+    """
+
+    # ---- Load CSV ----
+    df = pd.read_csv(csv_path, parse_dates=["time"])
+
+    # ---- Always extract dataset + time_range from CSV ----
+    dataset = df["source"].unique()[0]
+    time_range_start = df["time"].min().strftime("%Y-%m-%d")
+    time_range_end   = df["time"].max().strftime("%Y-%m-%d")
+
+    auto_overrides = [
+        f"dataset={dataset}",
+        f"time_range.start_date={time_range_start}",
+        f"time_range.end_date={time_range_end}",
+    ]
+
+    # ---- Merge with any user-provided overrides ----
+    # (e.g., "index=tn10p")
+    if extra_overrides:
+        overrides = auto_overrides + extra_overrides
+    else:
+        overrides = auto_overrides + ["index=tn10p"]  # default index
+
+    print("Using Hydra overrides:", overrides)
+    
+    # 1. Ensure local configs are available
+    conf_dir = _ensure_local_conf()  # copies conf/ to cwd
+    rel_conf_dir = os.path.relpath(conf_dir, os.path.dirname(__file__))
+
+    # 2. Initialize Hydra only if not already initialized
+    if not GlobalHydra.instance().is_initialized():
+        hydra_context = initialize(config_path=rel_conf_dir, version_base=None)
+    else:
+        # If already initialized, just set context to None for clarity
+        hydra_context = None
+
+    # Use compose within context manager if newly initialized
+    if hydra_context is not None:
+        with hydra_context:
+            cfg: DictConfig = compose(config_name=cfg_name, overrides=overrides)
+    else:
+        # Already initialized: compose directly
+        cfg: DictConfig = compose(config_name=cfg_name, overrides=overrides)
+    # ---- Convert CSV → xarray ----
+    df_pivot = df.pivot_table(
+        index=["time", "lat", "lon"],
+        columns="variable",
+        values="value"
+    ).reset_index()
+
+    ds = df_pivot.set_index(["time", "lat", "lon"]).to_xarray()
+
+    # ---- Attach units ----
+    for var in df["variable"].unique():
+        units = df[df["variable"] == var]["units"].iloc[0]
+        ds[var].attrs["units"] = units
+
+    print(ds)
+
+    # ---- Compute extreme index ----
+    indices = climdata.extreme_index(cfg, ds)
+    print(f"Calculating index: {cfg.index}")
+
+    result = indices.calculate(cfg.index).compute()
+
+    # ---- Save result ----
+    if save_to_file:
+        result.to_dataframe().reset_index().to_csv(output_path)
+        print(f"Saved result → {output_path}")
+
+    return result

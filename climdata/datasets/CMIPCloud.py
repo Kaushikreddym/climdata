@@ -134,7 +134,7 @@ class CMIPCloud:
             if "time" in self.ds.variables:
                 self.ds["time"].encoding.clear()
             self.ds.to_netcdf(filename)
-            print(f"Saved NetCDF to {filename}")
+            # print(f"Saved NetCDF to {filename}")
 
     def save_zarr(self, store_path):
         if self.ds is not None:
@@ -183,4 +183,4 @@ class CMIPCloud:
             df = self.ds.to_dataframe().reset_index()
             df = self._format(df)
             df.to_csv(filename, index=False)
-            print(f"Saved CSV to {filename}")
+            # print(f"Saved CSV to {filename}")
