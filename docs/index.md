@@ -5,100 +5,90 @@
 [![image](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
 [![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata)
 
+# ClimData — Quickstart & Overview
 
-**This project automates the fetching and extraction of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.**
+ClimData provides a unified interface for extracting climate data from multiple providers (MSWX, CMIP, POWER, DWD, HYRAS), computing extreme indices, and converting results to tabular form. The ClimData (or ClimateExtractor) class is central: it manages configuration, extraction, index computation, and common I/O.
 
+## Key features
+- Provider-agnostic extraction (point / region / shapefile)
+- Unit normalization via xclim
+- Compute extreme indices using package indices
+- Convert xarray Datasets → long-form pandas DataFrames
+- Simple workflow runner for chained actions
 
--   Free software: MIT License
--   Documentation: https://Kaushikreddym.github.io/climdata
-    
+## Installation
 
-## 📦 Data Sources
-
-This project utilizes climate and weather datasets from a variety of data sources:
-
-- **DWD Station Data**  
-  Retrieved using the [DWD API](https://wetterdienst.readthedocs.io/en/latest/index.html). Provides high-resolution observational data from Germany's national meteorological service.
-
-- **MSWX (Multi-Source Weather)**  
-  Accessed via [GloH2O's Google Drive](https://www.gloh2o.org/mswx/). Combines multiple satellite and reanalysis datasets for global gridded weather variables.
-
-- **DWD HYRAS**  
-  Downloaded from the [DWD Open Data FTP Server](https://opendata.dwd.de/). Offers gridded observational data for Central Europe, useful for hydrological applications.
-
-- **ERA5, ERA5-Land**  
-  Accessed through the [Google Earth Engine](https://developers.google.com/earth-engine/datasets/catalog). Provides reanalysis datasets from ECMWF with high temporal and spatial resolution.
-
-- **NASA NEX-GDDP**  
-  Also retrieved via Earth Engine. Downscaled CMIP5/CMIP6 climate projections developed by NASA for local-scale impact assessment.
-
-- **CMIP6**  
-  Obtained using [ESGPull](https://esgf.github.io/esgf-download/) from the ESGF data nodes. Includes multi-model climate simulations following various future scenarios.
-
-It supports:
-✅ Automatic file download (e.g., from Google Drive or online servers)  
-✅ Flexible configuration via `config.yaml`  
-✅ Time series extraction for a user-specified latitude/longitude  
-✅ Batch processing for many locations from a CSV file
-
-
-## 🚀 How to Run and Explore Configurations
-
-### ✅ Run a download job with custom overrides
-
-You can run the data download script and override any configuration value directly in the command line using [Hydra](https://hydra.cc/).
-
-For example, to download **ERA5-Land** data for **January 1–4, 2020**, run:
-
+1) Create and activate a conda environment:
 ```bash
-python download_location.py dataset='era5-land' \
-  time_range.start_date='2020-01-01' \
-  time_range.end_date='2020-01-04' \
-  location.lat=52.5200 \
-  location.lon=13.4050
+# create
+conda create -n climdata python=3.11 -y
+
+# activate
+conda activate climdata
 ```
 
-For downloading multiple locations from a csv file `locations.csv`, run:
-
+2) Install via pip (PyPI, if available) or from source:
 ```bash
-python download_csv.py dataset='era5-land' \
-  time_range.start_date='2020-01-01' \
-  time_range.end_date='2020-01-04' \
+# from PyPI
+pip install climdata
+
+# or from local source (editable)
+git clone <repo-url>
+cd climdata
+pip install -e .
 ```
 
-an example `locations.csv` can be
-
-```csv
-lat,lon,city
-52.5200,13.4050,berlin
-48.1351,11.5820,munich
-53.5511,9.9937,hamburg
-```
-
-**What this does:**
-
-- `dataset='era5-land'` tells the script which dataset to use.
-- `time_range.start_date` and `time_range.end_date` override the default dates in your YAML config.
-- All other settings use your existing `config.yaml` in the `conf` folder.
-
----
-
-### ✅ List all available datasets defined in your configuration
-
-To see what datasets are available (without running the downloader), you can dump the **resolved configuration** and filter it using [`yq`](https://github.com/mikefarah/yq).
-
-Run:
-
+Install optional extras as needed (e.g., xclim, shapely, hydra, dask):
 ```bash
-python download_location.py --cfg job | yq '.mappings | keys'
+pip install xarray xclim shapely hydra-core dask "pandas>=1.5"
 ```
 
-**What this does:**
+## Quick example
+```python
+from climdata import ClimData  # or from climdata.utils.wrapper_workflow import ClimateExtractor
 
-- `--cfg job` tells Hydra to output the final resolved configuration and exit.
-- `| yq '.mappings | keys'` filters the output to show only the dataset names defined under the `mappings` section.
+overrides = [
+    "dataset=mswx",
+    "lat=52.5",
+    "lon=13.4",
+    "time_range.start_date=2014-01-01",
+    "time_range.end_date=2014-12-31",
+    "variables=[tasmin,tasmax,pr]",
+    "data_dir=/path/to/data",
+    "index=tn10p",
+]
 
----
+# initialize
+extractor = ClimData(overrides=overrides)
+
+# extract data (returns xarray.Dataset and updates internal state)
+ds = extractor.extract()
+
+# compute index (uses cfg.index)
+ds_index = extractor.calc_index(ds)
+
+# convert to long-form dataframe and save
+df = extractor.to_dataframe(ds_index)
+extractor.to_csv(df, filename="index.csv")
+```
+
+## Workflow runner
+Use `run_workflow` for multi-step sequences:
+```python
+result = extractor.run_workflow(actions=["extract", "calc_index", "to_dataframe", "to_csv"])
+```
+`WorkflowResult` contains produced dataset(s), dataframe(s), and filenames.
+
+## Documentation & API
+- See API docs under `docs/api/` for detailed descriptions of ClimData/ClimateExtractor methods.
+- Examples and notebooks are under `examples/`.
+
+## Contributing
+- Run tests and lint locally.
+- Follow project coding and documentation conventions; submit PRs with tests.
+
+## License
+Refer to the repository LICENSE file for terms.
 
 ### ⚡️ Tip
 
