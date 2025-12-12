@@ -1,235 +1,182 @@
-# climdata
+# Welcome to climdata
+
 
 
 [![image](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
 [![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata)
 
-`climdata` is a Python package designed to automate fetching, extraction, and processing of climate data from various sources, including MSWX, DWD HYRAS, ERA5-Land, and NASA-NEX-GDDP. It provides tools to retrieve data for specific locations and time ranges, facilitating climate analysis and research.
+# ClimData — Quickstart & Overview
 
----
-
-## Key features
-- Fetch and load datasets: MSWX, CMIP (cloud via intake), DWD, HYRAS
-- Spatial extraction: point, box (region via config bounds), or shapefile (GeoJSON/Feature)
-- Temporal subsetting via config or programmatic call
-- Multi-format export: NetCDF, Zarr, CSV (standardized long format: variable, value, units)
-- Hydra configuration + easy CLI overrides
-- Helper to normalize AOI (GeoJSON → point / bbox / polygon)
-- Provenance-friendly workflow (designed to be used with CI/CD workflows)
-
-## Install (development)
-1. Clone repository
-```bash
-git clone <repo-url>
-cd climdata
-```
-2. Create virtualenv and install deps
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e ".[dev]"   # or pip install -r requirements.txt
-```
-
-## Quick CLI (Hydra) usage
-Hydra reads configs from `conf/`. Override any config value on the CLI.
-
-Examples:
-```bash
-# Region extraction (saves NetCDF by default when region is used)
-python examples/climdata_cli.py dataset=CMIP region=europe time_range.start_date=2010-01-01 time_range.end_date=2010-12-31
-
-# Point extraction (saves CSV)
-python examples/climdata_cli.py dataset=MSWX lat=52.5 lon=13.4 variables=['tas','pr'] time_range.start_date=2000-01-01
-
-# HYRAS / DWD (point only)
-python examples/climdata_cli.py dataset=HYRAS lat=52 lon=10
-```
-
-Notes:
-- Use `dataset=<MSWX|CMIP|DWD|HYRAS>` in CLI.
-- Override any config key: e.g. `time_range.start_date=2000-01-01`.
-- DWD/HYRAS: region (box) extraction is not supported — script will raise an error if attempted.
-
-## Programmatic usage
-Use the wrapper to compose configs, preprocess AOI, extract, and save.
-
-```python
-from climdata.utils.wrapper import extract_data
-
-# returns (cfg, filename, ds, index) when save_to_file=True
-cfg, filename, ds, index = extract_data(cfg_name="config", overrides=["dataset=MSWX","lat=52.5","lon=13.4"])
-```
-
-Or use the dataset classes directly:
-```python
-import climdata, xarray as xr
-cmip = climdata.CMIP(cfg)
-cmip.fetch()
-cmip.load()
-cmip.extract(box=cfg.bounds[cfg.region])
-cmip.save_netcdf("output.nc")
-```
-
-## Configs
-- Config files live in `climdata/conf/`. There are dataset-specific config entry points e.g. `config_cmip`, `config_mswx`, etc.  
-- Filename templates are configurable in `cfg.output`:
-  - `cfg.output.filename_nc`
-  - `cfg.output.filename_csv`
-  - `cfg.output.filename_zarr`
-
-The wrapper generates filenames via `get_output_filename(cfg, output_type, ...)` using `cfg.bounds`, `cfg.time_range`, etc.
-
-## Output CSV format
-CSV produced by `save_csv` is standardized to the long form with columns (where available):
-- source_id, experiment_id, table_id, time, lat, lon, variable, value, units
-
-This ensures a single `value` column and a `variable` column for stacked variables.
-
-## Common issues & tips
-- NetCDF write ValueError (datetime encoding): call `ds["time"].encoding.clear()` before `to_netcdf()` (wrapper handles this).
-- PermissionError writing files: ensure output directory is writable or write to `/tmp/` (or adjust permissions).
-- CMIP cloud access requires network access — use the Pangeo intake catalog URL already referenced in code.
-
-## AOI handling
-`preprocess_aoi(cfg)` accepts:
-- GeoJSON strings / Feature / FeatureCollection
-- Point → sets `cfg.lat`, `cfg.lon`
-- Polygon or bbox → sets `cfg.bounds['custom']` and `cfg.region='custom'`
-
-## HYRAS support
-HYRAS class mirrors MSWX design:
-- `fetch()` / `load()` / `extract(point=...)` / `save_csv()` / `save_netcdf()`
-- HYRAS extraction currently supports point extraction; attempt to use a region will raise an error.
-
-## Development & provenance
-- CI: add GitHub Actions workflows to run tests and build/publish to PyPI.
-- Keep config and runtime overrides in Hydra to enable reproducible runs.
-- Include `CITATION.cff`, license, and a changelog for FAIR discoverability.
-
-## Contributing
-- Run tests: `pytest`
-- Style: follow repository linting config
-- Open PRs against `main` with tests and a short changelog entry
-
-## License
-Specify the license (e.g. MIT or Apache 2.0) in `LICENSE`.
-
----
-
-For further examples, see `examples/` and the `docs/` folder (usage, installation, faq).// filepath: /beegfs/muduchuru/pkgs_fnl/climdata/README.md
-# climdata
-
-Lightweight toolkit to fetch, subset and export climate data (MSWX, CMIP, DWD, HYRAS).  
-Provides a Hydra-driven CLI, programmatic wrapper, cloud-native CMIP access, local dataset handling, and standardized CSV/NetCDF/Zarr exports.
+ClimData provides a unified interface for extracting climate data from multiple providers (MSWX, CMIP, POWER, DWD, HYRAS), computing extreme indices, and converting results to tabular form. The ClimData (or ClimateExtractor) class is central: it manages configuration, extraction, index computation, and common I/O.
 
 ## Key features
-- Fetch and load datasets: MSWX, CMIP (cloud via intake), DWD, HYRAS
-- Spatial extraction: point, box (region via config bounds), or shapefile (GeoJSON/Feature)
-- Temporal subsetting via config or programmatic call
-- Multi-format export: NetCDF, Zarr, CSV (standardized long format: variable, value, units)
-- Hydra configuration + easy CLI overrides
-- Helper to normalize AOI (GeoJSON → point / bbox / polygon)
-- Provenance-friendly workflow (designed to be used with CI/CD workflows)
+- Provider-agnostic extraction (point / region / shapefile)
+- Unit normalization via xclim
+- Compute extreme indices using package indices
+- Convert xarray Datasets → long-form pandas DataFrames
+- Simple workflow runner for chained actions
 
-## Install (development)
-1. Clone repository
+## Installation
+
+1) Create and activate a conda environment:
 ```bash
+# create
+conda create -n climdata python=3.11 -y
+
+# activate
+conda activate climdata
+```
+
+2) Install via pip (PyPI, if available) or from source:
+```bash
+# from PyPI
+pip install climdata
+
+# or from local source (editable)
 git clone <repo-url>
 cd climdata
+pip install -e .
 ```
-2. Create virtualenv and install deps
+
+Install optional extras as needed (e.g., xclim, shapely, hydra, dask):
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e ".[dev]"   # or pip install -r requirements.txt
+pip install xarray xclim shapely hydra-core dask "pandas>=1.5"
 ```
 
-## Quick CLI (Hydra) usage
-Hydra reads configs from `conf/`. Override any config value on the CLI.
-
-Examples:
-```bash
-# Region extraction (saves NetCDF by default when region is used)
-python examples/climdata_cli.py dataset=CMIP region=europe time_range.start_date=2010-01-01 time_range.end_date=2010-12-31
-
-# Point extraction (saves CSV)
-python examples/climdata_cli.py dataset=MSWX lat=52.5 lon=13.4 variables=['tas','pr'] time_range.start_date=2000-01-01
-
-# HYRAS / DWD (point only)
-python examples/climdata_cli.py dataset=HYRAS lat=52 lon=10
-```
-
-Notes:
-- Use `dataset=<MSWX|CMIP|DWD|HYRAS>` in CLI.
-- Override any config key: e.g. `time_range.start_date=2000-01-01`.
-- DWD/HYRAS: region (box) extraction is not supported — script will raise an error if attempted.
-
-## Programmatic usage
-Use the wrapper to compose configs, preprocess AOI, extract, and save.
-
+## Quick example
 ```python
-from climdata.utils.wrapper import extract_data
+from climdata import ClimData  # or from climdata.utils.wrapper_workflow import ClimateExtractor
 
-# returns (cfg, filename, ds, index) when save_to_file=True
-cfg, filename, ds, index = extract_data(cfg_name="config", overrides=["dataset=MSWX","lat=52.5","lon=13.4"])
+overrides = [
+    "dataset=mswx",
+    "lat=52.5",
+    "lon=13.4",
+    "time_range.start_date=2014-01-01",
+    "time_range.end_date=2014-12-31",
+    "variables=[tasmin,tasmax,pr]",
+    "data_dir=/path/to/data",
+    "index=tn10p",
+]
+
+# initialize
+extractor = ClimData(overrides=overrides)
+
+# extract data (returns xarray.Dataset and updates internal state)
+ds = extractor.extract()
+
+# compute index (uses cfg.index)
+ds_index = extractor.calc_index(ds)
+
+# convert to long-form dataframe and save
+df = extractor.to_dataframe(ds_index)
+extractor.to_csv(df, filename="index.csv")
 ```
 
-Or use the dataset classes directly:
+## Workflow runner
+Use `run_workflow` for multi-step sequences:
 ```python
-import climdata, xarray as xr
-cmip = climdata.CMIP(cfg)
-cmip.fetch()
-cmip.load()
-cmip.extract(box=cfg.bounds[cfg.region])
-cmip.save_netcdf("output.nc")
+result = extractor.run_workflow(actions=["extract", "calc_index", "to_dataframe", "to_csv"])
 ```
+`WorkflowResult` contains produced dataset(s), dataframe(s), and filenames.
 
-## Configs
-- Config files live in `climdata/conf/`. There are dataset-specific config entry points e.g. `config_cmip`, `config_mswx`, etc.  
-- Filename templates are configurable in `cfg.output`:
-  - `cfg.output.filename_nc`
-  - `cfg.output.filename_csv`
-  - `cfg.output.filename_zarr`
-
-The wrapper generates filenames via `get_output_filename(cfg, output_type, ...)` using `cfg.bounds`, `cfg.time_range`, etc.
-
-## Output CSV format
-CSV produced by `save_csv` is standardized to the long form with columns (where available):
-- source_id, experiment_id, table_id, time, lat, lon, variable, value, units
-
-This ensures a single `value` column and a `variable` column for stacked variables.
-
-## Common issues & tips
-- NetCDF write ValueError (datetime encoding): call `ds["time"].encoding.clear()` before `to_netcdf()` (wrapper handles this).
-- PermissionError writing files: ensure output directory is writable or write to `/tmp/` (or adjust permissions).
-- CMIP cloud access requires network access — use the Pangeo intake catalog URL already referenced in code.
-
-## AOI handling
-`preprocess_aoi(cfg)` accepts:
-- GeoJSON strings / Feature / FeatureCollection
-- Point → sets `cfg.lat`, `cfg.lon`
-- Polygon or bbox → sets `cfg.bounds['custom']` and `cfg.region='custom'`
-
-## HYRAS support
-HYRAS class mirrors MSWX design:
-- `fetch()` / `load()` / `extract(point=...)` / `save_csv()` / `save_netcdf()`
-- HYRAS extraction currently supports point extraction; attempt to use a region will raise an error.
-
-## Development & provenance
-- CI: add GitHub Actions workflows to run tests and build/publish to PyPI.
-- Keep config and runtime overrides in Hydra to enable reproducible runs.
-- Include `CITATION.cff`, license, and a changelog for FAIR discoverability.
+## Documentation & API
+- See API docs under `docs/api/` for detailed descriptions of ClimData/ClimateExtractor methods.
+- Examples and notebooks are under `examples/`.
 
 ## Contributing
-- Run tests: `pytest`
-- Style: follow repository linting config
-- Open PRs against `main` with tests and a short changelog entry
+- Run tests and lint locally.
+- Follow project coding and documentation conventions; submit PRs with tests.
 
 ## License
-Specify the license (e.g. MIT or Apache 2.0) in `LICENSE`.
+Refer to the repository LICENSE file for terms.
+
+### ⚡️ Tip
+
+- Make sure `yq` is installed:
+  ```bash
+  brew install yq   # macOS
+  # OR
+  pip install yq
+  ```
+
+- To see available variables for a specific dataset (for example `mswx`), run:
+  ```bash
+  python download_location.py --cfg job | yq '.mappings.mswx.variables | keys'
+  ```
 
 ---
 
-For further examples, see `examples/` and the `docs/` folder (usage, installation, faq).
+---
+
+## ⚙️ **Key Features**
+
+- **Supports multiple weather data providers**
+- **Uses `xarray` for robust gridded data extraction**
+- **Handles curvilinear and rectilinear grids**
+- **Uses a Google Drive Service Account for secure downloads**
+- **Easily reproducible runs using Hydra**
+
+---
+## 📡 Google Drive API Setup
+
+This project uses the **Google Drive API** with a **Service Account** to securely download weather data files from a shared Google Drive folder.
+
+Follow these steps to set it up correctly:
+
+---
+
+### ✅ 1. Create a Google Cloud Project
+
+- Go to [Google Cloud Console](https://console.cloud.google.com/).
+- Click **“Select Project”** → **“New Project”**.
+- Enter a project name (e.g. `WeatherDataDownloader`).
+- Click **“Create”**.
+
+---
+
+### ✅ 2. Enable the Google Drive API
+
+- In the left sidebar, go to **APIs & Services → Library**.
+- Search for **“Google Drive API”**.
+- Click it, then click **“Enable”**.
+
+---
+
+### ✅ 3. Create a Service Account
+
+- Go to **IAM & Admin → Service Accounts**.
+- Click **“Create Service Account”**.
+- Enter a name (e.g. `weather-downloader-sa`).
+- Click **“Create and Continue”**. You can skip assigning roles for read-only Drive access.
+- Click **“Done”** to finish.
+
+---
+
+### ✅ 4. Create and Download a JSON Key
+
+- After creating the Service Account, click on its email address to open its details.
+- Go to the **“Keys”** tab.
+- Click **“Add Key” → “Create new key”** → choose **`JSON`** → click **“Create”**.
+- A `.json` key file will download automatically. **Store it securely!**
+
+### ✅ 5. Store the JSON Key Securely
+
+- Place the downloaded `.json` key in the conf folder with the name service.json. 
+
+
+## Setup Instructions fro ERA5 api
+
+### 1. CDS API Key Setup
+
+1. Create a free account on the
+[Copernicus Climate Data Store](https://cds.climate.copernicus.eu/user/register)
+2. Once logged in, go to your [user profile](https://cds.climate.copernicus.eu/user)
+3. Click on the "Show API key" button
+4. Create the file `~/.cdsapirc` with the following content:
+
+   ```bash
+   url: https://cds.climate.copernicus.eu/api/v2
+   key: <your-api-key-here>
+   ```
+
+5. Make sure the file has the correct permissions: `chmod 600 ~/.cdsapirc`
