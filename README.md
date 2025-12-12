@@ -164,7 +164,7 @@ Follow these steps to set it up correctly:
 - Place the downloaded `.json` key in the conf folder with the name service.json. 
 
 
-## Setup Instructions fro ERA5 api
+## Setup Instructions from ERA5 api
 
 ### 1. CDS API Key Setup
 
