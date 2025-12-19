@@ -391,8 +391,10 @@ class ClimateExtractor:
             extract_kwargs["point"] = (cfg.lon, cfg.lat)
             if cfg.dataset == "dwd":
                 extract_kwargs["buffer_km"] = 30
-        else:
+        elif cfg.region is not None:
             extract_kwargs["box"] = cfg.bounds[cfg.region]
+        elif cfg.shapefile is not None:
+            extract_kwargs["shapefile"] = cfg.shapefile
 
         ds = None
         dataset_upper = cfg.dataset.upper()
