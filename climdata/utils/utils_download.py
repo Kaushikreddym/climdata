@@ -94,14 +94,14 @@ def fetch_dwd(var_cfg,var):
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         print(f"⬇️  Checking: {file_url}")
 
+        if os.path.exists(local_path):
+            print(f"✔️  Exists locally: {local_path}")
+            continue
+
         # Check if file exists on server first (HEAD request)
         head = requests.head(file_url)
         if head.status_code != 200:
             raise FileNotFoundError(f"❌ Not found on server: {file_url} (HTTP {head.status_code})")
-
-        if os.path.exists(local_path):
-            print(f"✔️  Exists locally: {local_path}")
-            continue
 
         print(f"⬇️  Downloading: {file_url}")
         try:

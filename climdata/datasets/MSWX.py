@@ -16,7 +16,6 @@ import cf_xarray
 
 warnings.filterwarnings("ignore", category=Warning)
 
-
 class MSWXmirror:
     def __init__(self, cfg: DictConfig):
         self.cfg = cfg
@@ -115,7 +114,13 @@ class MSWXmirror:
         # ---- Shapefile extraction ----
         elif self._extract_mode == "shapefile":
             gdf = self._extract_params
+            
+            # Suppose your dataset uses 'lon' and 'lat' as coordinates
+            ds = ds.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
 
+            # Also ensure CRS is set
+            ds = ds.rio.write_crs("EPSG:4326", inplace=True)
+            
             clipped_list = []
             for geom in gdf.geometry:
                 clipped = ds.rio.clip([mapping(geom)], gdf.crs, drop=True)

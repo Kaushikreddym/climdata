@@ -408,7 +408,6 @@ class HYRASmirror:
                 engine="netcdf4",
                 parallel=False,  # point preproc is tiny; parallel could be True on dask cluster
             )
-            dset = self._apply_time_subset(dset)
             if use_dask and chunking:
                 dset = dset.chunk(chunking)
 
@@ -456,7 +455,7 @@ class HYRASmirror:
                 # optionally chunk lazily
                 if use_dask and chunking:
                     sub = sub.chunk(chunking)
-
+                
                 datasets.append(sub)
 
             # concatenate along time
@@ -465,7 +464,7 @@ class HYRASmirror:
             # normalize pr units
             if "pr" in dset:
                 dset["pr"].attrs.setdefault("units", "mm/day")
-
+            dset = self._apply_time_subset(dset)
             self.dataset = dset
             return dset
 
