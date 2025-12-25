@@ -36,4 +36,20 @@
          <loc>https://Kaushikreddym.github.io/climdata/usage/</loc>
          <lastmod>2025-12-25</lastmod>
     </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/examples/climdata_cli/</loc>
+         <lastmod>2025-12-25</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/examples/extremes/</loc>
+         <lastmod>2025-12-25</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/examples/wrapper/</loc>
+         <lastmod>2025-12-25</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/examples/wrapper_workflow/</loc>
+         <lastmod>2025-12-25</lastmod>
+    </url>
 </urlset>
