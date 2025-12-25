@@ -74,8 +74,6 @@ nav:
     - Changelog: changelog.md
     - Report Issues: https://github.com/Kaushikreddym/climdata/issues
     - Examples:
-        - Workflow Notebook: examples/wrapper_workflow.ipynb
+        - Workflow Notebook: ../examples/wrapper_workflow.ipynb
     - API Reference:
-        # - climdata package: climdata   # points to top-level package, not climdata.climdata
-        - workflow module: climdata.ClimData
-        - datasets module: climdata.datasets
+        - Reference: api.md
