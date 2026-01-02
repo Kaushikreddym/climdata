@@ -9,16 +9,18 @@ copyright: "Copyright &copy; 2024 - 2024 Kaushik Muduchuru"
 theme:
     palette:
         - scheme: default
-          toggle:
-              icon: material/toggle-switch-off-outline
-              name: Switch to dark mode
-        - scheme: slate
-          primary: indigo
-          accent: indigo
-          toggle:
-              icon: material/toggle-switch
-              name: Switch to light mode
+          primary: light green
+        #   toggle:
+        #       icon: material/toggle-switch-off-outline
+        #       name: Switch to dark mode
+        # - scheme: slate
+        #   primary: light green
+        #   accent: indigo
+        #   toggle:
+        #       icon: material/toggle-switch
+        #       name: Switch to light mode
     name: material
+    logo: assets/climdata_logo.png
     icon:
         repo: fontawesome/brands/github
     custom_dir: "docs/overrides"
@@ -31,14 +33,17 @@ theme:
         - navigation.top
         - search.highlight
         - search.share
+    extra_css:
+    - overrides/assets.css
 
 plugins:
     - search
     - mkdocstrings:
-          handlers:
-              python:
-                  options:
-                      show_root_heading: true
+        handlers:
+            python:
+                docstring_style: numpy
+                options:
+                    show_root_heading: true
     - git-revision-date
     - git-revision-date-localized:
           enable_creation_date: true
@@ -69,9 +74,9 @@ nav:
     - Home: index.md
     - Installation: installation.md
     - Usage: usage.md
-    - Contributing: contributing.md
-    - FAQ: faq.md
-    - Changelog: changelog.md
+    # - Contributing: contributing.md
+    # - FAQ: faq.md
+    # - Changelog: changelog.md
     - Report Issues: https://github.com/Kaushikreddym/climdata/issues
     - Examples:
         - Workflow Notebook: examples/wrapper_workflow.ipynb

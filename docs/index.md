@@ -3,10 +3,12 @@
 
 
 [![image](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
-[![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata)
+<!-- [![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata) -->
 
 # ClimData — Quickstart & Overview
-
+<p align="center">
+  <img src="assets/climdata_logo.png" alt="ClimData Logo" class="page-logo" width="200">
+</p>
 ClimData provides a unified interface for extracting climate data from multiple providers (MSWX, CMIP, POWER, DWD, HYRAS), computing extreme indices, and converting results to tabular form. The ClimData (or ClimateExtractor) class is central: it manages configuration, extraction, index computation, and common I/O.
 
 ## Key features
