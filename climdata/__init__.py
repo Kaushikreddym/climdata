@@ -2,7 +2,7 @@
 
 __author__ = """Kaushik Muduchuru"""
 __email__ = "kaushik.reddy.m@gmail.com"
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 
 from .utils.utils_download import * # etc.
 from .utils.config import load_config
