@@ -66,9 +66,49 @@ def update_df(attr_name=None):
 # ClimateExtractor Class
 # ----------------------------
 class ClimateExtractor:
-    """Climate data extraction & extreme index workflow manager."""
+    """
+    Climate data extraction and extreme-index workflow manager.
+
+    This class provides a high-level API for:
+      - loading/configuring dataset providers via Hydra config,
+      - uploading NetCDF/CSV content into xarray Datasets,
+      - extracting data from supported providers (CMIP, DWD, MSWX, HYRAS, POWER),
+      - computing extreme indices using configured xclim indices,
+      - converting datasets to long-form DataFrames and saving results.
+
+    Attributes
+    ----------
+    cfg : DictConfig
+        Hydra configuration object describing dataset, region/time/variables, outputs.
+    current_ds : xr.Dataset
+        The most recently loaded or extracted dataset.
+    current_df : pd.DataFrame
+        The most recently produced long-form DataFrame.
+    filename_csv / filename_nc / filename_zarr : str
+        Generated output filename templates/paths.
+
+    Example
+    -------
+    extractor = ClimateExtractor(overrides=['dataset=cmip', 'region=europe'])
+    extractor.extract()
+    idx_ds = extractor.calc_index()
+    df = extractor.to_dataframe(idx_ds)
+    extractor.to_csv(df)
+    """
 
     def __init__(self, cfg_name="config", conf_path=None, overrides: Optional[List[str]] = None):
+        """
+        Initialize the workflow manager and load configuration.
+
+        Parameters
+        ----------
+        cfg_name : str
+            Name of the Hydra configuration (default: "config").
+        conf_path : str, optional
+            Optional config path override (not commonly used).
+        overrides : list[str], optional
+            Hydra overrides to apply to the configuration.
+        """
         self.cfg_name = cfg_name
         self.conf_path = conf_path
         self.cfg: Optional[DictConfig] = None
@@ -266,6 +306,19 @@ class ClimateExtractor:
     # Hydra config
     # ----------------------------
     def load_config(self, overrides: Optional[List[str]] = None) -> DictConfig:
+        """
+        Load and compose the Hydra configuration.
+
+        Parameters
+        ----------
+        overrides : list[str], optional
+            Hydra overrides to apply when composing the configuration.
+
+        Returns
+        -------
+        DictConfig
+            Composed Hydra configuration object and stored on `self.cfg`.
+        """
         overrides = overrides or []
         conf_dir = _ensure_local_conf()
         rel_conf_dir = os.path.relpath(conf_dir, os.path.dirname(__file__))
@@ -286,6 +339,24 @@ class ClimateExtractor:
     # AOI preprocessing
     # ----------------------------
     def preprocess_aoi(self, cfg: DictConfig) -> DictConfig:
+        """
+        Process an 'aoi' specification in the configuration.
+
+        Supports GeoJSON strings or dictionaries for FeatureCollection, Feature,
+        or simple geometry objects (Point/Polygon). When a Point is provided,
+        `cfg.lat` and `cfg.lon` are set. When a Polygon is provided, `cfg.bounds`
+        is set and `cfg.region` is set to "custom".
+
+        Parameters
+        ----------
+        cfg : DictConfig
+            Configuration object with optional `aoi` entry.
+
+        Returns
+        -------
+        DictConfig
+            The modified configuration.
+        """
         if not hasattr(cfg, "aoi") or cfg.aoi is None:
             return cfg
 
@@ -327,6 +398,19 @@ class ClimateExtractor:
     # ----------------------------
     @update_ds(attr_name='ds')
     def upload_netcdf(self, nc_file: str) -> xr.Dataset:
+        """
+        Load a NetCDF file into an xarray.Dataset and update file metadata.
+
+        Parameters
+        ----------
+        nc_file : str
+            Path to the NetCDF file to open.
+
+        Returns
+        -------
+        xr.Dataset
+            The loaded dataset (also sets `self.current_ds`).
+        """
         if not os.path.exists(nc_file):
             raise FileNotFoundError(f"{nc_file} does not exist")
 
@@ -346,6 +430,22 @@ class ClimateExtractor:
     # ----------------------------
     @update_ds(attr_name='ds')
     def upload_csv(self, csv_file: str) -> xr.Dataset:
+        """
+        Load a long-form CSV into an xarray.Dataset.
+
+        CSV must contain `time` and `lat`/`latitude`, `lon`/`longitude`, `variable`, `value`.
+        Units may be supplied in a `units` column and an optional `source` column is recognised.
+
+        Parameters
+        ----------
+        csv_file : str
+            Path to the CSV file to load.
+
+        Returns
+        -------
+        xr.Dataset
+            The converted dataset (also sets `self.current_ds`).
+        """
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"{csv_file} does not exist")
 
@@ -384,6 +484,19 @@ class ClimateExtractor:
     # ----------------------------
     @update_ds(attr_name='ds')
     def extract(self) -> xr.Dataset:
+        """
+        Extract data from the configured provider using `self.cfg`.
+
+        Uses provider-specific classes (e.g., `CMIP`, `DWD`, `MSWX`, `HYRAS`, `POWER`)
+        to fetch, load and extract datasets. When extraction completes, units are
+        converted to those declared in `cfg.varinfo`, the dataset is computed,
+        and filenames are generated from the configuration.
+
+        Returns
+        -------
+        xr.Dataset
+            The extracted and computed dataset (also sets `self.current_ds`).
+        """
         cfg = self.cfg
         extract_kwargs = {}
 
@@ -450,6 +563,19 @@ class ClimateExtractor:
     # ----------------------------
     @update_ds(attr_name='index_ds')
     def calc_index(self, ds: xr.Dataset = None) -> xr.Dataset:
+        """
+        Calculate the configured extreme index using xclim indices.
+
+        Parameters
+        ----------
+        ds : xr.Dataset, optional
+            Dataset to operate on. If None, `self.current_ds` is used.
+
+        Returns
+        -------
+        xr.Dataset
+            The computed index as an xarray Dataset (also sets `self.index_ds`).
+        """
         cfg = self.cfg
 
         # Use provided ds or fallback
@@ -479,6 +605,22 @@ class ClimateExtractor:
     # ----------------------------
     @update_df()
     def to_dataframe(self, ds: xr.Dataset = None) -> pd.DataFrame:
+        """
+        Convert a dataset to a long-form pandas DataFrame.
+
+        The output contains columns: time, lat, lon (or latitude/longitude),
+        variable, value, units, source.
+
+        Parameters
+        ----------
+        ds : xr.Dataset, optional
+            Dataset to convert. If None, uses `self.current_ds`.
+
+        Returns
+        -------
+        pd.DataFrame
+            Long-form DataFrame (also sets `self.current_df`).
+        """
         ds = ds or self.current_ds
         if ds is None:
             raise ValueError("No dataset provided and no current_ds is available.")
@@ -509,6 +651,21 @@ class ClimateExtractor:
     # Save CSV
     # ----------------------------
     def to_csv(self, df: Optional[pd.DataFrame] = None, filename: Optional[str] = None) -> str:
+        """
+        Save a DataFrame to CSV.
+
+        Parameters
+        ----------
+        df : pd.DataFrame, optional
+            DataFrame to save. Defaults to `self.current_df`.
+        filename : str, optional
+            Output filename. Defaults to `self.filename_csv`.
+
+        Returns
+        -------
+        str
+            The path of the written CSV file.
+        """
         df = df if df is not None else self.current_df
 
         filename = filename or getattr(self, "filename_csv", None)
@@ -533,6 +690,18 @@ class ClimateExtractor:
         - If filename is None: use self.filename_nc.
         - Creates directories if needed.
         - Updates self.filename_nc and self.current_filename.
+
+        Parameters
+        ----------
+        ds : xr.Dataset, optional
+            Dataset to save. If None, uses `self.current_ds`.
+        filename : str, optional
+            Output filename. Defaults to `self.filename_nc`.
+
+        Returns
+        -------
+        str
+            The path of the written NetCDF file.
         """
 
         # -------------------------------
@@ -573,7 +742,25 @@ class ClimateExtractor:
     def run_workflow(self, overrides: Optional[List[str]] = None,
                      actions: Optional[List[str]] = None,
                      file: Optional[str] = None) -> WorkflowResult:
+        """
+        Execute a sequence of workflow actions.
 
+        Parameters
+        ----------
+        overrides : list[str], optional
+            Hydra overrides to apply (not all actions will use these).
+        actions : list[str], optional
+            Ordered list of actions to perform. Supported actions include:
+            'upload_netcdf', 'upload_csv', 'extract', 'calc_index',
+            'to_dataframe', 'to_csv', 'to_nc'.
+        file : str, optional
+            File path used for upload actions when required.
+
+        Returns
+        -------
+        WorkflowResult
+            Named result container with populated fields for dataframe/dataset/filenames.
+        """
         actions = actions or ["extract", "compute_index", "to_dataframe", "to_csv", "to_nc"]
         result = WorkflowResult(cfg=self.cfg)
         for action in actions:
@@ -664,11 +851,27 @@ class ClimateExtractor:
     # Exploration helpers using cfg.dsinfo
     # ----------------------------
     def get_datasets(self) -> List[str]:
+        """
+        Return the list of dataset provider names available in configuration.
+        """
         if not self.cfg or not hasattr(self.cfg, "dsinfo"):
             raise ValueError("Configuration or dsinfo not loaded")
         return list(self.cfg.dsinfo.keys())
 
     def get_variables(self, dataset: Optional[str] = None) -> List[str]:
+        """
+        Return the list of variables available for a dataset.
+
+        Parameters
+        ----------
+        dataset : str, optional
+            Dataset name to query. Defaults to `cfg.dataset`.
+
+        Returns
+        -------
+        List[str]
+            List of variable names.
+        """
         if not self.cfg or not hasattr(self.cfg, "dsinfo"):
             raise ValueError("Configuration or dsinfo not loaded")
 
@@ -728,22 +931,20 @@ class ClimateExtractor:
         return actions_map
     def get_indices(self, variables: List[str], require_all: bool = True) -> Dict[str, dict]:
         """
-        Fetch climate extreme indices from cfg.extinfo that involve the given variables.
+        Fetch climate extreme indices from `cfg.extinfo` that involve the given variables.
 
         Parameters
         ----------
-        cfg : DictConfig
-            Configuration object containing 'extinfo' which has the indices definitions.
-        variables : List[str]
-            List of variable names to filter indices by (e.g., ['pr', 'tasmin']).
-        require_all : bool, default False
-            If True, only return indices where all required variables are present in `variables`.
-            If False, return indices if any variable matches.
+        variables : list[str]
+            Variables to filter indices by (if None, uses `cfg.variables`).
+        require_all : bool
+            If True, return indices that require all provided variables; otherwise
+            return indices if any variable matches.
 
         Returns
         -------
-        Dict[str, dict]
-            Dictionary of indices matching the provided variables.
+        dict
+            Mapping index_name -> index_definition.
         """
         cfg = self.cfg
         variables = variables or cfg.variables 

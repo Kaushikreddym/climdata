@@ -1,8 +1,8 @@
 # API Reference
 
-::: climdata
+<!-- ::: climdata
     options:
-        show_root_heading: true
+        show_root_heading: true -->
 
 ::: climdata.ClimData
 

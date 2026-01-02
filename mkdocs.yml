@@ -1,5 +1,5 @@
 site_name: climdata
-site_description: This project automates the fetching and extraction of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.
+site_description: This project automates the fetching, extraction and processing of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.
 site_author: Kaushikreddym
 site_url: https://Kaushikreddym.github.io/climdata
 repo_url: https://github.com/Kaushikreddym/climdata
@@ -76,4 +76,4 @@ nav:
     - Examples:
         - Workflow Notebook: examples/wrapper_workflow.ipynb
     - API Reference:
-        - Reference: api.md
+        - Workflow Reference: api.md
