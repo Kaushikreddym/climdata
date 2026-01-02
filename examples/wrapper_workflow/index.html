@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="This project automates the fetching and extraction of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.">
+        <meta name="description" content="This project automates the fetching, extraction and processing of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.">
       
       
         <meta name="author" content="Kaushikreddym">
@@ -608,7 +608,7 @@
   <span class="md-ellipsis">
     
   
-    Reference
+    Workflow Reference
   
 
     
@@ -1110,7 +1110,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </style>
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=44c79d9e">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=171f1e48">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1143,7 +1143,7 @@ Includes examples for point-based and box-based extraction, variable exploration
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=d074e21c">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=2a362b21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1174,7 +1174,7 @@ import xarray as xr</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f3fe17dd">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ef2ab463">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1185,7 +1185,7 @@ import xarray as xr</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=3901d54a">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=912c67b0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1229,7 +1229,7 @@ print(datasets)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f515478f">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=44b807e5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1240,7 +1240,7 @@ print(datasets)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b43c1298">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=8f9a95ca">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1282,7 +1282,7 @@ print(variables)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=2b655564">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b2b4400c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1293,7 +1293,7 @@ print(variables)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d5983eaf">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=b1af4bc8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1335,7 +1335,7 @@ print(varinfo)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=96dac456">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b96275c0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1346,7 +1346,7 @@ print(varinfo)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0485f7b1">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=fc5cd6fc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1436,7 +1436,7 @@ print(indices.keys())
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d0581b51">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=63a06d96">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1447,7 +1447,7 @@ print(indices.keys())
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=c5a52ed8">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=04c2bf05">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1799,7 +1799,7 @@ DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=94b99da9">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3fd592ce">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1810,7 +1810,7 @@ DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=277b3d12">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=3c542868">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1852,7 +1852,7 @@ DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b74d2a41">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=f6826378">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1863,7 +1863,7 @@ DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e9034848">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=59d6f4b7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2105,7 +2105,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=33d8a458">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cd21954d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2116,7 +2116,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=4345a538">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=04d53348">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2241,7 +2241,7 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=71361bd1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a8c171cf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2252,7 +2252,7 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=128b9551">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=94dd42ec">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
