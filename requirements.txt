@@ -20,7 +20,7 @@ ipyleaflet
 wetterdienst
 pint-pandas
 cdsapi
-imputegap
+# imputegap
 
 # Workflow + config
 hydra-core
