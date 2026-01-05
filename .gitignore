@@ -110,3 +110,5 @@ outputs
 *.csv
 *.zarr
 *.nc
+
+usecase/*
