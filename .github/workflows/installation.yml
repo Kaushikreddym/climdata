@@ -20,11 +20,19 @@ jobs:
 
         steps:
             - uses: actions/checkout@v4
+            - name: Free disk space
+              run: |
+                sudo rm -rf /usr/share/dotnet
+                sudo rm -rf /usr/local/lib/android
+                sudo rm -rf /opt/ghc
+                sudo apt-get clean
             - name: Set up Python
               uses: actions/setup-python@v5
               with:
                   python-version: ${{ matrix.python-version }}
-
+            - name: Install PyTorch (CPU only)
+              run: |
+                  pip install torch --index-url https://download.pytorch.org/whl/cpu
             - name: Install package
               run: pip install .
             - name: Test import
