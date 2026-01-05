@@ -52,7 +52,7 @@ jobs:
           pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
           pip install torch-cluster \
             --no-build-isolation \
-            -f https://data.pyg.org/whl/torch-2.3.1.html
+            -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
           pip install -r requirements.txt
           pip install . --no-build-isolation
 
