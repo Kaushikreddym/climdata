@@ -1,0 +1,37 @@
+/* Resize top header logo */
+.md-header__inner .md-header-nav__title img {
+    max_height: 220px;   /* adjust as needed */
+    width: auto;    /* maintain aspect ratio */
+    vertical-align: middle;
+}
+
+/* Responsive: smaller logo on small screens */
+@media screen and (max-width: 768px) {
+    .md-header__inner .md-header-nav__title img {
+        height: 50px;
+    }
+}
+
+.page-logo {
+    display: block;     /* makes it a block element */
+    margin-left: auto;  /* horizontal center */
+    margin-right: auto; /* horizontal center */
+    max-width: 80%;     /* responsive scaling */
+    height: auto;       /* maintain aspect ratio */
+}
+
+@media screen and (min-width: 1024px) {
+    .page-logo {
+        max-width: 200px;  /* fixed max width on large screens */
+    }
+}
+
+/* Optional: style parameter tables */
+.md-typeset table {
+    border-collapse: collapse;
+}
+
+.md-typeset th, .md-typeset td {
+    border: 1px solid #ddd;
+    padding: 0.5em;
+}
