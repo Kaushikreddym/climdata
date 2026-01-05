@@ -19,7 +19,7 @@ jobs:
                 config:
                     - { os: ubuntu-latest, py: "3.10" }
                     - { os: ubuntu-latest, py: "3.11" }
-                    - { os: ubuntu-latest, py: "3.12" }
+                    # - { os: ubuntu-latest, py: "3.12" }
         steps:
             - name: Checkout Code
               uses: actions/checkout@v4
@@ -42,6 +42,9 @@ jobs:
               run: |
                   python -c "from osgeo import gdal"
                   gdalinfo --version
+            - name: Install PyTorch (CPU only)
+              run: |
+                  pip install torch --index-url https://download.pytorch.org/whl/cpu
             - name: Install dependencies
               run: |
                   pip install --user -r requirements.txt

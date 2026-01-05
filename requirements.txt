@@ -11,8 +11,8 @@ dask[complete]
 xclim
 cartopy
 colormaps
-h5netcdf
-netCDF4
+# h5netcdf
+# netCDF4
 pymannkendall
 tqdm
 zarr
@@ -20,7 +20,6 @@ ipyleaflet
 wetterdienst
 pint-pandas
 cdsapi
-torch
 imputegap
 
 # Workflow + config
