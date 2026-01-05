@@ -46,24 +46,13 @@ jobs:
           python -c "from osgeo import gdal"
           gdalinfo --version
 
-    #   - name: Install PyTorch (CPU only)
-    #     run: |
-    #       pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-    #   - name: Install torch-cluster (PyG wheel)
-    #     run: |
-    #       TORCH_VERSION=$(python - << 'EOF'
-    #       import torch
-    #       print(torch.__version__.split('+')[0])
-    #       EOF
-    #       )
-    #       pip install torch-cluster -f https://data.pyg.org/whl/torch-$TORCH_VERSION.html
-
       - name: Install dependencies + package
         run: |
           pip install numpy
           pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
-          pip install torch-cluster -f https://data.pyg.org/whl/torch-2.3.1.html
+          pip install torch-cluster \
+            --no-build-isolation \
+            -f https://data.pyg.org/whl/torch-2.3.1.html
           pip install -r requirements.txt
           pip install . --no-build-isolation
 
