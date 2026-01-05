@@ -7,6 +7,7 @@ import warnings
 warnings.filterwarnings("default")
 from dataclasses import dataclass
 from typing import Optional, List, Dict
+from functools import wraps
 
 import xclim
 import climdata
@@ -37,6 +38,7 @@ class WorkflowResult:
 
 def update_ds(attr_name=None):
     def decorator(func):
+        @wraps(func)
         def wrapper(self, *args, **kwargs):
             ds = func(self, *args, **kwargs)
             if ds is not None:
@@ -52,6 +54,7 @@ def update_df(attr_name=None):
     and optionally store it in a named attribute.
     """
     def decorator(func):
+        @wraps(func)
         def wrapper(self, *args, **kwargs):
             df = func(self, *args, **kwargs)
             if df is not None:
