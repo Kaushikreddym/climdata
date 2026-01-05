@@ -1,14 +1,11 @@
 # Core scientific stack
-xarray
-xesmf
-ipython
-jupyter
+# ipython
+# jupyter
 openpyxl
 pandas
 geopandas
 rioxarray
 dask[complete]
-xclim
 cartopy
 colormaps
 # h5netcdf
@@ -16,7 +13,7 @@ colormaps
 pymannkendall
 tqdm
 zarr
-ipyleaflet
+# ipyleaflet
 wetterdienst
 pint-pandas
 cdsapi
@@ -24,8 +21,6 @@ cdsapi
 
 # Workflow + config
 hydra-core
-intake
-intake-esm
 aiohttp
 requests
 gcsfs
@@ -35,6 +30,10 @@ seaborn
 # Earth Engine / remote sensing
 earthengine-api
 geemap
+xarray
+xesmf
+intake
+intake-esm
 
 # Climate/statistics packages
 xsdba 
@@ -53,4 +52,4 @@ gitpython
 beautifulsoup4
 google-auth
 google-api-python-client
-ipdb
+# ipdb

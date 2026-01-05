@@ -65,7 +65,7 @@ class Imputer:
         n_var, t, n_lat, n_lon = data.shape
 
         self.shape_info = {
-            "variables": da.variable.values,
+            "variables": np.array(self.variables, dtype=object),
             self.time_dim: self.ds[self.time_dim].values,
             self.lat_dim: self.ds[self.lat_dim].values,
             self.lon_dim: self.ds[self.lon_dim].values,
@@ -97,6 +97,7 @@ class Imputer:
         n_lat = self.shape_info["n_lat"]
         n_lon = self.shape_info["n_lon"]
 
+        # rebuild 4D array to (variable, time, lat, lon)
         data_4d = data_2d.reshape(
             n_var,
             n_lat,
@@ -105,15 +106,38 @@ class Imputer:
         ).transpose(0, 3, 1, 2)
         # (variable, time, lat, lon)
 
+        # --- sanitize coords (ensure 1-D arrays and correct lengths) ---
+        # helper to coerce to 1D and validate length
+        def _safe_coord(key, expected_len, fallback_range=True):
+            val = self.shape_info.get(key, None)
+            val = np.asarray(val) if val is not None else None
+            if val is None:
+                return np.arange(expected_len) if fallback_range else None
+            # flatten to 1D if possible
+            if val.ndim != 1 or len(val) != expected_len:
+                # try ravel() then trim / pad if needed
+                val = val.ravel()
+                if len(val) >= expected_len:
+                    return val[:expected_len]
+                else:
+                    # fallback to integer index
+                    return np.arange(expected_len)
+            return val
+
+        variable_coord = _safe_coord("variables", n_var)
+        time_coord = _safe_coord(self.time_dim, data_4d.shape[1])
+        lat_coord = _safe_coord(self.lat_dim, n_lat)
+        lon_coord = _safe_coord(self.lon_dim, n_lon)
+
         da = xr.DataArray(
             data_4d,
             dims=("variable", self.time_dim, self.lat_dim, self.lon_dim),
-            coords={
-                "variable": self.shape_info["variables"],
-                self.time_dim: self.shape_info[self.time_dim],
-                self.lat_dim: self.shape_info[self.lat_dim],
-                self.lon_dim: self.shape_info[self.lon_dim],
-            },
+            coords=(
+                ("variable", np.asarray(variable_coord).astype(str)),
+                (self.time_dim, time_coord),
+                (self.lat_dim, lat_coord),
+                (self.lon_dim, lon_coord),
+            ),
             attrs=self.attrs,
         )
 
@@ -130,12 +154,14 @@ class Imputer:
         self._to_timeseries()
 
         data = self.ts.data
-
+        print(data.shape)
         if self.method == "BRITS":
             imputer = Imputation.DeepLearning.BRITS(data)
             imputer.epochs = epochs
         elif self.method == "SoftImpute":
             imputer = Imputation.MatrixCompletion.SoftImpute(data)
+        elif self.method == "CDRec":
+            imputer = Imputation.MatrixCompletion.CDRec(data)
         else:
             raise ValueError(f"Unknown method: {self.method}")
 
