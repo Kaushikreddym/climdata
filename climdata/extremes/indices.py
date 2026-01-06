@@ -33,7 +33,7 @@ class extreme_index:
             for var_name, link_cfg in index_cfg.link.items():
                 # --- External function call ---
                 if "function_call" in link_cfg:
-                    print(type(self.climate_data))
+                    
                     inputs = [self.climate_data[name] for name in link_cfg["inputs"]]
                     module_path, func_name = link_cfg["function_call"].rsplit(".", 1)
                     func = getattr(importlib.import_module(module_path), func_name)

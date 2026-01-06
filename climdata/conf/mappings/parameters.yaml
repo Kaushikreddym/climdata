@@ -136,6 +136,8 @@ mswx:
       name: wind_speed
       folder_id: 1ZaL1-1SitnlovSdnYdbNecC0dnlN3Qou
 hyras:
+  lat_dim: y
+  lon_dim: x
   variables:
     tasmin:
       name: tasmin

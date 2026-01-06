@@ -14,12 +14,15 @@ import climdata
 from climdata.utils.config import _ensure_local_conf
 from climdata.utils.utils_download import get_output_filename
 from climdata.extremes.indices import extreme_index
-
+from climdata.impute.impute_xarray import Imputer
+    
 from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig
 from shapely.geometry import shape, Polygon, Point
+import logging
 
+logger = logging.getLogger(__name__)
 
 # ----------------------------
 # Dataclass for workflow result
@@ -32,6 +35,8 @@ class WorkflowResult:
     filename: Optional[str] = None
     index_ds: Optional[xr.Dataset] = None
     index_filename: Optional[str] = None
+    impute_ds: Optional[xr.Dataset] = None
+    impute_filename: Optional[str] = None
 
     def keys(self):
         return [k for k, v in self.__dict__.items() if v is not None]
@@ -45,6 +50,9 @@ def update_ds(attr_name=None):
                 self.current_ds = ds
                 if attr_name:
                     setattr(self, attr_name, ds)
+                # log update
+                log = getattr(self, "logger", logger)
+                log.debug(f"Dataset updated by {func.__name__}; attr_name={attr_name}")
             return ds
         return wrapper
     return decorator
@@ -59,9 +67,11 @@ def update_df(attr_name=None):
             df = func(self, *args, **kwargs)
             if df is not None:
                 self.current_df = df
-                self.df = df  # keep alias for convenience
+                self.df = df
                 if attr_name:
                     setattr(self, attr_name, df)
+                log = getattr(self, "logger", logger)
+                log.debug(f"DataFrame updated by {func.__name__}; attr_name={attr_name}")
             return df
         return wrapper
     return decorator
@@ -138,6 +148,9 @@ class ClimateExtractor:
         # Automatically load config on init
         self.load_config(overrides)
         self.cfg = self.preprocess_aoi(self.cfg)
+
+        # instance logger for this extractor
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
     def _gen_fn(self, ds: xr.Dataset):
         """
         Create filenames (csv, nc, zarr) using config templates and dataset metadata.
@@ -587,7 +600,7 @@ class ClimateExtractor:
             raise ValueError("No dataset provided and no current_ds is available.")
 
         if cfg.index is None:
-            print("No index selected.")
+            self.logger.info("No index selected.")
             return None
 
         if "time" in ds.coords:
@@ -682,7 +695,8 @@ class ClimateExtractor:
         self.filename_csv = str(path)
         self.current_filename = str(path)
         
-        print(f"DataFrame saved to CSV file: {self.current_filename}")
+        # print(f"DataFrame saved to CSV file: {self.current_filename}")
+        self.logger.info(f"DataFrame saved to CSV file: {self.current_filename}")
 
         return filename
     
@@ -735,8 +749,9 @@ class ClimateExtractor:
         self.filename_nc = str(path)
         self.current_filename = str(path)
         
-        print(f"Dataset saved to NetCDF file: {self.current_filename}")
-        
+        # print(f"Dataset saved to NetCDF file: {self.current_filename}")
+        self.logger.info(f"Dataset saved to NetCDF file: {self.current_filename}")
+
         return str(path)
 
     # ----------------------------
@@ -767,86 +782,98 @@ class ClimateExtractor:
         actions = actions or ["extract", "compute_index", "to_dataframe", "to_csv", "to_nc"]
         result = WorkflowResult(cfg=self.cfg)
         for action in actions:
-        
-            if action == "upload_netcdf":
-                if file is None:
-                    raise ValueError(
-                        "Action 'upload_netcdf' requires argument 'netcdf_file', "
-                        "but none was provided."
-                    )
-                    # Validate extension
-                valid_nc_ext = (".nc", ".nc4", ".nc.gz")
-                if not any(str(file).lower().endswith(ext) for ext in valid_nc_ext):
-                    raise ValueError(
-                        f"Invalid file format for upload_netcdf: '{file}'. "
-                        f"Expected one of: {valid_nc_ext}"
-                    )
-                self.upload_netcdf(file)
-                result.dataset = self.current_ds
+            self.logger.info("Starting action: %s", action)
+            try:
+                if action == "upload_netcdf":
+                    if file is None:
+                        raise ValueError(
+                            "Action 'upload_netcdf' requires argument 'netcdf_file', "
+                            "but none was provided."
+                        )
+                        # Validate extension
+                    valid_nc_ext = (".nc", ".nc4", ".nc.gz")
+                    if not any(str(file).lower().endswith(ext) for ext in valid_nc_ext):
+                        raise ValueError(
+                            f"Invalid file format for upload_netcdf: '{file}'. "
+                            f"Expected one of: {valid_nc_ext}"
+                        )
+                    self.upload_netcdf(file)
+                    result.dataset = self.current_ds
 
-            elif action == "upload_csv":
-                if file is None:
-                    raise ValueError(
-                        "Action 'upload_csv' requires argument 'csv_file', "
-                        "but none was provided."
-                    )
+                elif action == "upload_csv":
+                    if file is None:
+                        raise ValueError(
+                            "Action 'upload_csv' requires argument 'csv_file', "
+                            "but none was provided."
+                        )
 
-                # Validate CSV extension
-                valid_csv_ext = (".csv", ".csv.gz")
-                if not any(str(file).lower().endswith(ext) for ext in valid_csv_ext):
-                    raise ValueError(
-                        f"Invalid file format for upload_csv: '{file}'. "
-                        f"Expected one of: {valid_csv_ext}"
-                    )
+                    # Validate CSV extension
+                    valid_csv_ext = (".csv", ".csv.gz")
+                    if not any(str(file).lower().endswith(ext) for ext in valid_csv_ext):
+                        raise ValueError(
+                            f"Invalid file format for upload_csv: '{file}'. "
+                            f"Expected one of: {valid_csv_ext}"
+                        )
 
-                self.upload_csv(file)
-                result.dataset = self.current_ds
+                    self.upload_csv(file)
+                    result.dataset = self.current_ds
 
-            elif action == "extract":
-                if self.cfg.dataset is None:
-                    raise ValueError(
-                        "Action 'extract' cannot run because no dataset provider is set "
-                        "(cfg.dataset is None)."
-                    )
-                self.extract()
-                result.dataset = self.current_ds
+                elif action == "extract":
+                    if self.cfg.dataset is None:
+                        raise ValueError(
+                            "Action 'extract' cannot run because no dataset provider is set "
+                            "(cfg.dataset is None)."
+                        )
+                    self.extract()
+                    result.dataset = self.current_ds
 
-            elif action == "calc_index":
-                if self.current_ds is None:
-                    raise ValueError(
-                        "Action 'calc_index' requires a dataset, but no dataset is available. "
-                        "Upload or extract a dataset before computing an index."
-                    )
-                self.calc_index()
-                result.index_ds = self.current_ds
+                elif action == "calc_index":
+                    if self.current_ds is None:
+                        raise ValueError(
+                            "Action 'calc_index' requires a dataset, but no dataset is available. "
+                            "Upload or extract a dataset before computing an index."
+                        )
+                    self.calc_index()
+                    result.index_ds = self.current_ds
 
-            elif action == "to_dataframe":
-                if self.current_ds is None:
-                    raise ValueError(
-                        "Action 'to_dataframe' requires a dataset, but no dataset is available. "
-                        "Upload or extract a dataset before converting to a DataFrame."
-                    )
-                self.to_dataframe()
-                result.dataframe = self.current_df
+                elif action == "to_dataframe":
+                    if self.current_ds is None:
+                        raise ValueError(
+                            "Action 'to_dataframe' requires a dataset, but no dataset is available. "
+                            "Upload or extract a dataset before converting to a DataFrame."
+                        )
+                    self.to_dataframe()
+                    result.dataframe = self.current_df
 
-            elif action == "to_csv":
-                if self.current_df is None:
-                    raise ValueError(
-                        "Action 'to_csv' requires a DataFrame, but no DataFrame is available. "
-                        "Use 'to_dataframe' or upload a CSV before saving."
-                    )
-                result.filename = self.to_csv()
+                elif action == "to_csv":
+                    if self.current_df is None:
+                        raise ValueError(
+                            "Action 'to_csv' requires a DataFrame, but no DataFrame is available. "
+                            "Use 'to_dataframe' or upload a CSV before saving."
+                        )
+                    result.filename = self.to_csv()
 
-            elif action == "to_nc":
-                if self.current_ds is None:
-                    raise ValueError(
-                        "Action 'to_nc' requires a dataset, but no dataset is available. "
-                        "Upload or extract a dataset before saving to NetCDF."
-                    )
-                result.filename = self.to_nc()
+                elif action == "to_nc":
+                    if self.current_ds is None:
+                        raise ValueError(
+                            "Action 'to_nc' requires a dataset, but no dataset is available. "
+                            "Upload or extract a dataset before saving to NetCDF."
+                        )
+                    result.filename = self.to_nc()
 
-            else:
-                raise ValueError(f"Unknown action '{action}'")
+                elif action == "impute":
+                    if self.current_ds is None:
+                        raise ValueError("Action 'impute' requires a dataset, but no dataset is available.")
+                    self.impute()
+                    result.dataset = self.current_ds
+                    result.impute_ds = getattr(self, "impute_ds", None)
+
+                else:
+                    raise ValueError(f"Unknown action '{action}'")
+                self.logger.info("Completed action: %s", action)
+            except Exception:
+                self.logger.exception("Action '%s' failed", action)
+                raise
 
         return result
 
@@ -969,3 +996,82 @@ class ClimateExtractor:
                     matched_indices[idx_name] = idx_info
 
         return matched_indices
+
+    # ----------------------------
+    # Imputation
+    # ----------------------------
+    @update_ds(attr_name='impute_ds')
+    def impute(self, ds: xr.Dataset = None) -> xr.Dataset:
+        """
+        Impute missing values using `self.cfg.impute` or `impute_cfg`.
+
+        Returns:
+            xr.Dataset: imputed dataset (also sets `self.current_ds` and `self.impute_ds`)
+        """
+        cfg = self.cfg
+        impute_cfg = cfg.imputeinfo
+        ds = ds or self.current_ds
+        if ds is None:
+            raise ValueError("No dataset provided and no current_ds is available.")
+
+        if cfg.impute is None:
+            self.logger.warning("No imputation method selected.")
+            return None
+        # select variables (optional)
+        # variables = cfg.get("variables", None)
+        # if variables:
+        #     missing = [v for v in variables if v not in self.current_ds.data_vars]
+        #     if missing:
+        #         raise ValueError(f"Variables not present in dataset: {missing}")
+        #     ds_in = self.current_ds[variables]
+        # else:
+        #     ds_in = self.current_ds
+
+        method = cfg.impute
+        normalize = impute_cfg[method].get("normalize", True)
+        time_dim = cfg.dsinfo[cfg.dataset].get("time_dim", "time")
+        lat_dim = cfg.dsinfo[cfg.dataset].get("lat_dim", "lat")
+        lon_dim = cfg.dsinfo[cfg.dataset].get("lon_dim", "lon")
+        # epochs = impute_cfg[method].get("epochs", 300)
+
+        # run imputer (Imputer expects dims (time, lat, lon))
+        imputer = Imputer(
+            ds,
+            time_dim=time_dim,
+            lat_dim=lat_dim,
+            lon_dim=lon_dim,
+            method=method,
+            normalize=normalize,
+        )
+        recovered = imputer.impute()
+
+        # merge imputed variables back into original dataset if we operated on a subset
+
+        ds_out = recovered
+
+        # update filenames (if desired) and return dataset (decorator will set current_ds and impute_ds)
+        self._gen_fn_cfg()
+        return ds_out
+
+    def get_impute_methods(self) -> Dict[str, dict]:
+        """
+        Return mapping of available imputation methods from config (cfg.imputeinfo).
+        Returns empty dict if none configured.
+        """
+        if not hasattr(self.cfg, "imputeinfo") or not self.cfg.imputeinfo:
+            return {}
+        return dict(self.cfg.imputeinfo)
+    
+    def configure_logging(self, level=logging.INFO, handler: logging.Handler = None):
+        """
+        Configure logging for this extractor instance.
+        """
+        if handler is None:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+        # Avoid adding duplicate handlers
+        if not any(isinstance(h, handler.__class__) for h in self.logger.handlers):
+            self.logger.addHandler(handler)
+        self.logger.setLevel(level)
+        # also set module logger level
+        logger.setLevel(level)

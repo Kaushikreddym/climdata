@@ -11,7 +11,7 @@ to_csv:
   description: "Save current long-form DataFrame to CSV file"
 
 calc_index:
-  output: index
+  output: dataset
   description: "Compute extreme index from Dataset"
 
 to_nc:
@@ -25,3 +25,7 @@ upload_netcdf:
 upload_csv:
   output: dataset
   description: "Upload a CSV file and convert it to xarray Dataset"
+
+impute:
+  output: dataset
+  description: "Impute missing values in the dataset"

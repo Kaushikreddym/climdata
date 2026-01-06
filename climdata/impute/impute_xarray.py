@@ -3,6 +3,14 @@ import xarray as xr
 from imputegap.recovery.imputation import Imputation
 from imputegap.recovery.manager import TimeSeries
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ANSI color codes (works on Linux terminals)
+_COLOR_YELLOW = "\033[93m"
+_COLOR_RESET = "\033[0m"
+
 class Imputer:
     """
     Impute missing values in an xarray.Dataset with dims (time, lat, lon)
@@ -147,14 +155,14 @@ class Imputer:
         Run imputation unless missing fraction is zero.
         """
         if self.missing_fraction()["global"] == 0.0:
-            print("No missing data found. Imputation not required.")
+            logger.info(f"{_COLOR_YELLOW}No missing data found. Imputation not required.{_COLOR_RESET}")
             self.recovered_ds = self.ds.copy(deep=True)
             return self.recovered_ds
 
         self._to_timeseries()
 
         data = self.ts.data
-        print(data.shape)
+        # print(data.shape)
         if self.method == "BRITS":
             imputer = Imputation.DeepLearning.BRITS(data)
             imputer.epochs = epochs
@@ -162,6 +170,8 @@ class Imputer:
             imputer = Imputation.MatrixCompletion.SoftImpute(data)
         elif self.method == "CDRec":
             imputer = Imputation.MatrixCompletion.CDRec(data)
+        elif self.method == "XGBOOST":
+            imputer = Imputation.MachineLearning.XGBOOST(data)
         else:
             raise ValueError(f"Unknown method: {self.method}")
 
