@@ -46,7 +46,7 @@ overrides = [
 # -----------------------------
 # Step 3: Define the workflow sequence
 # -----------------------------
-seq = ["extract", "impute", "calc_index", "to_dataframe", "to_csv", "to_nc"]
+seq = ["extract", "impute", "calc_index", "to_nc"]
 
 # -----------------------------
 # Step 4: Initialize the ClimData extractor
