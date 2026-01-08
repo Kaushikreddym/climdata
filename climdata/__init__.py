@@ -16,5 +16,6 @@ from .datasets.HYRAS import HYRASmirror as HYRAS
 from .datasets.NASAPOWER import POWER as POWER
 from .extremes.indices import extreme_index as extreme_index
 from .utils.wrapper_workflow import ClimateExtractor as ClimData
+from ._vendor import imputegap
 # from .impute.impute_xarray import Imputer as imputer_xarray
 

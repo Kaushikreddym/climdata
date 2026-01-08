@@ -413,8 +413,12 @@ class HYRASmirror:
 
             # normalize pr units
             if "pr" in dset:
-                dset["pr"].attrs.setdefault("units", "mm/day")
-
+                if dset["pr"].attrs.get("units") == "mm":
+                    dset["pr"].attrs["units"] = "mm/day"
+            if "hurs" in dset:
+                if dset["hurs"].attrs.get("units") == "Percent":
+                    dset["hurs"].attrs["units"] = "%"
+            
             self.dataset = dset
             return dset
 
@@ -463,7 +467,11 @@ class HYRASmirror:
 
             # normalize pr units
             if "pr" in dset:
-                dset["pr"].attrs.setdefault("units", "mm/day")
+                if dset["pr"].attrs.get("units") == "mm":
+                    dset["pr"].attrs["units"] = "mm/day"
+            if "hurs" in dset:
+                if dset["hurs"].attrs.get("units") == "Percent":
+                    dset["hurs"].attrs["units"] = "%"
             dset = self._apply_time_subset(dset)
             self.dataset = dset
             return dset
@@ -492,7 +500,13 @@ class HYRASmirror:
                 dset = dset.chunk(chunking)
 
             if "pr" in dset:
-                dset["pr"].attrs.setdefault("units", "mm/day")
+                if dset["pr"].attrs.get("units") == "mm":
+                    dset["pr"].attrs["units"] = "mm/day"
+
+            if "hurs" in dset:
+                if dset["hurs"].attrs.get("units") == "Percent":
+                    dset["hurs"].attrs["units"] = "%"
+            
 
             self.dataset = dset
             return dset

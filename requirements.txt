@@ -8,6 +8,8 @@ rioxarray
 dask[complete]
 cartopy
 colormaps
+matplotlib
+scipy
 # h5netcdf
 # netCDF4
 pymannkendall
@@ -53,3 +55,45 @@ beautifulsoup4
 google-auth
 google-api-python-client
 # ipdb
+
+# imputegap (vendorized)
+
+toml
+tensorflow
+shap
+pycatch22
+scikit-optimize
+pyswarms
+pytest
+xlsxwriter
+types-toml
+types-setuptools
+wheel
+sktime
+statsmodels
+prophet
+plotly
+darts
+torch
+torchvision
+torchaudio
+ujson
+ipdb
+torchcde
+tables
+MissForest
+lightgbm
+tsfel
+tsfresh
+einops
+ray
+fire
+fastdtw
+torch-geometric
+pytorch-lightning
+torchmetrics
+lightning
+reformer-pytorch
+transformers
+timm
+pyqt5

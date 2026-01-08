@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  imputegap:
+    container_name: imputegap-docker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./imputegap_docker/:/root/imputegap_assets/
+    ports:
+      - "8888:8888"
+    shm_size: 4720m

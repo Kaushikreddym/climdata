@@ -1,0 +1,22 @@
+|Geometry|5-bin histogram mode|-1.2468173605295707|
+|Geometry|10-bin histogram mode|0.8254787327262303|
+|Correlation|First 1/e crossing of the ACF|0.5531405331698586|
+|Correlation|First minimum of the ACF|1|
+|Correlation|Histogram-based automutual information (lag 2, 5 bins)|0.0030914312919998453|
+|Correlation|Time reversibility|-0.007087613186347406|
+|Geometry|Proportion of high incremental changes in the series|0.965619656196562|
+|Geometry|Longest stretch of above-mean values|92.0|
+|Geometry|Transition matrix column variance|0.0009604922097481461|
+|Trend|Wangs periodicity metric|3|
+|Geometry|Goodness of exponential fit to embedding distance distribution|0.03029724105804939|
+|Correlation|First minimum of the AMI function|4.0|
+|Correlation|Change in autocorrelation timescale after incremental differencing|1.0|
+|Geometry|Positive outlier timing|0.006040000000000045|
+|Geometry|Negative outlier timing|0.008399999999999963|
+|Transformation|Power in the lowest 20% of frequencies|0.17090456872484874|
+|Geometry|Longest stretch of decreasing values|7.0|
+|Trend|Entropy of successive pairs in symbolized series|2.188715240115428|
+|Geometry|Rescaled range fluctuation analysis (low-scale scaling)|0.64|
+|Geometry|Detrended fluctuation analysis (low-scale scaling)|0.84|
+|Transformation|Centroid frequency|1.8841598396202843|
+|Trend|Error of 3-point rolling mean forecast|1.1957075487620428|

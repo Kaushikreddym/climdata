@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
-from imputegap.recovery.imputation import Imputation
-from imputegap.recovery.manager import TimeSeries
+from .._vendor.imputegap.recovery.imputation import Imputation
+from .._vendor.imputegap.recovery.manager import TimeSeries
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import logging
 
