@@ -32,7 +32,7 @@ geojson = {
 # -----------------------------
 # Overrides are strings used by Hydra to modify default configurations at runtime.
 overrides = [
-    "dataset=mswx",  # Choose the MSWX dataset for extraction
+    "dataset=cmip",  # Choose the MSWX dataset for extraction
     f"aoi='{json.dumps(geojson)}'",  # Set the AOI as the point defined above
     f"time_range.start_date=2014-12-01",  # Start date for data extraction
     f"time_range.end_date=2014-12-31",    # End date for data extraction
