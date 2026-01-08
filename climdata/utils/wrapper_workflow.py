@@ -53,6 +53,13 @@ def update_ds(attr_name=None):
                 # log update
                 log = getattr(self, "logger", logger)
                 log.debug(f"Dataset updated by {func.__name__}; attr_name={attr_name}")
+                # Ensure filenames are generated after the dataset update so
+                # that filename templates use the newly produced dataset (e.g. index datasets).
+                try:
+                    if hasattr(self, "_gen_fn_cfg") and callable(getattr(self, "_gen_fn_cfg")):
+                        self._gen_fn_cfg()
+                except Exception:
+                    log.exception("Generating filenames after %s failed", func.__name__)
             return ds
         return wrapper
     return decorator
@@ -530,8 +537,6 @@ class ClimateExtractor:
 
         ds = ds.compute()
 
-        self._gen_fn_cfg()
-
         return ds
     # ----------------------------
     # Compute extreme index
@@ -566,8 +571,6 @@ class ClimateExtractor:
         indices = extreme_index(cfg, ds)
         index_ds = indices.calculate(cfg.index).compute()
         index_ds = index_ds.to_dataset(name=cfg.index)
-
-        self._gen_fn_cfg()
 
         return index_ds
     # ----------------------------
@@ -707,7 +710,7 @@ class ClimateExtractor:
         Returns:
             WorkflowResult: Named result container with populated fields for dataframe/dataset/filenames.
         """
-        actions = actions or ["extract", "compute_index", "to_dataframe", "to_csv", "to_nc"]
+        actions = actions or ["extract", "calc_index", "to_csv", "to_nc"]
         result = WorkflowResult(cfg=self.cfg)
         for action in actions:
             self.logger.info("Starting action: %s", action)
@@ -764,7 +767,7 @@ class ClimateExtractor:
                     self.calc_index()
                     result.index_ds = self.current_ds
 
-                elif action == "to_dataframe":
+                elif action == "to_csv":
                     if self.current_ds is None:
                         raise ValueError(
                             "Action 'to_dataframe' requires a dataset, but no dataset is available. "
@@ -772,13 +775,6 @@ class ClimateExtractor:
                         )
                     self.to_dataframe()
                     result.dataframe = self.current_df
-
-                elif action == "to_csv":
-                    if self.current_df is None:
-                        raise ValueError(
-                            "Action 'to_csv' requires a DataFrame, but no DataFrame is available. "
-                            "Use 'to_dataframe' or upload a CSV before saving."
-                        )
                     result.filename = self.to_csv()
 
                 elif action == "to_nc":
@@ -971,8 +967,7 @@ class ClimateExtractor:
 
         ds_out = recovered
 
-        # update filenames (if desired) and return dataset (decorator will set current_ds and impute_ds)
-        self._gen_fn_cfg()
+        # Return dataset (decorator will set current_ds and impute_ds and generate filenames)
         return ds_out
 
     def get_impute_methods(self) -> Dict[str, dict]:

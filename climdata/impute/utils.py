@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-from imputegap.recovery.manager import TimeSeries
+from .._vendor.imputegap.recovery.manager import TimeSeries
 
 
 def contaminate_ds_mcar(

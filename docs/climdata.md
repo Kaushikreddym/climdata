@@ -1,4 +1,0 @@
-
-# climdata module
-
-::: climdata

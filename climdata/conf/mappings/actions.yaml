@@ -2,26 +2,26 @@ extract:
   type: primary
   output: dataset
   description: "Download climate data and and convert to xarray Dataset"
-
-to_dataframe:
-  type: primary
-  output: df
-  description: "Convert xarray Dataset to long-form pandas DataFrame"
-
-to_csv:
-  type: secondary
-  output: filename
-  description: "Save current long-form DataFrame to CSV file"
-
+  
 calc_index:
   type: primary
   output: dataset
   description: "Compute extreme index from Dataset"
 
+impute:
+  type: primary
+  output: dataset
+  description: "Impute missing values in the dataset"
+
 to_nc:
   type: secondary
   output: filename
   description: "Save xarray dataset to NetCDF"
+
+to_csv:
+  type: secondary
+  output: filename
+  description: "Save current long-form DataFrame to CSV file"
 
 upload_netcdf:
   type: secondary
@@ -32,8 +32,3 @@ upload_csv:
   type: secondary
   output: dataset
   description: "Upload a CSV file and convert it to xarray Dataset"
-
-impute:
-  type: primary
-  output: dataset
-  description: "Impute missing values in the dataset"
