@@ -41,7 +41,7 @@ plugins:
     - mkdocstrings:
         handlers:
             python:
-                docstring_style: numpy
+                docstring_style: google
                 options:
                     show_root_heading: true
     - git-revision-date

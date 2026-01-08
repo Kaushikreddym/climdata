@@ -73,7 +73,6 @@ statsmodels
 prophet
 plotly
 darts
-torch
 torchvision
 torchaudio
 ujson
