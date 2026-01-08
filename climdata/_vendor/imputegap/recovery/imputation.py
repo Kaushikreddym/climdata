@@ -1,7 +1,7 @@
 import re
-from imputegap.tools import utils
-from imputegap.recovery.downstream import Downstream
-from imputegap.recovery.evaluation import Evaluation
+from ..tools import utils
+from .downstream import Downstream
+from .evaluation import Evaluation
 
 not_optimized = ["knn", "interpolation", "iterative_svd", "grouse", "dynammo", "rosl", "soft_impute", "spirit", "svt",
                  "tkcm", "deep_mvi", "brits", "mpin", "pristi", "bay_otide", "bit_graph", "gain", "grin", "hkmf_t",
@@ -153,7 +153,7 @@ class BaseImputer:
         -------
         None
         """
-        from imputegap.recovery.optimization import Optimization
+        from .optimization import Optimization
 
         optimizer = parameters.get('optimizer', "ray_tune")
 
@@ -408,7 +408,7 @@ class Imputation:
                 self : ZeroImpute
                     The object with `recov_data` set.
                 """
-                from imputegap.algorithms.zero_impute import zero_impute
+                from ..algorithms.zero_impute import zero_impute
 
                 self.recov_data = zero_impute(self.incomp_data, params)
 
@@ -440,7 +440,7 @@ class Imputation:
                 self : MinImpute
                     The object with `recov_data` set.
                 """
-                from imputegap.algorithms.mean_impute import mean_impute
+                from ..algorithms.mean_impute import mean_impute
 
                 self.recov_data = mean_impute(self.incomp_data, params)
 
@@ -472,7 +472,7 @@ class Imputation:
                 self : MinImpute
                     The object with `recov_data` set.
                 """
-                from imputegap.algorithms.min_impute import min_impute
+                from ..algorithms.min_impute import min_impute
 
                 self.recov_data = min_impute(self.incomp_data, params)
 
@@ -498,7 +498,7 @@ class Imputation:
                 self : MeanImputeBySeries
                     The object with `recov_data` set.
                 """
-                from imputegap.algorithms.mean_impute_by_series import mean_impute_by_series
+                from ..algorithms.mean_impute_by_series import mean_impute_by_series
 
                 self.recov_data = mean_impute_by_series(self.incomp_data, logs=self.logs, verbose=self.verbose)
 
@@ -530,7 +530,7 @@ class Imputation:
                 self : ZeroImpute
                     The object with `recov_data` set.
                 """
-                from imputegap.algorithms.test import zero_impute
+                from ..algorithms.test import zero_impute
 
                 self.recov_data = zero_impute(self.incomp_data, params)
 
@@ -571,7 +571,7 @@ class Imputation:
                     >>> interpolation_imputer.impute(user_def=False, params={"input_data": ts.data, "optimizer": "ray_tune"})  # automl with ray_tune
                     >>> recov_data = interpolation_imputer.recov_data
                 """
-                from imputegap.algorithms.interpolation import interpolation
+                from ..algorithms.interpolation import interpolation
 
                 if params is not None:
                     method, poly_order = self._check_params(user_def, params)
@@ -625,7 +625,7 @@ class Imputation:
                     >>> knn_imputer.impute(user_def=False, params={"input_data": ts.data, "optimizer": "ray_tune"})  # automl with ray_tune
                     >>> recov_data = knn_imputer.recov_data
                 """
-                from imputegap.algorithms.knn import knn
+                from ..algorithms.knn import knn
 
                 if params is not None:
                     k, weights = self._check_params(user_def, params)
@@ -775,7 +775,7 @@ class Imputation:
                 ----------
                 Khayati, M., Cudré-Mauroux, P. & Böhlen, M.H. Scalable recovery of missing blocks in time series with high and low cross-correlations. Knowl Inf Syst 62, 2257–2280 (2020). https://doi.org/10.1007/s10115-019-01421-7
                 """
-                from imputegap.algorithms.cdrec import cdrec
+                from ..algorithms.cdrec import cdrec
 
                 if params is not None:
                     rank, epsilon, iterations = self._check_params(user_def, params)
@@ -835,7 +835,7 @@ class Imputation:
                 ----------
                 Olga Troyanskaya, Michael Cantor, Gavin Sherlock, Pat Brown, Trevor Hastie, Robert Tibshirani, David Botstein, Russ B. Altman, Missing value estimation methods for DNA microarrays , Bioinformatics, Volume 17, Issue 6, June 2001, Pages 520–525, https://doi.org/10.1093/bioinformatics/17.6.520
                 """
-                from imputegap.algorithms.iterative_svd import iterative_svd
+                from ..algorithms.iterative_svd import iterative_svd
 
                 if params is not None:
                     rank  = self._check_params(user_def, params)[0]
@@ -895,7 +895,7 @@ class Imputation:
                 ----------
                 D. Zhang and L. Balzano. Global convergence of a grassmannian gradient descent algorithm for subspace estimation. In Proceedings of the 19th International Conference on Artificial Intelligence and Statistics, AISTATS 2016, Cadiz, Spain, May 9-11, 2016, pages 1460–1468, 2016.
                 """
-                from imputegap.algorithms.grouse import grouse
+                from ..algorithms.grouse import grouse
 
                 if params is not None:
                     max_rank  = self._check_params(user_def, params)[0]
@@ -958,7 +958,7 @@ class Imputation:
                 ----------
                 X. Shu, F. Porikli, and N. Ahuja. Robust orthonormal subspace learning: Efficient recovery of corrupted low-rank matrices. In 2014 IEEE Conference on Computer Vision and Pattern Recognition, CVPR 2014, Columbus, OH, USA, June 23-28, 2014, pages 3874–3881, 2014.
                 """
-                from imputegap.algorithms.rosl import rosl
+                from ..algorithms.rosl import rosl
 
                 if params is not None:
                     rank, regularization = self._check_params(user_def, params)
@@ -1018,7 +1018,7 @@ class Imputation:
                 ----------
                 R. Mazumder, T. Hastie, and R. Tibshirani. Spectral regularization algorithms for learning large incomplete matrices. Journal of Machine Learning Research, 11:2287–2322, 2010.
                 """
-                from imputegap.algorithms.soft_impute import soft_impute
+                from ..algorithms.soft_impute import soft_impute
 
                 if params is not None:
                     max_rank = self._check_params(user_def, params)[0]
@@ -2217,7 +2217,7 @@ class Imputation:
                 J. Yoon, J. Jordon, and M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets," CoRR, vol. abs/1806.02920, 2018. Available: http://arxiv.org/abs/1806.02920.
                 """
 
-                from imputegap.algorithms.gain import gain
+                from ..algorithms.gain import gain
 
                 if params is not None:
                     batch_size, hint_rate, alpha, epoch = self._check_params(user_def, params)

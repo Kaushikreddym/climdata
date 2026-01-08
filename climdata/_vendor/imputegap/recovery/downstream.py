@@ -4,9 +4,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from imputegap.tools import utils
-
-
+from ..tools import utils
 
 class Downstream:
     """

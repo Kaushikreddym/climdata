@@ -5,7 +5,7 @@ import time
 import numpy as np
 import matplotlib
 import importlib.resources
-from imputegap.tools import utils
+from ..tools import utils
 
 import matplotlib.pyplot as plt
 
@@ -164,7 +164,7 @@ class TimeSeries:
                 #  update path form inner library datasets
                 if data in utils.list_of_datasets(txt=True):
                     self.name = data[:-4]
-                    data = importlib.resources.files('imputegap.datasets').joinpath(data)
+                    data = importlib.resources.files('..datasets').joinpath(data)
 
                 if not os.path.exists(data):
                     data = ".." + saved_data

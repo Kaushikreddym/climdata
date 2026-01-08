@@ -19,7 +19,6 @@ zarr
 wetterdienst
 pint-pandas
 cdsapi
-# imputegap
 
 # Workflow + config
 hydra-core
