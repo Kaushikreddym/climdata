@@ -502,20 +502,20 @@ class ClimateExtractor:
                 mswx.load(var)
                 ds_vars.append(mswx.dataset)
             ds = xr.merge(ds_vars)
-
+            self.dataset_class = mswx
         elif dataset_upper == "CMIP":
             cmip = climdata.CMIP(cfg)
             cmip.fetch()
             cmip.load()
             cmip.extract(**extract_kwargs)
             ds = cmip.ds
-
+            self.dataset_class = cmip
         elif dataset_upper == "POWER":
             power = climdata.POWER(cfg)
             power.fetch()
             power.load()
             ds = power.ds
-
+            self.dataset_class = power
         elif dataset_upper == "DWD":
             ds_vars = []
             for var in cfg.variables:
@@ -523,7 +523,7 @@ class ClimateExtractor:
                 ds_var = dwd.extract(variable=var, **extract_kwargs)
                 ds_vars.append(ds_var)
             ds = xr.merge(ds_vars)
-
+            self.dataset_class = dwd
         elif dataset_upper == "HYRAS":
             hyras = climdata.HYRAS(cfg)
             ds_vars = []
@@ -531,7 +531,7 @@ class ClimateExtractor:
                 hyras.extract(**extract_kwargs)
                 ds_vars.append(hyras.load(var)[[var]])
             ds = xr.merge(ds_vars, compat="override")
-
+            self.dataset_class = hyras
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 

@@ -6,9 +6,68 @@ import intake
 import xarray as xr
 import pandas as pd
 from omegaconf import DictConfig
+import logging
 
-
+logger = logging.getLogger(__name__)
 class CMIPCloud:
+    def open_cmip6_catalog(self):
+        return intake.open_esm_datastore(
+            "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
+        )
+
+    def get_experiment_ids(self):
+        import re
+        col = self.open_cmip6_catalog()
+        
+        experiments = sorted(col.df["experiment_id"].unique())
+        
+        pattern = re.compile(r"^ssp\d{3}$")  # ssp + exactly 3 digits
+        
+        experiments = [
+            e for e in experiments 
+            if e == "historical" or pattern.match(e)
+        ]
+        
+        return experiments
+
+    def get_source_ids(self, experiment_id):
+        col = self.open_cmip6_catalog()
+        
+        subset = col.search(experiment_id=[experiment_id])
+        
+        if len(subset.df) == 0:
+            raise ValueError(f"No data found for experiment_id={experiment_id}")
+        sources = sorted(subset.df["source_id"].unique())
+        logger.info(f"{len(sources)} models found for experiment '{experiment_id}'")
+        return sources
+
+
+    
+
+    def get_variables(self, * , experiment_id, source_id, table_id='day'):
+        TARGET_VARS = {"tas", "tasmin", "tasmax", "pr", "hurs", "sfcWind"}
+        col = self.open_cmip6_catalog()
+        
+        query = dict(
+            experiment_id=[experiment_id],
+            source_id=[source_id],
+        )
+        
+        if table_id is not None:
+            query["table_id"] = [table_id]
+        
+        subset = col.search(**query)
+        
+        if len(subset.df) == 0:
+            raise ValueError(
+                f"No data found for experiment_id={experiment_id}, source_id={source_id}"
+            )
+        
+        available = set(subset.df["variable_id"].unique())
+        selected = sorted(available & TARGET_VARS)
+        
+        return selected
+
     def __init__(self, cfg: DictConfig):
         # Directly read from flat config
         self.experiment_id = cfg.experiment_id
