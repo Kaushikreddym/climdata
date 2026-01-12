@@ -1013,7 +1013,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </style>
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=80415046">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5b531257">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1036,7 +1036,7 @@ Includes examples for point-based and box-based extraction, variable exploration
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=38535e2a">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=876c5a93">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1083,7 +1083,7 @@ logging.basicConfig(
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e6493494">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e98fb569">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1094,7 +1094,7 @@ logging.basicConfig(
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=8f42be94">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2e80f428">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1138,7 +1138,7 @@ print(datasets)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e0895768">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e22f2db8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1149,12 +1149,12 @@ print(datasets)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=f2b8820c">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9abc314a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -1169,9 +1169,24 @@ print(datasets)</div>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_variables</span><span class="p">(</span><span class="s1">'mswx'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+
+<span class="c1"># for CMIP</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">climdata</span>
+<span class="n">extractor_CMIP</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">CMIP</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extractor_CMIP</span><span class="o">.</span><span class="n">get_experiment_ids</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extractor_CMIP</span><span class="o">.</span><span class="n">get_source_ids</span><span class="p">(</span><span class="s1">'ssp245'</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extractor_CMIP</span><span class="o">.</span><span class="n">get_variables</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="s1">'ssp245'</span><span class="p">,</span><span class="n">source_id</span><span class="o">=</span><span class="s1">'ACCESS-CM2'</span><span class="p">))</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">variables = extractor.get_variables('mswx')
-print(variables)</div>
+print(variables)
+
+# for CMIP
+import climdata
+extractor_CMIP = climdata.CMIP(extractor.cfg)
+print(extractor_CMIP.get_experiment_ids())
+print(extractor_CMIP.get_source_ids('ssp245'))
+print(extractor_CMIP.get_variables(experiment_id='ssp245',source_id='ACCESS-CM2'))
+</div>
 </div>
 </div>
 </div>
@@ -1184,6 +1199,22 @@ print(variables)</div>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>['tasmin', 'tasmax', 'tas', 'pr', 'rsds', 'hurs', 'sfcWind']
+['historical', 'ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp460', 'ssp585']
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>INFO | 46 models found for experiment 'ssp245'
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>['ACCESS-CM2', 'ACCESS-ESM1-5', 'AWI-CM-1-1-MR', 'BCC-CSM2-MR', 'CAMS-CSM1-0', 'CAS-ESM2-0', 'CESM2', 'CESM2-WACCM', 'CIESM', 'CMCC-CM2-SR5', 'CMCC-ESM2', 'CNRM-CM6-1', 'CNRM-CM6-1-HR', 'CNRM-ESM2-1', 'CanESM5', 'CanESM5-CanOE', 'E3SM-1-1', 'EC-Earth3', 'EC-Earth3-CC', 'EC-Earth3-Veg', 'EC-Earth3-Veg-LR', 'FGOALS-f3-L', 'FGOALS-g3', 'FIO-ESM-2-0', 'GFDL-CM4', 'GFDL-ESM4', 'GISS-E2-1-G', 'GISS-E2-1-H', 'HadGEM3-GC31-LL', 'IITM-ESM', 'INM-CM4-8', 'INM-CM5-0', 'IPSL-CM6A-LR', 'KACE-1-0-G', 'KIOST-ESM', 'MCM-UA-1-0', 'MIROC-ES2L', 'MIROC6', 'MPI-ESM1-2-HR', 'MPI-ESM1-2-LR', 'MRI-ESM2-0', 'NESM3', 'NorESM2-LM', 'NorESM2-MM', 'TaiESM1', 'UKESM1-0-LL']
+['hurs', 'pr', 'sfcWind', 'tas', 'tasmax', 'tasmin']
 </pre>
 </div>
 </div>
@@ -1191,7 +1222,7 @@ print(variables)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8f5340fc">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b04ed779">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1202,7 +1233,7 @@ print(variables)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=785f75f5">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=38b87d03">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1244,7 +1275,7 @@ print(varinfo)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=59b8f771">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c0217716">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1255,7 +1286,7 @@ print(varinfo)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=acb413aa">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=458f350e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1346,7 +1377,7 @@ dict_keys(['BRITS', 'XGBOOST', 'CDRec', 'SoftImpute'])
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=036b5fe9">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d7b604eb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1357,7 +1388,7 @@ dict_keys(['BRITS', 'XGBOOST', 'CDRec', 'SoftImpute'])
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7c36b33f">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=fc0d11d9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1712,7 +1743,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=af56f766">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=23c43026">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1723,7 +1754,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=4b0e1d1a">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=11eb6b6a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1765,7 +1796,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=22f84740">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=78a3af10">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1776,7 +1807,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=09e7b640">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=acd69b20">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2018,7 +2049,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=137458bf">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6c976eeb">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2029,7 +2060,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=470e5d7c">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7d92ba34">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2154,7 +2185,7 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=38758555">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bb6016a3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2165,7 +2196,7 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=49616170">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d8915fd3">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2343,7 +2374,7 @@ ValueError: Action 'upload_netcdf' requires argument 'netcdf_file', but none was
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 8, 2026 15:07:40 UTC"><span class="timeago" datetime="2026-01-08T15:07:40+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 8, 2026 15:07:40 UTC">2026-01-08</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 12, 2026 08:39:28 UTC"><span class="timeago" datetime="2026-01-12T08:39:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 12, 2026 08:39:28 UTC">2026-01-12</span>
   </span>
 
     

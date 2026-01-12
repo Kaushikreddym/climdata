@@ -1554,20 +1554,20 @@ extractor.to_csv(df)</p>
                 <span class="n">mswx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
                 <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mswx</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">)</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">mswx</span>
         <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;CMIP&quot;</span><span class="p">:</span>
             <span class="n">cmip</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">CMIP</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
             <span class="n">cmip</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
             <span class="n">cmip</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
             <span class="n">cmip</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">cmip</span><span class="o">.</span><span class="n">ds</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">cmip</span>
         <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;POWER&quot;</span><span class="p">:</span>
             <span class="n">power</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">POWER</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
             <span class="n">power</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
             <span class="n">power</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">power</span><span class="o">.</span><span class="n">ds</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">power</span>
         <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;DWD&quot;</span><span class="p">:</span>
             <span class="n">ds_vars</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
@@ -1575,7 +1575,7 @@ extractor.to_csv(df)</p>
                 <span class="n">ds_var</span> <span class="o">=</span> <span class="n">dwd</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="n">var</span><span class="p">,</span> <span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
                 <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ds_var</span><span class="p">)</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">)</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">dwd</span>
         <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;HYRAS&quot;</span><span class="p">:</span>
             <span class="n">hyras</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">HYRAS</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
             <span class="n">ds_vars</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1583,7 +1583,7 @@ extractor.to_csv(df)</p>
                 <span class="n">hyras</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
                 <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyras</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">)[[</span><span class="n">var</span><span class="p">]])</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">)</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">hyras</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">xclim</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">convert_units_to</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">cfg</span><span class="o">.</span><span class="n">varinfo</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
 
@@ -2379,20 +2379,20 @@ to fetch, load and extract datasets. When extraction completes, units are conver
             <span class="n">mswx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
             <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mswx</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">mswx</span>
     <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;CMIP&quot;</span><span class="p">:</span>
         <span class="n">cmip</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">CMIP</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
         <span class="n">cmip</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
         <span class="n">cmip</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
         <span class="n">cmip</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">cmip</span><span class="o">.</span><span class="n">ds</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">cmip</span>
     <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;POWER&quot;</span><span class="p">:</span>
         <span class="n">power</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">POWER</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
         <span class="n">power</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
         <span class="n">power</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">power</span><span class="o">.</span><span class="n">ds</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">power</span>
     <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;DWD&quot;</span><span class="p">:</span>
         <span class="n">ds_vars</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
@@ -2400,7 +2400,7 @@ to fetch, load and extract datasets. When extraction completes, units are conver
             <span class="n">ds_var</span> <span class="o">=</span> <span class="n">dwd</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="n">var</span><span class="p">,</span> <span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
             <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ds_var</span><span class="p">)</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">dwd</span>
     <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;HYRAS&quot;</span><span class="p">:</span>
         <span class="n">hyras</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">HYRAS</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
         <span class="n">ds_vars</span> <span class="o">=</span> <span class="p">[]</span>
@@ -2408,7 +2408,7 @@ to fetch, load and extract datasets. When extraction completes, units are conver
             <span class="n">hyras</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
             <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyras</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">)[[</span><span class="n">var</span><span class="p">]])</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">hyras</span>
     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
         <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">xclim</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">convert_units_to</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">cfg</span><span class="o">.</span><span class="n">varinfo</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
 
