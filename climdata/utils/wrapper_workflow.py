@@ -147,92 +147,135 @@ class ClimateExtractor:
 
         # instance logger for this extractor
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-    def _gen_fn(self, ds: xr.Dataset):
+    def _gen_fn(self, *, ds: xr.Dataset = None, df: pd.DataFrame = None):
         """Create filenames (csv, nc, zarr) using config templates and dataset metadata.
 
-        The method automatically handles coordinate aliases such as lat/latitude, lon/longitude and time/date.
+        Accepts either:
+        - ds : xarray.Dataset
+        - df : pandas.DataFrame (long form with columns: lat, lon, time/date, variable, value, optional source)
+
+        Exactly one must be provided (keyword-only).
         """
 
         # ------------------------
-        # Helper: find coord alias
+        # Validate inputs
+        # ------------------------
+        if (ds is None) == (df is None):
+            raise ValueError("Provide exactly one of `ds` or `df` as a keyword argument.")
+
+        # ------------------------
+        # Helper: find coord alias (xarray)
         # ------------------------
         def find_coord(ds, names):
-            """Return ds coordinate if any alias in names exists."""
             for name in names:
                 if name in ds.coords:
                     return ds[name]
             return None
 
         # ------------------------
-        # Extract coordinates
+        # Case 1: xarray.Dataset
         # ------------------------
-        lat = find_coord(ds, ["lat", "latitude"])
-        lon = find_coord(ds, ["lon", "longitude"])
-        time = find_coord(ds, ["time", "date"])
+        if ds is not None:
+            lat = find_coord(ds, ["lat", "latitude"])
+            lon = find_coord(ds, ["lon", "longitude"])
+            time = find_coord(ds, ["time", "date"])
 
-        # ------------------------
-        # Provider
-        # ------------------------
-        provider = ds.attrs.get("source", "unknown")
+            provider = ds.attrs.get("source", "unknown")
+            vars_list = list(ds.data_vars)
+            parameter = vars_list[0] if len(vars_list) == 1 else "_".join(vars_list)
 
-        # ------------------------
-        # Parameter(s)
-        # ------------------------
-        vars_list = list(ds.data_vars)
-        parameter = vars_list[0] if len(vars_list) == 1 else "_".join(vars_list)
-
-        # ------------------------
-        # Latitude range
-        # ------------------------
-        if lat is None:
-            lat_str = "unknown"
-            lat_range = "unknown"
-        else:
-            # Flatten in case of 2D lat/lon grid
-            lat_vals = lat.values.reshape(-1)
-            lat_min = float(lat_vals.min())
-            lat_max = float(lat_vals.max())
-
-            if lat_min == lat_max:
-                lat_str = f"{lat_min}"
-                lat_range = f"{lat_min}"
+            # Latitude range
+            if lat is not None:
+                lat_vals = lat.values.reshape(-1)
+                lat_min, lat_max = float(lat_vals.min()), float(lat_vals.max())
             else:
-                lat_str = f"{lat_min}_{lat_max}"
-                lat_range = f"{lat_min}-{lat_max}"
+                lat_min = lat_max = None
 
-        # ------------------------
-        # Longitude range
-        # ------------------------
-        if lon is None:
-            lon_str = "unknown"
-            lon_range = "unknown"
-        else:
-            lon_vals = lon.values.reshape(-1)
-            lon_min = float(lon_vals.min())
-            lon_max = float(lon_vals.max())
-
-            if lon_min == lon_max:
-                lon_str = f"{lon_min}"
-                lon_range = f"{lon_min}"
+            # Longitude range
+            if lon is not None:
+                lon_vals = lon.values.reshape(-1)
+                lon_min, lon_max = float(lon_vals.min()), float(lon_vals.max())
             else:
-                lon_str = f"{lon_min}_{lon_max}"
-                lon_range = f"{lon_min}-{lon_max}"
+                lon_min = lon_max = None
+
+            # Time range
+            if time is not None:
+                tvals = pd.to_datetime(time.values)
+                start, end = tvals.min().strftime("%Y-%m-%d"), tvals.max().strftime("%Y-%m-%d")
+            else:
+                start = end = "unknown"
 
         # ------------------------
-        # Time range
+        # Case 2: pandas.DataFrame (long form)
         # ------------------------
-        if time is None:
-            start = end = "unknown"
         else:
-            tvals = pd.to_datetime(time.values)
-            start = tvals.min().strftime("%Y-%m-%d")
-            end = tvals.max().strftime("%Y-%m-%d")
+            cols = df.columns.astype(str)
+
+            # Identify coordinate columns
+            lat_cols = [c for c in cols if "lat" in c.lower()]
+            lon_cols = [c for c in cols if "lon" in c.lower()]
+            time_cols = [c for c in cols if "time" in c.lower() or "date" in c.lower()]
+
+            # Provider from 'source' column
+            if "source" in df.columns:
+                unique_sources = df["source"].dropna().unique()
+                provider = unique_sources[0] if len(unique_sources) == 1 else "_".join(map(str, unique_sources))
+            else:
+                provider = "unknown"
+
+            # Unique parameters from 'variable' column
+            if "variable" in df.columns:
+                unique_parameters = sorted(df["variable"].dropna().unique())
+                parameter = unique_parameters[0] if len(unique_parameters) == 1 else "_".join(unique_parameters)
+            else:
+                parameter = "unknown"
+
+            # Latitude range
+            if lat_cols:
+                lat_vals = pd.to_numeric(df[lat_cols[0]], errors="coerce")
+                lat_min, lat_max = float(lat_vals.min()), float(lat_vals.max())
+            else:
+                lat_min = lat_max = None
+
+            # Longitude range
+            if lon_cols:
+                lon_vals = pd.to_numeric(df[lon_cols[0]], errors="coerce")
+                lon_min, lon_max = float(lon_vals.min()), float(lon_vals.max())
+            else:
+                lon_min = lon_max = None
+
+            # Time range
+            if time_cols:
+                tvals = pd.to_datetime(df[time_cols[0]], errors="coerce")
+                start = tvals.min().strftime("%Y-%m-%d")
+                end = tvals.max().strftime("%Y-%m-%d")
+            else:
+                start = end = "unknown"
+
+        # ------------------------
+        # Format lat/lon strings
+        # ------------------------
+        if lat_min is None:
+            lat_str = lat_range = "unknown"
+        elif lat_min == lat_max:
+            lat_str = lat_range = f"{lat_min}"
+        else:
+            lat_str = f"{lat_min}_{lat_max}"
+            lat_range = f"{lat_min}-{lat_max}"
+
+        if lon_min is None:
+            lon_str = lon_range = "unknown"
+        elif lon_min == lon_max:
+            lon_str = lon_range = f"{lon_min}"
+        else:
+            lon_str = f"{lon_min}_{lon_max}"
+            lon_range = f"{lon_min}-{lon_max}"
 
         # ------------------------
         # Build filenames
         # ------------------------
         outdir = Path(self.cfg.output.out_dir)
-
+        outdir.mkdir(parents=True, exist_ok=True)
         def build(fn_template):
             return fn_template.format(
                 provider=provider,
@@ -248,8 +291,7 @@ class ClimateExtractor:
         self.filename_csv = str(outdir / build(self.cfg.output.filename_csv))
         self.filename_nc = str(outdir / build(self.cfg.output.filename_nc))
         self.filename_zarr = str(outdir / build(self.cfg.output.filename_zarr))
-
-    
+        return self
     def _gen_fn_cfg(self):
         """Generate output filenames using configuration and extracted dataset metadata.
 
@@ -306,7 +348,7 @@ class ClimateExtractor:
                 lon_range=lon_range or lon_str,
             )
 
-        out_dir = Path('./')
+        out_dir = Path(self.cfg.output.out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
 
         self.filename_csv = str(out_dir / format_template(out.filename_csv))
@@ -529,13 +571,13 @@ class ClimateExtractor:
             ds_vars = []
             for var in cfg.variables:
                 hyras.extract(**extract_kwargs)
-                ds_vars.append(hyras.load(var)[[var]])
+                ds_vars.append(hyras.load(var, chunking={'time':"auto"})[[var]])
             ds = xr.merge(ds_vars, compat="override")
             self.dataset_class = hyras
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 
-        ds = ds.compute()
+        # ds = ds.compute()
 
         return ds
     # ----------------------------
@@ -610,7 +652,10 @@ class ClimateExtractor:
         df_long["units"] = df_long["variable"].apply(
             lambda v: ds[v].attrs.get("units", "unknown")
         )
+        if getattr(self.cfg, "dataset") == 'cmip':
+            df_long["source_id"] = getattr(self.cfg, "source_id")
         df_long["source"] = getattr(self.cfg, "dataset", ds.attrs.get("source", "unknown"))
+        df_long = df_long.drop_duplicates()
         self._gen_fn_cfg()
         return df_long
 

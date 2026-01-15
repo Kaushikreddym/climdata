@@ -80,5 +80,7 @@ nav:
     - Report Issues: https://github.com/Kaushikreddym/climdata/issues
     - Examples:
         - Workflow Notebook: examples/wrapper_workflow.ipynb
+        - Advanced:
+            - CMIP validation: examples/advanced/cmip_obs_comparison.ipynb
     - API Reference:
         - Workflow Reference: api.md

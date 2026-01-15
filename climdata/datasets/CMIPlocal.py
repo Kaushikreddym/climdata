@@ -46,7 +46,8 @@ class CMIPmirror:
                 ds = ds.sortby("lon")
         return ds
 
-    def fetch(self, base_dir,tbl_id):
+    def fetch(self, base_dir, tbl_id):
+        # Collect all matching NetCDF files
         nc_files = [
             f
             for exp in self.experiments
@@ -55,34 +56,34 @@ class CMIPmirror:
                 recursive=True
             )
         ]
+
         rows = []
         for file_path in tqdm(nc_files, desc="Indexing CMIP6 files"):
-            parts = file_path.split(os.sep)
-            try:
-                activity_id   = parts[6]
-                institution_id = parts[7]
-                source_id      = parts[8]
-                experiment_id  = parts[9]
-                member_id      = parts[10]
-                table_id       = parts[11]
-                variable_id    = parts[12]
-                grid_label     = parts[13]
-                version        = parts[14]
-            except IndexError:
+            path_parts = Path(file_path).parts
+
+            # Ensure path has enough parts
+            if len(path_parts) < 15:
                 continue
 
-            # Extract start and end date from filename
-            fname = os.path.basename(file_path)
-            # Example: pr_day_MIROC6_ssp245-nat_r8i1p1f1_gn_20210101-20301231.nc
+            activity_id, institution_id, source_id, experiment_id, member_id, table_id, variable_id, grid_label, version = (
+                path_parts[6:15]
+            )
+
+            # Extract start and end dates from filename
+            fname = Path(file_path).name
             date_part = fname.split("_")[-1].replace(".nc", "")
             start_str, end_str = date_part.split("-")
-            
-            if tbl_id == 'Amon':
-                start_date = pd.to_datetime(start_str, format="%Y%m")
-                end_date   = pd.to_datetime(end_str, format="%Y%m")
-            elif tbl_id == 'day':
-                start_date = pd.to_datetime(start_str, format="%Y%m%d")
-                end_date   = pd.to_datetime(end_str, format="%Y%m%d")
+
+            if tbl_id.lower() == 'amon':
+                date_fmt = "%Y%m"
+            elif tbl_id.lower() == 'day':
+                date_fmt = "%Y%m%d"
+            else:
+                raise ValueError(f"Unknown table_id: {tbl_id}")
+
+            start_date = pd.to_datetime(start_str, format=date_fmt)
+            end_date = pd.to_datetime(end_str, format=date_fmt)
+
             rows.append({
                 "path": file_path,
                 "activity_id": activity_id,
@@ -98,33 +99,39 @@ class CMIPmirror:
                 "end_date": end_date
             })
 
+        # Create DataFrame
         df = pd.DataFrame(rows)
-        # import ipdb; ipdb.set_trace()
-        # keep only experiments that match all requested
+        if df.empty:
+            return df
+
+        # Keep only requested experiments per institution/source pair
         grouped = df.groupby(["institution_id", "source_id"])["experiment_id"].unique()
-        valid_pairs = grouped[grouped.apply(lambda exps: set(self.experiments).issubset(set(exps)))].index
+        valid_pairs = grouped[grouped.apply(lambda exps: set(self.experiments).issubset(exps))].index
         df = df[df.set_index(["institution_id", "source_id"]).index.isin(valid_pairs)]
 
-        # keep only versions with "v"
+        # Keep only versions containing "v"
         df = df[df['version'].str.contains('v')]
 
-        # compute file-level duration
+        # Compute file-level duration
         df["years"] = (df["end_date"] - df["start_date"]).dt.days / 365.25
+        self.df = df
+        # Compute total duration per dataset and filter for ≥60 years
+        coverage = (
+            df.groupby(
+                ["institution_id", "source_id", "experiment_id", "member_id", "variable_id", "grid_label"]
+            )
+            .agg(
+                total_years=("years", "sum"),
+                start=("start_date", "min"),
+                end=("end_date", "max"),
+                nfiles=("path", "count")
+            )
+            .reset_index()
+        )
 
-        # compute total duration per dataset
-        coverage = df.groupby(
-            ["institution_id", "source_id", "experiment_id", "member_id", "variable_id", "grid_label"]
-        ).agg(
-            total_years=("years", "sum"),
-            start=("start_date", "min"),
-            end=("end_date", "max"),
-            nfiles=("path", "count")
-        ).reset_index()
-
-        # keep only groups with ≥ 60 years
         valid_groups = coverage[coverage["total_years"] >= 60]
 
-        # filter original dataframe
+        # Filter original df to keep only valid groups
         df_filtered = df.merge(
             valid_groups,
             on=["institution_id", "source_id", "experiment_id", "member_id", "variable_id", "grid_label"],

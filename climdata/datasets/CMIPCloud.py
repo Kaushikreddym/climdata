@@ -2,11 +2,8 @@ import intake
 import xarray as xr
 import pandas as pd
 from omegaconf import DictConfig
-import intake
-import xarray as xr
-import pandas as pd
-from omegaconf import DictConfig
 import logging
+import cftime
 
 logger = logging.getLogger(__name__)
 class CMIPCloud:
@@ -44,29 +41,57 @@ class CMIPCloud:
 
     
 
-    def get_variables(self, * , experiment_id, source_id, table_id='day'):
+    def get_variables(self, *, experiment_id, source_id, table_id="day"):
         TARGET_VARS = {"tas", "tasmin", "tasmax", "pr", "hurs", "sfcWind"}
+        
         col = self.open_cmip6_catalog()
         
-        query = dict(
-            experiment_id=[experiment_id],
-            source_id=[source_id],
-        )
+        # Normalize to lists
+        if isinstance(experiment_id, str):
+            experiment_ids = [experiment_id]
+        else:
+            experiment_ids = list(experiment_id)
+            
+        if isinstance(source_id, str):
+            source_ids = [source_id]
+        else:
+            source_ids = list(source_id)
         
-        if table_id is not None:
-            query["table_id"] = [table_id]
+        common_vars = None
         
-        subset = col.search(**query)
+        for exp in experiment_ids:
+            for src in source_ids:
+                query = dict(
+                    experiment_id=[exp],
+                    source_id=[src],
+                )
+                
+                if table_id is not None:
+                    query["table_id"] = [table_id]
+                
+                subset = col.search(**query)
+                
+                if len(subset.df) == 0:
+                    continue
+                
+                available = set(subset.df["variable_id"].unique())
+                selected = available & TARGET_VARS
+                
+                if common_vars is None:
+                    common_vars = selected
+                else:
+                    common_vars = common_vars & selected
         
-        if len(subset.df) == 0:
+        if not common_vars:
             raise ValueError(
-                f"No data found for experiment_id={experiment_id}, source_id={source_id}"
+                f"No common variables found for "
+                f"experiment_id={experiment_ids}, "
+                f"source_id={source_ids}, "
+                f"table_id={table_id}"
             )
         
-        available = set(subset.df["variable_id"].unique())
-        selected = sorted(available & TARGET_VARS)
-        
-        return selected
+        return sorted(common_vars)
+
 
     def __init__(self, cfg: DictConfig):
         # Directly read from flat config
@@ -114,6 +139,30 @@ class CMIPCloud:
             )
 
         return self.col_subsets
+    def convert_to_noleap(self, ds):
+        """Convert any CMIP dataset time to cftime.DatetimeNoLeap and floor to day."""
+        if "time" not in ds.coords:
+            return ds
+        
+        t = ds.indexes["time"]  # can be pandas.DatetimeIndex or CFTimeIndex
+        new_times = []
+
+        for ti in t:
+            year, month, day = ti.year, ti.month, ti.day
+            # Floor to day: ignore hour, minute, second
+            if isinstance(ti, pd.Timestamp):
+                new_times.append(cftime.Datetime(year, month, day))
+            elif isinstance(ti, cftime.DatetimeNoLeap):
+                # still floor to day
+                new_times.append(cftime.Datetime(year, month, day))
+            elif isinstance(ti, cftime.Datetime):
+                # other cftime calendars → convert to NoLeap, floor to day
+                new_times.append(cftime.Datetime(year, month, day))
+            else:
+                raise TypeError(f"Unsupported time type: {type(ti)}")
+        
+        ds = ds.assign_coords(time=("time", new_times))
+        return ds
 
     def load(self):
         """Load and merge datasets from collected col_subsets."""
@@ -128,6 +177,7 @@ class CMIPCloud:
             self.ds = xr.merge(datasets,compat='override')
         else:
             self.ds = None
+
         return self.ds
 
     def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
@@ -178,6 +228,9 @@ class CMIPCloud:
         else:
             raise ValueError("Must provide either point, box, or shapefile.")
         self.ds = ds_subset
+        self.ds = self.ds.assign_coords(source_id=self.source_id)
+        self.ds = self.ds.expand_dims("source_id")
+        self.ds = self.convert_to_noleap(self.ds)
         return ds_subset
 
     def _subset_time(self, start_date, end_date):
