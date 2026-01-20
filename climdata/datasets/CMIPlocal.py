@@ -61,12 +61,19 @@ class CMIPmirror:
         for file_path in tqdm(nc_files, desc="Indexing CMIP6 files"):
             path_parts = Path(file_path).parts
 
-            # Ensure path has enough parts
-            if len(path_parts) < 15:
+            # Find the base_dir in path_parts to determine the offset
+            base_parts = Path(base_dir).parts
+            try:
+                base_index = len(base_parts)
+            except:
+                continue
+
+            # Ensure path has enough parts after base_dir
+            if len(path_parts) < base_index + 9:
                 continue
 
             activity_id, institution_id, source_id, experiment_id, member_id, table_id, variable_id, grid_label, version = (
-                path_parts[6:15]
+                path_parts[base_index:base_index + 9]
             )
 
             # Extract start and end dates from filename
@@ -201,20 +208,20 @@ class CMIPmirror:
         self.dataset = data_dict
         return data_dict
 
-    def to_zarr(self,dataset):
+    def to_zarr(self, dataset=None):
         if self.dataset is None:
             raise ValueError("No dataset loaded. Call `load()` before `to_zarr()`.")
-        for var_name in self.dataset.keys():
-            for mod_name in self.dataset[var_name].keys():
-                ds_model = self.dataset[var_name][mod_name]
+        for mod_name in self.dataset.keys():
+            for var_name in self.dataset[mod_name].keys():
+                ds_model = self.dataset[mod_name][var_name]
             
                 dataset_name = mod_name
                 region = self.var_cfg.region
 
                 if var_name == 'pr':
-                    self.dataset.attrs['units'] = 'kg m-2 s-1'
+                    ds_model.attrs['units'] = 'kg m-2 s-1'
                 elif var_name in ['tas', 'tasmax', 'tasmin']:
-                    self.dataset.attrs['units'] = 'degC'
+                    ds_model.attrs['units'] = 'degC'
         
                 zarr_filename = self.var_cfg.output.filename.format(
                     index=var_name,
@@ -228,4 +235,4 @@ class CMIPmirror:
                 os.makedirs(os.path.dirname(zarr_path), exist_ok=True)
         
                 print(f"💾 Saving {var_name} to Zarr: {zarr_path}")
-                self.dataset.to_zarr(zarr_path, mode="w")
+                ds_model.to_zarr(zarr_path, mode="w")

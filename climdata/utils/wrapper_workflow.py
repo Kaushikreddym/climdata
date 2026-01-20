@@ -574,6 +574,13 @@ class ClimateExtractor:
                 ds_vars.append(hyras.load(var, chunking={'time':"auto"})[[var]])
             ds = xr.merge(ds_vars, compat="override")
             self.dataset_class = hyras
+        elif dataset_upper == "W5E5":
+            w5e5 = climdata.W5E5(cfg)
+            w5e5.fetch()  # Download from ISIMIP
+            w5e5.load()   # Load into xarray
+            w5e5.extract(**extract_kwargs)
+            ds = w5e5.ds
+            self.dataset_class = w5e5
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 

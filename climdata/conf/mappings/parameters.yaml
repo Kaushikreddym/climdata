@@ -258,3 +258,54 @@ power:
 #       name: total_precipitation
 #     rsds:
 #       name: surface_solar_radiation_downwards
+w5e5:
+  type: gridded
+  subsetting: None
+  params:
+    simulation_round: ISIMIP3a
+    product: InputData
+    climate_forcing: w5e5v2.0
+    climate_scenario: obsclim
+    resolution: 0.5deg
+  variables:
+    tas:
+      name: tas
+      long_name: Near-Surface Air Temperature
+      units: K
+    tasmax:
+      name: tasmax
+      long_name: Daily Maximum Near-Surface Air Temperature
+      units: K
+    tasmin:
+      name: tasmin
+      long_name: Daily Minimum Near-Surface Air Temperature
+      units: K
+    pr:
+      name: pr
+      long_name: Precipitation
+      units: kg m-2 s-1
+    rsds:
+      name: rsds
+      long_name: Surface Downwelling Shortwave Radiation
+      units: W m-2
+    rlds:
+      name: rlds
+      long_name: Surface Downwelling Longwave Radiation
+      units: W m-2
+    hurs:
+      name: hurs
+      long_name: Near-Surface Relative Humidity
+      units: "%"
+    sfcWind:
+      name: sfcwind
+      long_name: Near-Surface Wind Speed
+      units: m s-1
+    ps:
+      name: ps
+      long_name: Surface Air Pressure
+      units: Pa
+    huss:
+      name: huss
+      long_name: Near-Surface Specific Humidity
+      units: "1"
+  Description: "Observed atmospheric climate. Version 2.0 of the W5E5 dataset covers the entire globe at 0.5° horizontal and daily temporal resolution from 1979 to 2019. The W5E5 dataset was compiled to support the bias adjustment of climate input data for the impact assessments carried out in phase 3b of the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."

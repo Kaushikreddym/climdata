@@ -222,7 +222,7 @@ class MSWXmirror:
             raise RuntimeError(f"Failed to load dataset for variable '{variable}': {e}")
 
         # Ensure consistent dimension order
-        if self._extract_mode is not "point":
+        if self._extract_mode != "point":
             dset = dset.transpose("time", "lat", "lon")
 
         # Store in the class

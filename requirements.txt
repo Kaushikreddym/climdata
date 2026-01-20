@@ -19,6 +19,7 @@ zarr
 wetterdienst
 pint-pandas
 cdsapi
+isimip-client
 
 # Workflow + config
 hydra-core

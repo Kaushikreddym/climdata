@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import geopandas as gpd
 import hydra
 from wetterdienst import Settings
 from wetterdienst.provider.dwd.observation import DwdObservationRequest
