@@ -151,13 +151,13 @@ class CMIPCloud:
             year, month, day = ti.year, ti.month, ti.day
             # Floor to day: ignore hour, minute, second
             if isinstance(ti, pd.Timestamp):
-                new_times.append(cftime.Datetime(year, month, day))
+                new_times.append(cftime.DatetimeNoLeap(year, month, day))
             elif isinstance(ti, cftime.DatetimeNoLeap):
                 # still floor to day
-                new_times.append(cftime.Datetime(year, month, day))
-            elif isinstance(ti, cftime.Datetime):
+                new_times.append(cftime.DatetimeNoLeap(year, month, day))
+            elif isinstance(ti, cftime.DatetimeNoLeap):
                 # other cftime calendars → convert to NoLeap, floor to day
-                new_times.append(cftime.Datetime(year, month, day))
+                new_times.append(cftime.DatetimeNoLeap(year, month, day))
             else:
                 raise TypeError(f"Unsupported time type: {type(ti)}")
         
