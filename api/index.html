@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/api/">
       
       
-        <link rel="prev" href="../examples/wrapper_workflow/">
+        <link rel="prev" href="../examples/advanced/cmip_obs_comparison/">
       
       
       
@@ -424,6 +424,89 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/advanced/cmip_obs_comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1199,92 +1282,135 @@ extractor.to_csv(df)</p>
 
         <span class="c1"># instance logger for this extractor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_gen_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_gen_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create filenames (csv, nc, zarr) using config templates and dataset metadata.</span>
 
-<span class="sd">        The method automatically handles coordinate aliases such as lat/latitude, lon/longitude and time/date.</span>
+<span class="sd">        Accepts either:</span>
+<span class="sd">        - ds : xarray.Dataset</span>
+<span class="sd">        - df : pandas.DataFrame (long form with columns: lat, lon, time/date, variable, value, optional source)</span>
+
+<span class="sd">        Exactly one must be provided (keyword-only).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># ------------------------</span>
-        <span class="c1"># Helper: find coord alias</span>
+        <span class="c1"># Validate inputs</span>
+        <span class="c1"># ------------------------</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provide exactly one of `ds` or `df` as a keyword argument.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># ------------------------</span>
+        <span class="c1"># Helper: find coord alias (xarray)</span>
         <span class="c1"># ------------------------</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Return ds coordinate if any alias in names exists.&quot;&quot;&quot;</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="c1"># ------------------------</span>
-        <span class="c1"># Extract coordinates</span>
+        <span class="c1"># Case 1: xarray.Dataset</span>
         <span class="c1"># ------------------------</span>
-        <span class="n">lat</span> <span class="o">=</span> <span class="n">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lat&quot;</span><span class="p">,</span> <span class="s2">&quot;latitude&quot;</span><span class="p">])</span>
-        <span class="n">lon</span> <span class="o">=</span> <span class="n">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">])</span>
-        <span class="n">time</span> <span class="o">=</span> <span class="n">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;date&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lat&quot;</span><span class="p">,</span> <span class="s2">&quot;latitude&quot;</span><span class="p">])</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="n">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">])</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">find_coord</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;date&quot;</span><span class="p">])</span>
 
-        <span class="c1"># ------------------------</span>
-        <span class="c1"># Provider</span>
-        <span class="c1"># ------------------------</span>
-        <span class="n">provider</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+            <span class="n">provider</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+            <span class="n">vars_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span>
+            <span class="n">parameter</span> <span class="o">=</span> <span class="n">vars_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vars_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vars_list</span><span class="p">)</span>
 
-        <span class="c1"># ------------------------</span>
-        <span class="c1"># Parameter(s)</span>
-        <span class="c1"># ------------------------</span>
-        <span class="n">vars_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span>
-        <span class="n">parameter</span> <span class="o">=</span> <span class="n">vars_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vars_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">vars_list</span><span class="p">)</span>
-
-        <span class="c1"># ------------------------</span>
-        <span class="c1"># Latitude range</span>
-        <span class="c1"># ------------------------</span>
-        <span class="k">if</span> <span class="n">lat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">lat_str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
-            <span class="n">lat_range</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Flatten in case of 2D lat/lon grid</span>
-            <span class="n">lat_vals</span> <span class="o">=</span> <span class="n">lat</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">lat_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_vals</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
-            <span class="n">lat_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_vals</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-
-            <span class="k">if</span> <span class="n">lat_min</span> <span class="o">==</span> <span class="n">lat_max</span><span class="p">:</span>
-                <span class="n">lat_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="n">lat_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="c1"># Latitude range</span>
+            <span class="k">if</span> <span class="n">lat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lat_vals</span> <span class="o">=</span> <span class="n">lat</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">lat_min</span><span class="p">,</span> <span class="n">lat_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_vals</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_vals</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">lat_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">lat_max</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="n">lat_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">lat_max</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">lat_min</span> <span class="o">=</span> <span class="n">lat_max</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># ------------------------</span>
-        <span class="c1"># Longitude range</span>
-        <span class="c1"># ------------------------</span>
-        <span class="k">if</span> <span class="n">lon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">lon_str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
-            <span class="n">lon_range</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">lon_vals</span> <span class="o">=</span> <span class="n">lon</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">lon_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon_vals</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
-            <span class="n">lon_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon_vals</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
-
-            <span class="k">if</span> <span class="n">lon_min</span> <span class="o">==</span> <span class="n">lon_max</span><span class="p">:</span>
-                <span class="n">lon_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="n">lon_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="c1"># Longitude range</span>
+            <span class="k">if</span> <span class="n">lon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lon_vals</span> <span class="o">=</span> <span class="n">lon</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">lon_min</span><span class="p">,</span> <span class="n">lon_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon_vals</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon_vals</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">lon_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">lon_max</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="n">lon_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">lon_max</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">lon_min</span> <span class="o">=</span> <span class="n">lon_max</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Time range</span>
+            <span class="k">if</span> <span class="n">time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tvals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+                <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">tvals</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">),</span> <span class="n">tvals</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
 
         <span class="c1"># ------------------------</span>
-        <span class="c1"># Time range</span>
+        <span class="c1"># Case 2: pandas.DataFrame (long form)</span>
         <span class="c1"># ------------------------</span>
-        <span class="k">if</span> <span class="n">time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">tvals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-            <span class="n">start</span> <span class="o">=</span> <span class="n">tvals</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">end</span> <span class="o">=</span> <span class="n">tvals</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+            <span class="c1"># Identify coordinate columns</span>
+            <span class="n">lat_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="s2">&quot;lat&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+            <span class="n">lon_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="s2">&quot;lon&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+            <span class="n">time_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span> <span class="k">if</span> <span class="s2">&quot;time&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;date&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+
+            <span class="c1"># Provider from &#39;source&#39; column</span>
+            <span class="k">if</span> <span class="s2">&quot;source&quot;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">unique_sources</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+                <span class="n">provider</span> <span class="o">=</span> <span class="n">unique_sources</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_sources</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">unique_sources</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">provider</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+            <span class="c1"># Unique parameters from &#39;variable&#39; column</span>
+            <span class="k">if</span> <span class="s2">&quot;variable&quot;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">unique_parameters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;variable&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+                <span class="n">parameter</span> <span class="o">=</span> <span class="n">unique_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_parameters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">unique_parameters</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parameter</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+            <span class="c1"># Latitude range</span>
+            <span class="k">if</span> <span class="n">lat_cols</span><span class="p">:</span>
+                <span class="n">lat_vals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">lat_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+                <span class="n">lat_min</span><span class="p">,</span> <span class="n">lat_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_vals</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_vals</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lat_min</span> <span class="o">=</span> <span class="n">lat_max</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Longitude range</span>
+            <span class="k">if</span> <span class="n">lon_cols</span><span class="p">:</span>
+                <span class="n">lon_vals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">lon_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+                <span class="n">lon_min</span><span class="p">,</span> <span class="n">lon_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon_vals</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="nb">float</span><span class="p">(</span><span class="n">lon_vals</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lon_min</span> <span class="o">=</span> <span class="n">lon_max</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Time range</span>
+            <span class="k">if</span> <span class="n">time_cols</span><span class="p">:</span>
+                <span class="n">tvals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">tvals</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">tvals</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">end</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+        <span class="c1"># ------------------------</span>
+        <span class="c1"># Format lat/lon strings</span>
+        <span class="c1"># ------------------------</span>
+        <span class="k">if</span> <span class="n">lat_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lat_str</span> <span class="o">=</span> <span class="n">lat_range</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+        <span class="k">elif</span> <span class="n">lat_min</span> <span class="o">==</span> <span class="n">lat_max</span><span class="p">:</span>
+            <span class="n">lat_str</span> <span class="o">=</span> <span class="n">lat_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lat_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">lat_max</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">lat_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">lat_max</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">if</span> <span class="n">lon_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lon_str</span> <span class="o">=</span> <span class="n">lon_range</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+        <span class="k">elif</span> <span class="n">lon_min</span> <span class="o">==</span> <span class="n">lon_max</span><span class="p">:</span>
+            <span class="n">lon_str</span> <span class="o">=</span> <span class="n">lon_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lon_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">lon_max</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">lon_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">lon_max</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="c1"># ------------------------</span>
         <span class="c1"># Build filenames</span>
         <span class="c1"># ------------------------</span>
         <span class="n">outdir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_dir</span><span class="p">)</span>
-
+        <span class="n">outdir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="n">fn_template</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">fn_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
@@ -1300,8 +1426,7 @@ extractor.to_csv(df)</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">build</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">filename_csv</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename_nc</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">build</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">filename_nc</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename_zarr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">build</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">filename_zarr</span><span class="p">))</span>
-
-
+        <span class="k">return</span> <span class="bp">self</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_gen_fn_cfg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate output filenames using configuration and extracted dataset metadata.</span>
 
@@ -1358,7 +1483,7 @@ extractor.to_csv(df)</p>
                 <span class="n">lon_range</span><span class="o">=</span><span class="n">lon_range</span> <span class="ow">or</span> <span class="n">lon_str</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;./&#39;</span><span class="p">)</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_dir</span><span class="p">)</span>
         <span class="n">out_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">/</span> <span class="n">format_template</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">filename_csv</span><span class="p">))</span>
@@ -1581,13 +1706,20 @@ extractor.to_csv(df)</p>
             <span class="n">ds_vars</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
                 <span class="n">hyras</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
-                <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyras</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">)[[</span><span class="n">var</span><span class="p">]])</span>
+                <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyras</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">chunking</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;time&#39;</span><span class="p">:</span><span class="s2">&quot;auto&quot;</span><span class="p">})[[</span><span class="n">var</span><span class="p">]])</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">hyras</span>
+        <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;W5E5&quot;</span><span class="p">:</span>
+            <span class="n">w5e5</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+            <span class="n">w5e5</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Download from ISIMIP</span>
+            <span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>   <span class="c1"># Load into xarray</span>
+            <span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">w5e5</span><span class="o">.</span><span class="n">ds</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">w5e5</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">xclim</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">convert_units_to</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">cfg</span><span class="o">.</span><span class="n">varinfo</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
 
-        <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="c1"># ds = ds.compute()</span>
 
         <span class="k">return</span> <span class="n">ds</span>
     <span class="c1"># ----------------------------</span>
@@ -1662,7 +1794,10 @@ extractor.to_csv(df)</p>
         <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;variable&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">ds</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;cmip&#39;</span><span class="p">:</span>
+            <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;source_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;source_id&quot;</span><span class="p">)</span>
         <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">))</span>
+        <span class="n">df_long</span> <span class="o">=</span> <span class="n">df_long</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gen_fn_cfg</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">df_long</span>
 
@@ -2406,13 +2541,20 @@ to fetch, load and extract datasets. When extraction completes, units are conver
         <span class="n">ds_vars</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="n">hyras</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
-            <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyras</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">)[[</span><span class="n">var</span><span class="p">]])</span>
+            <span class="n">ds_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hyras</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">chunking</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;time&#39;</span><span class="p">:</span><span class="s2">&quot;auto&quot;</span><span class="p">})[[</span><span class="n">var</span><span class="p">]])</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ds_vars</span><span class="p">,</span> <span class="n">compat</span><span class="o">=</span><span class="s2">&quot;override&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">hyras</span>
+    <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;W5E5&quot;</span><span class="p">:</span>
+        <span class="n">w5e5</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">w5e5</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Download from ISIMIP</span>
+        <span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>   <span class="c1"># Load into xarray</span>
+        <span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">w5e5</span><span class="o">.</span><span class="n">ds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">w5e5</span>
     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
         <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">xclim</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">convert_units_to</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">cfg</span><span class="o">.</span><span class="n">varinfo</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
 
-    <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+    <span class="c1"># ds = ds.compute()</span>
 
     <span class="k">return</span> <span class="n">ds</span>
 </code></pre></div>
@@ -3514,7 +3656,10 @@ to fetch, load and extract datasets. When extraction completes, units are conver
     <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;variable&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">ds</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;cmip&#39;</span><span class="p">:</span>
+        <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;source_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;source_id&quot;</span><span class="p">)</span>
     <span class="n">df_long</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">))</span>
+    <span class="n">df_long</span> <span class="o">=</span> <span class="n">df_long</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_gen_fn_cfg</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">df_long</span>
 </code></pre></div>

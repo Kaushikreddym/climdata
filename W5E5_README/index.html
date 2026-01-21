@@ -1,0 +1,1510 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This project automates the fetching, extraction and processing of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.">
+      
+      
+        <meta name="author" content="Kaushikreddym">
+      
+      
+        <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/W5E5_README/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>W5E5 Dataset Support - climdata</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Google+Sans:300,300i,400,400i,700,700i%7CRegular:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Google Sans";--md-code-font:"Regular"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/timeago.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="light-green" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#w5e5-dataset-support" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="climdata" class="md-header__button md-logo" aria-label="climdata" data-md-component="logo">
+      
+  <img src="../assets/climdata_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            climdata
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              W5E5 Dataset Support
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="light-green" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Kaushikreddym/climdata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="climdata" class="md-nav__button md-logo" aria-label="climdata" data-md-component="logo">
+      
+  <img src="../assets/climdata_logo.png" alt="logo">
+
+    </a>
+    climdata
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Kaushikreddym/climdata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Kaushikreddym/climdata/issues" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/wrapper_workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow Notebook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/advanced/cmip_obs_comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#about-w5e5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About W5E5
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="About W5E5">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dataset-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dataset Characteristics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Basic Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-using-the-configuration-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Using the Configuration System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-direct-instantiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Direct Instantiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spatial-extraction-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial Extraction Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spatial Extraction Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bounding-box-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounding Box Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shapefile-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shapefile Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-xarray-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Working with the xarray Dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-access-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Access Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Access Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#isimip-repository-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ISIMIP Repository Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#file-naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Naming Convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tips
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-with-other-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison with Other Datasets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Comparison with Other Datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-w5e5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use W5E5
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use Alternatives
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#download-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Notebooks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+  
+  
+
+
+<h1 id="w5e5-dataset-support">W5E5 Dataset Support<a class="headerlink" href="#w5e5-dataset-support" title="Permanent link">&para;</a></h1>
+<p>The climdata package now includes support for the W5E5 (WFDE5 over land merged with ERA5 over ocean) global meteorological forcing dataset from ISIMIP.</p>
+<h2 id="about-w5e5">About W5E5<a class="headerlink" href="#about-w5e5" title="Permanent link">&para;</a></h2>
+<p><strong>W5E5</strong> is a high-quality global meteorological forcing dataset that combines:
+- WFDE5 (WATCH Forcing Data ERA5) over land
+- ERA5 reanalysis over ocean
+- Available through the ISIMIP (Inter-Sectoral Impact Model Intercomparison Project) data repository</p>
+<h3 id="dataset-characteristics">Dataset Characteristics<a class="headerlink" href="#dataset-characteristics" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Spatial Resolution</strong>: 0.5° × 0.5° (approximately 50 km)</li>
+<li><strong>Temporal Resolution</strong>: Daily</li>
+<li><strong>Temporal Coverage</strong>: 1979 - present</li>
+<li><strong>Global Coverage</strong>: Complete global coverage</li>
+<li><strong>Data Source</strong>: ISIMIP3a (observational/historical climate)</li>
+</ul>
+<h3 id="available-variables">Available Variables<a class="headerlink" href="#available-variables" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Name</th>
+<th>Description</th>
+<th>Units</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tas</code></td>
+<td>Near-Surface Air Temperature</td>
+<td>Mean daily temperature at 2m height</td>
+<td>K</td>
+</tr>
+<tr>
+<td><code>tasmax</code></td>
+<td>Maximum Temperature</td>
+<td>Daily maximum temperature at 2m height</td>
+<td>K</td>
+</tr>
+<tr>
+<td><code>tasmin</code></td>
+<td>Minimum Temperature</td>
+<td>Daily minimum temperature at 2m height</td>
+<td>K</td>
+</tr>
+<tr>
+<td><code>pr</code></td>
+<td>Precipitation</td>
+<td>Total daily precipitation</td>
+<td>kg m⁻² s⁻¹</td>
+</tr>
+<tr>
+<td><code>rsds</code></td>
+<td>Shortwave Radiation</td>
+<td>Surface downwelling shortwave radiation</td>
+<td>W m⁻²</td>
+</tr>
+<tr>
+<td><code>rlds</code></td>
+<td>Longwave Radiation</td>
+<td>Surface downwelling longwave radiation</td>
+<td>W m⁻²</td>
+</tr>
+<tr>
+<td><code>hurs</code></td>
+<td>Relative Humidity</td>
+<td>Near-surface relative humidity</td>
+<td>%</td>
+</tr>
+<tr>
+<td><code>sfcWind</code></td>
+<td>Wind Speed</td>
+<td>Near-surface wind speed</td>
+<td>m s⁻¹</td>
+</tr>
+<tr>
+<td><code>ps</code></td>
+<td>Surface Pressure</td>
+<td>Surface air pressure</td>
+<td>Pa</td>
+</tr>
+<tr>
+<td><code>huss</code></td>
+<td>Specific Humidity</td>
+<td>Near-surface specific humidity</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>To use the W5E5 dataset, you need to install the <code>isimip-client</code> package:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>isimip-client
+</code></pre></div></td></tr></table></div>
+<p>Or if installing climdata from the updated requirements:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</code></pre></div></td></tr></table></div>
+<h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
+<h3 id="1-using-the-configuration-system">1. Using the Configuration System<a class="headerlink" href="#1-using-the-configuration-system" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.W5E5</span><span class="w"> </span><span class="kn">import</span> <span class="n">W5E5</span>
+
+<span class="c1"># Load configuration</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span>
+    <span class="n">config_name</span><span class="o">=</span><span class="s1">&#39;config&#39;</span><span class="p">,</span>
+    <span class="n">overrides</span><span class="o">=</span><span class="p">[</span>
+        <span class="s1">&#39;dataset=w5e5&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;lat=52.52&#39;</span><span class="p">,</span>  <span class="c1"># Berlin, Germany</span>
+        <span class="s1">&#39;lon=13.405&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;variables=[tas,tasmax,tasmin,pr,rsds]&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;time_range.start_date=2010-01-01&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;time_range.end_date=2010-12-31&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;data_dir=./data&#39;</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># Initialize and fetch data</span>
+<span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Download from ISIMIP</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>   <span class="c1"># Load into xarray</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>  <span class="c1"># Extract for location</span>
+
+<span class="c1"># Save results</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="s1">&#39;output.csv&#39;</span><span class="p">)</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">save_netcdf</span><span class="p">(</span><span class="s1">&#39;output.nc&#39;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="2-direct-instantiation">2. Direct Instantiation<a class="headerlink" href="#2-direct-instantiation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">omegaconf</span><span class="w"> </span><span class="kn">import</span> <span class="n">OmegaConf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.W5E5</span><span class="w"> </span><span class="kn">import</span> <span class="n">W5E5</span>
+
+<span class="c1"># Create configuration manually</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">({</span>
+    <span class="s1">&#39;dataset&#39;</span><span class="p">:</span> <span class="s1">&#39;w5e5&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lat&#39;</span><span class="p">:</span> <span class="mf">40.7128</span><span class="p">,</span>  <span class="c1"># New York</span>
+    <span class="s1">&#39;lon&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">74.0060</span><span class="p">,</span>
+    <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span> <span class="s1">&#39;pr&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;time_range&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;start_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2015-01-01&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;end_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2015-12-31&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;data_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./w5e5_data&#39;</span>
+<span class="p">})</span>
+
+<span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h2>
+<h3 id="spatial-extraction-options">Spatial Extraction Options<a class="headerlink" href="#spatial-extraction-options" title="Permanent link">&para;</a></h3>
+<h4 id="point-extraction">Point Extraction<a class="headerlink" href="#point-extraction" title="Permanent link">&para;</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Extract for a single point</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">))</span>
+
+<span class="c1"># Extract with buffer (average over surrounding area)</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">),</span> <span class="n">buffer_km</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="bounding-box-extraction">Bounding Box Extraction<a class="headerlink" href="#bounding-box-extraction" title="Permanent link">&para;</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Extract for a rectangular region</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">box</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;lon_min&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+    <span class="s1">&#39;lon_max&#39;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">,</span>
+    <span class="s1">&#39;lat_min&#39;</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span>
+    <span class="s1">&#39;lat_max&#39;</span><span class="p">:</span> <span class="mf">55.0</span>
+<span class="p">})</span>
+</code></pre></div></td></tr></table></div>
+<h4 id="shapefile-extraction">Shapefile Extraction<a class="headerlink" href="#shapefile-extraction" title="Permanent link">&para;</a></h4>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+
+<span class="c1"># Extract for a shapefile region</span>
+<span class="n">gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="s1">&#39;region.shp&#39;</span><span class="p">)</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">shapefile</span><span class="o">=</span><span class="n">gdf</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="working-with-the-xarray-dataset">Working with the xarray Dataset<a class="headerlink" href="#working-with-the-xarray-dataset" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Access the loaded dataset</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">w5e5</span><span class="o">.</span><span class="n">ds</span>
+
+<span class="c1"># Convert to pandas DataFrame</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+
+<span class="c1"># Unit conversions</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;tas_celsius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;tas&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">273.15</span>  <span class="c1"># K to °C</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;pr_mm_day&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;pr&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">86400</span>      <span class="c1"># kg/m²/s to mm/day</span>
+
+<span class="c1"># Basic statistics</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+
+<span class="c1"># Plotting</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;tas_celsius&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Temperature Time Series&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="data-access-details">Data Access Details<a class="headerlink" href="#data-access-details" title="Permanent link">&para;</a></h2>
+<h3 id="isimip-repository-structure">ISIMIP Repository Structure<a class="headerlink" href="#isimip-repository-structure" title="Permanent link">&para;</a></h3>
+<p>W5E5 data is organized in the ISIMIP repository as:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>ISIMIP3a/InputData/climate/atmosphere/obsclim/global/daily/historical/w5e5v2.0/
+</code></pre></div></td></tr></table></div></p>
+<p>The W5E5 class automatically:
+1. Searches for datasets matching your criteria
+2. Downloads relevant files covering your time range
+3. Caches files locally to avoid re-downloading
+4. Loads and merges multiple files as needed</p>
+<h3 id="file-naming-convention">File Naming Convention<a class="headerlink" href="#file-naming-convention" title="Permanent link">&para;</a></h3>
+<p>W5E5 files follow this pattern:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>w5e5v2.0_obsclim_{variable}_global_daily_{start_year}_{end_year}.nc
+</code></pre></div></td></tr></table></div></p>
+<p>For example:
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>w5e5v2.0_obsclim_tas_global_daily_2010_2019.nc
+</code></pre></div></td></tr></table></div></p>
+<h2 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Download once</strong>: Downloaded files are cached in <code>data_dir/w5e5/</code></li>
+<li><strong>Subset early</strong>: Extract for your region immediately after loading to reduce memory usage</li>
+<li><strong>Use appropriate time ranges</strong>: W5E5 files cover multi-year periods, so choose ranges that minimize file downloads</li>
+<li><strong>Parallel processing</strong>: The <code>load()</code> method uses dask for parallel file reading</li>
+</ol>
+<h2 id="comparison-with-other-datasets">Comparison with Other Datasets<a class="headerlink" href="#comparison-with-other-datasets" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>W5E5</th>
+<th>ERA5</th>
+<th>MSWX</th>
+<th>NASA POWER</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Resolution</td>
+<td>0.5°</td>
+<td>0.25°</td>
+<td>0.1°</td>
+<td>0.5°</td>
+</tr>
+<tr>
+<td>Start Year</td>
+<td>1979</td>
+<td>1950</td>
+<td>1979</td>
+<td>1981</td>
+</tr>
+<tr>
+<td>Coverage</td>
+<td>Global</td>
+<td>Global</td>
+<td>Global</td>
+<td>Global</td>
+</tr>
+<tr>
+<td>Variables</td>
+<td>10+</td>
+<td>100+</td>
+<td>7</td>
+<td>6+</td>
+</tr>
+<tr>
+<td>Update Freq</td>
+<td>Annual</td>
+<td>Monthly</td>
+<td>Annual</td>
+<td>Near real-time</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>High</td>
+<td>Very High</td>
+<td>High</td>
+<td>Good</td>
+</tr>
+</tbody>
+</table>
+<h3 id="when-to-use-w5e5">When to Use W5E5<a class="headerlink" href="#when-to-use-w5e5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ Need bias-corrected ERA5 data</li>
+<li>✅ Working with ISIMIP climate impact models</li>
+<li>✅ Require consistent land-ocean dataset</li>
+<li>✅ 0.5° resolution is sufficient</li>
+<li>✅ Post-1979 period is adequate</li>
+</ul>
+<h3 id="when-to-use-alternatives">When to Use Alternatives<a class="headerlink" href="#when-to-use-alternatives" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use <strong>ERA5</strong> if you need higher resolution (0.25°) or more variables</li>
+<li>Use <strong>MSWX</strong> if you need higher resolution (0.1°) and focus on precipitation</li>
+<li>Use <strong>NASA POWER</strong> if you need near real-time data or solar energy applications</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="installation-issues">Installation Issues<a class="headerlink" href="#installation-issues" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># If isimip-client installation fails</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+pip<span class="w"> </span>install<span class="w"> </span>isimip-client
+
+<span class="c1"># Or use conda</span>
+conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>isimip-client
+</code></pre></div></td></tr></table></div>
+<h3 id="download-issues">Download Issues<a class="headerlink" href="#download-issues" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Check ISIMIP API status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">isimip_client.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">ISIMIPClient</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">ISIMIPClient</span><span class="p">()</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">datasets</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s1">&#39;w5e5&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;results&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[]))</span><span class="si">}</span><span class="s2"> datasets&quot;</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="memory-issues">Memory Issues<a class="headerlink" href="#memory-issues" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Process data in chunks for large regions</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="c1"># Extract smaller region first</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">box</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;lon_min&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;lon_max&#39;</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span> 
+                   <span class="s1">&#39;lat_min&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;lat_max&#39;</span><span class="p">:</span> <span class="mi">51</span><span class="p">})</span>
+</code></pre></div></td></tr></table></div>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>W5E5 Dataset</strong>: Lange, S. (2019). WFDE5 over land merged with ERA5 over the ocean (W5E5). V. 1.0. DOI: <a href="https://doi.org/10.5880/pik.2019.023">10.5880/pik.2019.023</a></p>
+</li>
+<li>
+<p><strong>ISIMIP Project</strong>: <a href="https://www.isimip.org/">https://www.isimip.org/</a></p>
+</li>
+<li>
+<p><strong>ISIMIP Data Repository</strong>: <a href="https://data.isimip.org/">https://data.isimip.org/</a></p>
+</li>
+<li>
+<p><strong>ISIMIP Client</strong>: <a href="https://github.com/ISI-MIP/isimip-client">https://github.com/ISI-MIP/isimip-client</a></p>
+</li>
+</ol>
+<h2 id="example-notebooks">Example Notebooks<a class="headerlink" href="#example-notebooks" title="Permanent link">&para;</a></h2>
+<p>See the following example notebooks:
+- <a href="../examples/w5e5_example/"><code>docs/examples/w5e5_example.ipynb</code></a> - Complete usage example</p>
+<h2 id="support">Support<a class="headerlink" href="#support" title="Permanent link">&para;</a></h2>
+<p>For issues related to:
+- <strong>W5E5 implementation</strong>: Open an issue in the climdata repository
+- <strong>ISIMIP data access</strong>: Visit <a href="https://www.isimip.org/contact/">ISIMIP support</a>
+- <strong>Data quality/methodology</strong>: See W5E5 documentation at <a href="https://doi.org/10.5880/pik.2019.023">PIK</a></p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 20, 2026 15:09:53 UTC"><span class="timeago" datetime="2026-01-20T15:09:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 20, 2026 15:09:53 UTC">2026-01-20</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 20, 2026 15:09:53 UTC"><span class="timeago" datetime="2026-01-20T15:09:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 20, 2026 15:09:53 UTC">2026-01-20</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 - 2024 Kaushik Muduchuru
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../js/timeago.min.js"></script>
+      
+        <script src="../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>

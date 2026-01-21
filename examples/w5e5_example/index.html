@@ -12,7 +12,7 @@
         <meta name="author" content="Kaushikreddym">
       
       
-        <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/examples/extremes/">
+        <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/examples/w5e5_example/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>Extremes - climdata</title>
+        <title>W5e5 example - climdata</title>
       
     
     
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Extremes
+              W5e5 example
             
           </span>
         </div>
@@ -624,7 +624,7 @@
               <article class="md-content__inner md-typeset">
                 
 
-    <a href="/climdata/examples/extremes/extremes.ipynb" title="Download Notebook" class="md-content__button md-icon">
+    <a href="/climdata/examples/w5e5_example/w5e5_example.ipynb" title="Download Notebook" class="md-content__button md-icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
     </a>
 
@@ -637,7 +637,7 @@
   
 
 
-  <h1>Extremes</h1>
+  <h1>W5e5 example</h1>
 
 <script>
 (function (global, factory) {
@@ -1076,12 +1076,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=4fe4fdf1">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=00b645ff">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-1">
@@ -1094,75 +1094,50 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.extremes.indices</span><span class="w"> </span><span class="kn">import</span> <span class="n">extreme_index</span> 
-<span class="n">geojson</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"FeatureCollection"</span><span class="p">,</span>
-  <span class="s2">"features"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Feature"</span><span class="p">,</span>
-      <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{},</span>
-      <span class="s2">"geometry"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span>
-          <span class="mf">13.246667038198012</span><span class="p">,</span>
-          <span class="mf">52.891982026993958</span>
-        <span class="p">],</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Point"</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">climdata.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.W5E5</span><span class="w"> </span><span class="kn">import</span> <span class="n">W5E5</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">climdata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClimData</span>
+<span class="c1"># Configure</span>
+<span class="n">overrides</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"dataset=w5e5"</span><span class="p">,</span>  <span class="c1"># Select the MSWX dataset for extraction</span>
+    <span class="s2">"lat=52"</span><span class="p">,</span>
+    <span class="s2">"lon=13"</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s2">"time_range.start_date=2004-01-01"</span><span class="p">,</span>  <span class="c1"># Start date of extraction</span>
+    <span class="sa">f</span><span class="s2">"time_range.end_date=2004-12-31"</span><span class="p">,</span>    <span class="c1"># End date of extraction</span>
+    <span class="s2">"variables=[tasmin,tasmax,pr]"</span><span class="p">,</span>       <span class="c1"># Variables to extract: min/max temperature &amp; precipitation</span>
+    <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
+<span class="p">]</span>
 
+<span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">climdata</span>
-<span class="n">clim</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span>
-    <span class="n">overrides</span><span class="o">=</span><span class="p">[</span>
-            <span class="s2">"dataset=hyras"</span><span class="p">,</span>
-            <span class="s2">"variables=['tasmin']"</span><span class="p">,</span>
-            <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span> <span class="c1">#optional </span>
-            <span class="sa">f</span><span class="s2">"time_range.start_date=1989-01-01"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"time_range.end_date=2014-12-31"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"aoi='</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">geojson</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">,</span>
-            <span class="s2">"index=tn10p"</span><span class="p">,</span>
-            <span class="s2">"dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json"</span><span class="p">,</span>
-    <span class="p">],</span>
-    <span class="n">save_to_file</span><span class="o">=</span><span class="kc">False</span>
-<span class="p">)</span>
+<span class="c1"># Fetch, load, and extract</span>
+<span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Download from ISIMIP</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>   <span class="c1"># Load into xarray</span>
+<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import json
-from climdata.extremes.indices import extreme_index 
-geojson = {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {},
-      "geometry": {
-        "coordinates": [
-          13.246667038198012,
-          52.891982026993958
-        ],
-        "type": "Point"
-      }
-    }
-  ]
-}
+<div class="clipboard-copy-txt" id="cell-1">from climdata.utils.config import load_config
+from climdata.datasets.W5E5 import W5E5
+from climdata import ClimData
+# Configure
+overrides = [
+    "dataset=w5e5",  # Select the MSWX dataset for extraction
+    "lat=52",
+    "lon=13",
+    f"time_range.start_date=2004-01-01",  # Start date of extraction
+    f"time_range.end_date=2004-12-31",    # End date of extraction
+    "variables=[tasmin,tasmax,pr]",       # Variables to extract: min/max temperature &amp; precipitation
+    "data_dir=/beegfs/muduchuru/data",    # Local directory to store downloaded/intermediate files
+]
 
+extractor = ClimData(overrides=overrides)
 
-import climdata
-clim = climdata.extract_data(
-    overrides=[
-            "dataset=hyras",
-            "variables=['tasmin']",
-            "data_dir=/beegfs/muduchuru/data", #optional 
-            f"time_range.start_date=1989-01-01",
-            f"time_range.end_date=2014-12-31",
-            f"aoi='{json.dumps(geojson)}'",
-            "index=tn10p",
-            "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",
-    ],
-    save_to_file=False
-)</div>
+# Fetch, load, and extract
+w5e5 = W5E5(extractor.cfg)
+w5e5.fetch()  # Download from ISIMIP
+w5e5.load()   # Load into xarray
+w5e5.extract(point=(extractor.cfg.lon, extractor.cfg.lat))
+</div>
 </div>
 </div>
 </div>
@@ -1174,60 +1149,26 @@ clim = climdata.extract_data(
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1989_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1989_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1990_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1990_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1991_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1991_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1992_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1992_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1993_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1993_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1994_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1994_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1995_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1995_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1996_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1996_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1997_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1997_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1998_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1998_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_1999_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_1999_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2000_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2000_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2001_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2001_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2002_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2002_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2003_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2003_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2004_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2004_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2005_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2005_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2006_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2006_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2007_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2007_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2008_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2008_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2009_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2009_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2010_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2010_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2011_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2011_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2012_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2012_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2013_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2013_v6-0_de.nc
-⬇️  Checking: https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/tasmin_hyras_1_2014_v6-0_de.nc
-✔️  Exists locally: /beegfs/muduchuru/data/hyras/TASMIN/tasmin_hyras_1_2014_v6-0_de.nc
-Calculating index: tn10p
-&lt;class 'xarray.core.dataset.Dataset'&gt;
+<pre>🔍 Searching for W5E5 datasets in ISIMIP repository...
+
+📥 Fetching tasmin...
+✅ Found dataset: 20crv3-w5e5_obsclim_tasmin_global_daily
+  ✓ Already exists: 20crv3-w5e5_obsclim_tasmin_global_daily_2001_2010.nc
+
+📥 Fetching tasmax...
+✅ Found dataset: 20crv3-w5e5_obsclim_tasmax_global_daily
+  ✓ Already exists: 20crv3-w5e5_obsclim_tasmax_global_daily_2001_2010.nc
+
+📥 Fetching pr...
+✅ Found dataset: 20crv3-w5e5_obsclim_pr_global_daily
+  ✓ Already exists: 20crv3-w5e5_obsclim_pr_global_daily_2001_2010.nc
+
+✅ Downloaded 3 files
+📂 Loading 3 W5E5 files...
+  Loading tasmin from 1 file(s)...
+  Loading tasmax from 1 file(s)...
+  Loading pr from 1 file(s)...
+✅ Loaded dataset with 3 variables
 </pre>
 </div>
 </div>
@@ -1235,12 +1176,12 @@ Calculating index: tn10p
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0819775d">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ec130acc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -1253,75 +1194,9 @@ Calculating index: tn10p
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.extremes.indices</span><span class="w"> </span><span class="kn">import</span> <span class="n">extreme_index</span> 
-<span class="n">geojson</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"FeatureCollection"</span><span class="p">,</span>
-  <span class="s2">"features"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Feature"</span><span class="p">,</span>
-      <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{},</span>
-      <span class="s2">"geometry"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span>
-          <span class="mf">13.246667038198012</span><span class="p">,</span>
-          <span class="mf">52.891982026993958</span>
-        <span class="p">],</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Point"</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">climdata</span>
-<span class="n">clim</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span>
-    <span class="n">overrides</span><span class="o">=</span><span class="p">[</span>
-            <span class="s2">"dataset=hyras"</span><span class="p">,</span>
-            <span class="s2">"variables=['tasmin']"</span><span class="p">,</span>
-            <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span> <span class="c1">#optional </span>
-            <span class="sa">f</span><span class="s2">"time_range.start_date=1989-01-01"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"time_range.end_date=2014-12-31"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"aoi='</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">geojson</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">,</span>
-            <span class="s2">"index=tn10p"</span><span class="p">,</span>
-            <span class="s2">"dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json"</span><span class="p">,</span>
-    <span class="p">],</span>
-    <span class="n">save_to_file</span><span class="o">=</span><span class="kc">False</span>
-<span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">w5e5</span><span class="o">.</span><span class="n">ds</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-2">import json
-from climdata.extremes.indices import extreme_index 
-geojson = {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {},
-      "geometry": {
-        "coordinates": [
-          13.246667038198012,
-          52.891982026993958
-        ],
-        "type": "Point"
-      }
-    }
-  ]
-}
-
-
-import climdata
-clim = climdata.extract_data(
-    overrides=[
-            "dataset=hyras",
-            "variables=['tasmin']",
-            "data_dir=/beegfs/muduchuru/data", #optional 
-            f"time_range.start_date=1989-01-01",
-            f"time_range.end_date=2014-12-31",
-            f"aoi='{json.dumps(geojson)}'",
-            "index=tn10p",
-            "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",
-    ],
-    save_to_file=False
-)</div>
+<div class="clipboard-copy-txt" id="cell-2">w5e5.ds</div>
 </div>
 </div>
 </div>
@@ -1331,7 +1206,7 @@ clim = climdata.extract_data(
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div><svg style="position: absolute; width: 0; height: 0; overflow: hidden">
 <defs>
@@ -1776,357 +1651,36 @@ dl.xr-attrs {
   filter: drop-shadow(1px 1px 5px var(--xr-font-color2));
   stroke-width: 0.8px;
 }
-</style><pre class="xr-text-repr-fallback">&lt;xarray.Dataset&gt; Size: 158kB
-Dimensions:      (time: 9496, dayofyear: 366)
+</style><pre class="xr-text-repr-fallback">&lt;xarray.Dataset&gt; Size: 7kB
+Dimensions:  (time: 366)
 Coordinates:
-  * time         (time) datetime64[ns] 76kB 1989-01-01 1989-01-02 ... 2014-12-31
-    lon          float64 8B 13.25
-    lat          float64 8B 52.9
-    x            float32 4B 4.54e+06
-    y            float32 4B 3.314e+06
-    percentiles  int64 8B 10
-  * dayofyear    (dayofyear) int64 3kB 1 2 3 4 5 6 7 ... 361 362 363 364 365 366
+    lon      float64 8B 13.25
+    lat      float64 8B 52.25
+  * time     (time) datetime64[ns] 3kB 2004-01-01 2004-01-02 ... 2004-12-31
 Data variables:
-    tasmin       (time) float64 76kB -0.5 3.2 -1.5 -3.1 ... -9.0 -7.9 -4.2 0.9
-    tasmin_per   (dayofyear) float64 3kB -11.02 -10.47 -10.85 ... -10.89 -11.02
-Attributes: (12/21)
-    source:                 surface observations
-    institution:            Deutscher Wetterdienst (DWD)
-    Conventions:            CF-1.11
-    title:                  gridded_temperature_dataset_(HYRAS-DE TASMIN)
-    realization:            v6-0
-    project_id:             HYRAS
-    ...                     ...
-    license:                The HYRAS data, produced by DWD, is licensed unde...
-    ConventionsURL:         http://cfconventions.org/Data/cf-conventions/cf-c...
-    realm:                  atmos
-    product:                observations
-    input_data_status:      checked
-    filename:               tasmin_hyras_1_1989_v6-0_de.nc</pre><div class="xr-wrap" style="display:none"><div class="xr-header"><div class="xr-obj-type">xarray.Dataset</div></div><ul class="xr-sections"><li class="xr-section-item"><input class="xr-section-summary-in" disabled="" id="section-05a65eaf-bb49-4a8e-88a3-b2920d7e2455" type="checkbox"/><label class="xr-section-summary" for="section-05a65eaf-bb49-4a8e-88a3-b2920d7e2455" title="Expand/collapse section">Dimensions:</label><div class="xr-section-inline-details"><ul class="xr-dim-list"><li><span class="xr-has-index">time</span>: 9496</li><li><span class="xr-has-index">dayofyear</span>: 366</li></ul></div><div class="xr-section-details"></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-f419a453-41c3-4839-bfe2-f033fd1b4287" type="checkbox"/><label class="xr-section-summary" for="section-f419a453-41c3-4839-bfe2-f033fd1b4287">Coordinates: <span>(7)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span class="xr-has-index">time</span></div><div class="xr-var-dims">(time)</div><div class="xr-var-dtype">datetime64[ns]</div><div class="xr-var-preview xr-preview">1989-01-01 ... 2014-12-31</div><input class="xr-var-attrs-in" id="attrs-5c87dccd-1afa-40ed-86f6-0a8511cb0671" type="checkbox"/><label for="attrs-5c87dccd-1afa-40ed-86f6-0a8511cb0671" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-100d35a9-3d49-47ca-b6da-fa2039f0eba1" type="checkbox"/><label for="data-100d35a9-3d49-47ca-b6da-fa2039f0eba1" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>time</dd><dt><span>long_name :</span></dt><dd>Mid Of Twentyfour Hour Time Interval [UTC]</dd><dt><span>bounds :</span></dt><dd>time_bnds</dd><dt><span>axis :</span></dt><dd>T</dd></dl></div><div class="xr-var-data"><pre>array(['1989-01-01T00:00:00.000000000', '1989-01-02T00:00:00.000000000',
-       '1989-01-03T00:00:00.000000000', ..., '2014-12-29T00:00:00.000000000',
-       '2014-12-30T00:00:00.000000000', '2014-12-31T00:00:00.000000000'],
-      dtype='datetime64[ns]')</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>lon</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">13.25</div><input class="xr-var-attrs-in" id="attrs-b30bc1ec-7b32-42d1-a99b-a7ec3c1abb89" type="checkbox"/><label for="attrs-b30bc1ec-7b32-42d1-a99b-a7ec3c1abb89" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-3ae4774d-ac36-427a-9366-227f23f6c90f" type="checkbox"/><label for="data-3ae4774d-ac36-427a-9366-227f23f6c90f" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>longitude</dd><dt><span>long_name :</span></dt><dd>Longitude Of Cell Center</dd><dt><span>units :</span></dt><dd>degrees_east</dd><dt><span>_CoordinateAxisType :</span></dt><dd>Lon</dd></dl></div><div class="xr-var-data"><pre>array(13.24777272)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>lat</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">52.9</div><input class="xr-var-attrs-in" id="attrs-8e33558c-36a2-4953-b481-93efb2329e23" type="checkbox"/><label for="attrs-8e33558c-36a2-4953-b481-93efb2329e23" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-b7cd3fc8-53b4-4c73-a61f-5b6f6399ad8a" type="checkbox"/><label for="data-b7cd3fc8-53b4-4c73-a61f-5b6f6399ad8a" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>latitude</dd><dt><span>long_name :</span></dt><dd>Latitude Of Cell Center</dd><dt><span>units :</span></dt><dd>degrees_north</dd><dt><span>_CoordinateAxisType :</span></dt><dd>Lat</dd></dl></div><div class="xr-var-data"><pre>array(52.89523559)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>x</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">4.54e+06</div><input class="xr-var-attrs-in" id="attrs-7e591bc8-b7b4-4c98-854d-a0b605f70639" type="checkbox"/><label for="attrs-7e591bc8-b7b4-4c98-854d-a0b605f70639" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-7a4bdcfd-5c21-4174-97eb-7015af32094f" type="checkbox"/><label for="data-7a4bdcfd-5c21-4174-97eb-7015af32094f" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>projection_x_coordinate</dd><dt><span>long_name :</span></dt><dd>X Coordinate Of Projection for Cell Center</dd><dt><span>units :</span></dt><dd>m</dd><dt><span>axis :</span></dt><dd>X</dd><dt><span>bounds :</span></dt><dd>x_bnds</dd></dl></div><div class="xr-var-data"><pre>array(4539500., dtype=float32)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>y</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">3.314e+06</div><input class="xr-var-attrs-in" id="attrs-697b00d0-e961-4558-944a-638ae6f06488" type="checkbox"/><label for="attrs-697b00d0-e961-4558-944a-638ae6f06488" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-7952fa7a-695c-4ce9-8b4d-ec59808a75fa" type="checkbox"/><label for="data-7952fa7a-695c-4ce9-8b4d-ec59808a75fa" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>projection_y_coordinate</dd><dt><span>long_name :</span></dt><dd>Y Coordinate Of Projection for Cell Center</dd><dt><span>units :</span></dt><dd>m</dd><dt><span>axis :</span></dt><dd>Y</dd><dt><span>bounds :</span></dt><dd>y_bnds</dd></dl></div><div class="xr-var-data"><pre>array(3314500., dtype=float32)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>percentiles</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">int64</div><div class="xr-var-preview xr-preview">10</div><input class="xr-var-attrs-in" disabled="" id="attrs-f58b44ba-6f72-463a-824d-a0d282c86883" type="checkbox"/><label for="attrs-f58b44ba-6f72-463a-824d-a0d282c86883" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-de528f1a-3037-4e08-a418-841d9a59ddc5" type="checkbox"/><label for="data-de528f1a-3037-4e08-a418-841d9a59ddc5" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"></dl></div><div class="xr-var-data"><pre>array(10)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span class="xr-has-index">dayofyear</span></div><div class="xr-var-dims">(dayofyear)</div><div class="xr-var-dtype">int64</div><div class="xr-var-preview xr-preview">1 2 3 4 5 6 ... 362 363 364 365 366</div><input class="xr-var-attrs-in" disabled="" id="attrs-3a22d8b9-945c-40f2-a102-d222e0e41a98" type="checkbox"/><label for="attrs-3a22d8b9-945c-40f2-a102-d222e0e41a98" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-22504513-d66b-41b7-b34e-d32408c3ee2a" type="checkbox"/><label for="data-22504513-d66b-41b7-b34e-d32408c3ee2a" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"></dl></div><div class="xr-var-data"><pre>array([  1,   2,   3, ..., 364, 365, 366])</pre></div></li></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-f4dee4f3-01f7-4f9a-8198-795b92477e1f" type="checkbox"/><label class="xr-section-summary" for="section-f4dee4f3-01f7-4f9a-8198-795b92477e1f">Data variables: <span>(2)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>tasmin</span></div><div class="xr-var-dims">(time)</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">-0.5 3.2 -1.5 ... -7.9 -4.2 0.9</div><input class="xr-var-attrs-in" id="attrs-bad86710-4967-403a-9df4-ec910584d54d" type="checkbox"/><label for="attrs-bad86710-4967-403a-9df4-ec910584d54d" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-ad440fc8-cd07-4d00-9d9c-373c212dfc20" type="checkbox"/><label for="data-ad440fc8-cd07-4d00-9d9c-373c212dfc20" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>air_temperature</dd><dt><span>long_name :</span></dt><dd>Daily Minimum Air Temperature</dd><dt><span>units :</span></dt><dd>degree_Celsius</dd><dt><span>grid_mapping :</span></dt><dd>crs</dd><dt><span>cell_methods :</span></dt><dd>time: minimum</dd><dt><span>units_metadata :</span></dt><dd>temperature: on-scale</dd><dt><span>CoordinateSystems :</span></dt><dd>LatLonCoordinateSystem ProjectionCoordinateSystem</dd><dt><span>esri_pe_string :</span></dt><dd>PROJCS["ETRS_1989_LAEA",GEOGCS["GCS_ETRS_1989",DATUM["D_ETRS_1989",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Lambert_Azimuthal_Equal_Area"],PARAMETER["False_Easting",4321000.0],PARAMETER["False_Northing",3210000.0],PARAMETER["Central_Meridian",10.0],PARAMETER["Latitude_Of_Origin",52.0],UNIT["Meter",1.0]]</dd></dl></div><div class="xr-var-data"><pre>array([-0.50000001,  3.20000005, -1.50000002, ..., -7.90000012,
-       -4.20000006,  0.90000001])</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>tasmin_per</span></div><div class="xr-var-dims">(dayofyear)</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">-11.02 -10.47 ... -10.89 -11.02</div><input class="xr-var-attrs-in" id="attrs-3f0de85c-071d-4cd8-9f07-ab980358f8da" type="checkbox"/><label for="attrs-3f0de85c-071d-4cd8-9f07-ab980358f8da" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-3f47d224-220b-4e6d-8f86-1b6418bf04d7" type="checkbox"/><label for="data-3f47d224-220b-4e6d-8f86-1b6418bf04d7" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>air_temperature</dd><dt><span>long_name :</span></dt><dd>Daily Minimum Air Temperature</dd><dt><span>units :</span></dt><dd>degree_Celsius</dd><dt><span>grid_mapping :</span></dt><dd>crs</dd><dt><span>cell_methods :</span></dt><dd>time: minimum</dd><dt><span>units_metadata :</span></dt><dd>temperature: on-scale</dd><dt><span>CoordinateSystems :</span></dt><dd>LatLonCoordinateSystem ProjectionCoordinateSystem</dd><dt><span>esri_pe_string :</span></dt><dd>PROJCS["ETRS_1989_LAEA",GEOGCS["GCS_ETRS_1989",DATUM["D_ETRS_1989",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Lambert_Azimuthal_Equal_Area"],PARAMETER["False_Easting",4321000.0],PARAMETER["False_Northing",3210000.0],PARAMETER["Central_Meridian",10.0],PARAMETER["Latitude_Of_Origin",52.0],UNIT["Meter",1.0]]</dd><dt><span>climatology_bounds :</span></dt><dd>['1989-01-01', '2014-12-31']</dd><dt><span>window :</span></dt><dd>5</dd><dt><span>alpha :</span></dt><dd>0.3333333333333333</dd><dt><span>beta :</span></dt><dd>0.3333333333333333</dd><dt><span>history :</span></dt><dd>[2025-11-27 15:54:07] per: percentile_doy(arr=tasmin, window=5, per=10, alpha=0.3333333333333333, beta=0.3333333333333333, copy=True) - xclim version: 0.56.0</dd></dl></div><div class="xr-var-data"><pre>array([-11.01666683, -10.47482207, -10.8512513 , -10.99879468,
-       -11.00000016, -11.00000016, -10.85574445,  -9.87251156,
-        -9.50774443,  -8.09875811,  -6.32885854,  -5.71747954,
-        -5.82250237,  -5.7045115 ,  -6.25775352,  -6.490959  ,
-        -6.5000001 ,  -6.84641106,  -7.30381746,  -7.96494989,
-        -9.24452069, -10.47275815, -11.27005496, -12.8002285 ,
-       -13.1709317 , -12.97885864, -12.59801845, -10.42470335,
-        -9.61626498,  -9.56333348, -10.19662116, -10.68646591,
-       -10.72666683, -10.90858464, -11.56750702, -10.92812802,
-       -10.40264856, -10.6019545 , -10.11934262,  -8.50294077,
-        -8.5363015 ,  -8.56333346,  -8.56333346,  -7.57527865,
-        -6.84530604,  -6.38050238,  -6.15187224,  -6.12666676,
-        -6.61591791,  -6.20229233,  -6.12666676,  -6.35320557,
-        -7.24753435,  -7.28172614,  -7.73480377,  -8.27246588,
-        -8.01470332,  -7.30920559,  -6.61525124,  -5.34973524,
-        -5.12666674,  -5.02116902,  -5.738822  ,  -6.2512969 ,
-        -6.32666676,  -6.32666676,  -6.2229042 ,  -5.48697725,
-        -5.16392702,  -5.12666674,  -5.18593615,  -5.14093158,
-        -4.54869413,  -3.68133339,  -3.09871237,  -2.36369867,
-        -2.51671237,  -3.46794526,  -4.09315075,  -4.20000006,
-...
-        -0.5400822 ,  -0.77536987,  -1.10000002,  -1.14054796,
-        -1.42533335,  -1.80305026,  -1.30000002,  -1.30000002,
-        -1.30000002,  -1.30000002,  -1.37158906,  -1.69000003,
-        -1.69000003,  -1.6742192 ,  -1.61093153,  -1.63389044,
-        -1.50838358,  -1.60000002,  -1.61023747,  -1.63578998,
-        -1.47854797,  -1.36808221,  -1.05027399,  -0.68567124,
-        -0.24356165,  -0.51424658,  -0.74857535,  -1.68205482,
-        -1.88412788,  -2.51039273,  -3.06333338,  -3.04610963,
-        -2.92666671,  -2.98894982,  -3.50459366,  -3.99056627,
-        -4.28574436,  -5.06488592,  -5.91528776,  -6.10202749,
-        -5.76193616,  -4.61417358,  -4.49648409,  -4.4633334 ,
-        -4.46664847,  -4.53419185,  -4.9701188 ,  -5.88401835,
-        -6.35995443,  -5.31666675,  -5.31740647,  -5.32666675,
-        -5.36890419,  -5.99966219,  -6.87729691,  -8.05017364,
-        -8.42510515,  -8.55182661,  -8.283233  ,  -7.00666677,
-        -7.02032887,  -7.30000011,  -7.28794531,  -7.00244759,
-        -6.90117819,  -7.05763481,  -8.03612797,  -7.0433791 ,
-        -6.69986311,  -7.10490422,  -7.77000012,  -7.78200012,
-        -8.50945218,  -9.20581749, -10.63634719, -10.99941569,
-       -10.8936714 , -11.01666683])</pre></div></li></ul></div></li><li class="xr-section-item"><input class="xr-section-summary-in" id="section-6c12af44-3e55-4c01-9a19-8fdebc414c84" type="checkbox"/><label class="xr-section-summary" for="section-6c12af44-3e55-4c01-9a19-8fdebc414c84">Indexes: <span>(2)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-index-name"><div>time</div></div><div class="xr-index-preview">PandasIndex</div><input disabled="" type="checkbox"><label></label><input class="xr-index-data-in" id="index-112365b0-f139-47e5-b8ac-3feaa14cc668" type="checkbox"><label for="index-112365b0-f139-47e5-b8ac-3feaa14cc668" title="Show/Hide index repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-index-data"><pre>PandasIndex(DatetimeIndex(['1989-01-01', '1989-01-02', '1989-01-03', '1989-01-04',
-               '1989-01-05', '1989-01-06', '1989-01-07', '1989-01-08',
-               '1989-01-09', '1989-01-10',
+    tasmin   (time) float32 1kB ...
+    tasmax   (time) float32 1kB ...
+    pr       (time) float32 1kB ...
+Attributes:
+    title:        20CRv3-W5E5 observational climate input data for ISIMIP3a
+    institution:  Potsdam Institute for Climate Impact Research (PIK)
+    project:      Inter-Sectoral Impact Model Intercomparison Project phase 3...
+    contact:      ISIMIP cross-sectoral science team &lt;info@isimip.org&gt; &lt;https...
+    summary:      20CRv3, member 001, bias-adjusted to W5E5 v2.0 with ISIMIP3...
+    references:   Slivinski et al. (2019) &lt;https://doi.org/10.1002/qj.3598&gt; a...
+    source:       W5E5 via ISIMIP
+    dataset:      W5E5v2.0
+    description:  WFDE5 over land merged with ERA5 over ocean</pre><div class="xr-wrap" style="display:none"><div class="xr-header"><div class="xr-obj-type">xarray.Dataset</div></div><ul class="xr-sections"><li class="xr-section-item"><input class="xr-section-summary-in" disabled="" id="section-1128d18b-010c-4ae4-a25c-c63814f4c485" type="checkbox"/><label class="xr-section-summary" for="section-1128d18b-010c-4ae4-a25c-c63814f4c485" title="Expand/collapse section">Dimensions:</label><div class="xr-section-inline-details"><ul class="xr-dim-list"><li><span class="xr-has-index">time</span>: 366</li></ul></div><div class="xr-section-details"></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-a8c7be05-5dc6-44b6-a18d-00c61cc032ff" type="checkbox"/><label class="xr-section-summary" for="section-a8c7be05-5dc6-44b6-a18d-00c61cc032ff">Coordinates: <span>(3)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>lon</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">13.25</div><input class="xr-var-attrs-in" id="attrs-7f308989-e002-4ac3-afa9-877b9b9c7b36" type="checkbox"/><label for="attrs-7f308989-e002-4ac3-afa9-877b9b9c7b36" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-0fe78321-33b0-430a-8505-ac7bcfbccc13" type="checkbox"/><label for="data-0fe78321-33b0-430a-8505-ac7bcfbccc13" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>longitude</dd><dt><span>long_name :</span></dt><dd>Longitude</dd><dt><span>units :</span></dt><dd>degrees_east</dd><dt><span>axis :</span></dt><dd>X</dd></dl></div><div class="xr-var-data"><pre>array(13.25)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>lat</span></div><div class="xr-var-dims">()</div><div class="xr-var-dtype">float64</div><div class="xr-var-preview xr-preview">52.25</div><input class="xr-var-attrs-in" id="attrs-41a9133a-2e0f-4fd4-8d44-10aee2bc7968" type="checkbox"/><label for="attrs-41a9133a-2e0f-4fd4-8d44-10aee2bc7968" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-eed466a8-7146-4871-9805-8323a3cc94c1" type="checkbox"/><label for="data-eed466a8-7146-4871-9805-8323a3cc94c1" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>latitude</dd><dt><span>long_name :</span></dt><dd>Latitude</dd><dt><span>units :</span></dt><dd>degrees_north</dd><dt><span>axis :</span></dt><dd>Y</dd></dl></div><div class="xr-var-data"><pre>array(52.25)</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span class="xr-has-index">time</span></div><div class="xr-var-dims">(time)</div><div class="xr-var-dtype">datetime64[ns]</div><div class="xr-var-preview xr-preview">2004-01-01 ... 2004-12-31</div><input class="xr-var-attrs-in" id="attrs-1dc9c105-475e-40fb-aaae-c64828ce20ba" type="checkbox"/><label for="attrs-1dc9c105-475e-40fb-aaae-c64828ce20ba" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-27e17a24-e38d-424f-b921-3ff2484dadd9" type="checkbox"/><label for="data-27e17a24-e38d-424f-b921-3ff2484dadd9" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>time</dd><dt><span>long_name :</span></dt><dd>Time</dd><dt><span>axis :</span></dt><dd>T</dd></dl></div><div class="xr-var-data"><pre>array(['2004-01-01T00:00:00.000000000', '2004-01-02T00:00:00.000000000',
+       '2004-01-03T00:00:00.000000000', ..., '2004-12-29T00:00:00.000000000',
+       '2004-12-30T00:00:00.000000000', '2004-12-31T00:00:00.000000000'],
+      dtype='datetime64[ns]')</pre></div></li></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-c1378dd9-51a7-4abe-acdc-2f2ea2fea6dc" type="checkbox"/><label class="xr-section-summary" for="section-c1378dd9-51a7-4abe-acdc-2f2ea2fea6dc">Data variables: <span>(3)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-var-name"><span>tasmin</span></div><div class="xr-var-dims">(time)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">...</div><input class="xr-var-attrs-in" id="attrs-b5c984d4-c0cb-4341-bc4d-3d0c8fa053f6" type="checkbox"/><label for="attrs-b5c984d4-c0cb-4341-bc4d-3d0c8fa053f6" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-27e5f2a3-2a91-469d-aa4f-149ea8645b93" type="checkbox"/><label for="data-27e5f2a3-2a91-469d-aa4f-149ea8645b93" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>air_temperature</dd><dt><span>long_name :</span></dt><dd>Daily Minimum Near-Surface Air Temperature</dd><dt><span>units :</span></dt><dd>K</dd></dl></div><div class="xr-var-data"><pre>[366 values with dtype=float32]</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>tasmax</span></div><div class="xr-var-dims">(time)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">...</div><input class="xr-var-attrs-in" id="attrs-9f34f6c7-a9b2-41de-86a0-bb4cd48489d5" type="checkbox"/><label for="attrs-9f34f6c7-a9b2-41de-86a0-bb4cd48489d5" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-3991aeca-1f5b-485d-8d77-3e89cecf4321" type="checkbox"/><label for="data-3991aeca-1f5b-485d-8d77-3e89cecf4321" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>air_temperature</dd><dt><span>long_name :</span></dt><dd>Daily Maximum Near-Surface Air Temperature</dd><dt><span>units :</span></dt><dd>K</dd></dl></div><div class="xr-var-data"><pre>[366 values with dtype=float32]</pre></div></li><li class="xr-var-item"><div class="xr-var-name"><span>pr</span></div><div class="xr-var-dims">(time)</div><div class="xr-var-dtype">float32</div><div class="xr-var-preview xr-preview">...</div><input class="xr-var-attrs-in" id="attrs-6d7ce22d-fdc2-4c9d-96ac-bb9ac7c69c99" type="checkbox"/><label for="attrs-6d7ce22d-fdc2-4c9d-96ac-bb9ac7c69c99" title="Show/Hide attributes"><svg class="icon xr-icon-file-text2"><use xlink:href="#icon-file-text2"></use></svg></label><input class="xr-var-data-in" id="data-c299175d-57f8-4448-b54e-476be6295d89" type="checkbox"/><label for="data-c299175d-57f8-4448-b54e-476be6295d89" title="Show/Hide data repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-var-attrs"><dl class="xr-attrs"><dt><span>standard_name :</span></dt><dd>precipitation_flux</dd><dt><span>long_name :</span></dt><dd>Precipitation</dd><dt><span>units :</span></dt><dd>kg m-2 s-1</dd></dl></div><div class="xr-var-data"><pre>[366 values with dtype=float32]</pre></div></li></ul></div></li><li class="xr-section-item"><input class="xr-section-summary-in" id="section-04096e78-17b6-4a0f-866c-c70535628b25" type="checkbox"/><label class="xr-section-summary" for="section-04096e78-17b6-4a0f-866c-c70535628b25">Indexes: <span>(1)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><ul class="xr-var-list"><li class="xr-var-item"><div class="xr-index-name"><div>time</div></div><div class="xr-index-preview">PandasIndex</div><input disabled="" type="checkbox"><label></label><input class="xr-index-data-in" id="index-ffc1f96b-edd6-4ee7-a28f-bdbde0af0e6e" type="checkbox"><label for="index-ffc1f96b-edd6-4ee7-a28f-bdbde0af0e6e" title="Show/Hide index repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-index-data"><pre>PandasIndex(DatetimeIndex(['2004-01-01', '2004-01-02', '2004-01-03', '2004-01-04',
+               '2004-01-05', '2004-01-06', '2004-01-07', '2004-01-08',
+               '2004-01-09', '2004-01-10',
                ...
-               '2014-12-22', '2014-12-23', '2014-12-24', '2014-12-25',
-               '2014-12-26', '2014-12-27', '2014-12-28', '2014-12-29',
-               '2014-12-30', '2014-12-31'],
-              dtype='datetime64[ns]', name='time', length=9496, freq=None))</pre></div></input></input></li><li class="xr-var-item"><div class="xr-index-name"><div>dayofyear</div></div><div class="xr-index-preview">PandasIndex</div><input disabled="" type="checkbox"><label></label><input class="xr-index-data-in" id="index-efa6cae7-ff01-4a58-a409-214ff56c2951" type="checkbox"><label for="index-efa6cae7-ff01-4a58-a409-214ff56c2951" title="Show/Hide index repr"><svg class="icon xr-icon-database"><use xlink:href="#icon-database"></use></svg></label><div class="xr-index-data"><pre>PandasIndex(Index([  1,   2,   3,   4,   5,   6,   7,   8,   9,  10,
-       ...
-       357, 358, 359, 360, 361, 362, 363, 364, 365, 366],
-      dtype='int64', name='dayofyear', length=366))</pre></div></input></input></li></ul></div></li><li class="xr-section-item"><input class="xr-section-summary-in" id="section-730c252d-b448-4f75-aac8-148a3c399c40" type="checkbox"/><label class="xr-section-summary" for="section-730c252d-b448-4f75-aac8-148a3c399c40">Attributes: <span>(21)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><dl class="xr-attrs"><dt><span>source :</span></dt><dd>surface observations</dd><dt><span>institution :</span></dt><dd>Deutscher Wetterdienst (DWD)</dd><dt><span>Conventions :</span></dt><dd>CF-1.11</dd><dt><span>title :</span></dt><dd>gridded_temperature_dataset_(HYRAS-DE TASMIN)</dd><dt><span>realization :</span></dt><dd>v6-0</dd><dt><span>project_id :</span></dt><dd>HYRAS</dd><dt><span>level_type :</span></dt><dd>surface</dd><dt><span>frequency :</span></dt><dd>day</dd><dt><span>horizontal_resolution :</span></dt><dd>1_km</dd><dt><span>references :</span></dt><dd>https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min</dd><dt><span>author :</span></dt><dd>Climate Monitoring (KU21)</dd><dt><span>contact :</span></dt><dd>klimaanalyse@dwd.de</dd><dt><span>creation_date :</span></dt><dd>created at 2024-09-01 11:11:16</dd><dt><span>variable_id :</span></dt><dd>tasmin</dd><dt><span>unique_dataset_id :</span></dt><dd>DWD_HYRAS_tasmin_v6-0_1989_day_0066D4B2A8</dd><dt><span>license :</span></dt><dd>The HYRAS data, produced by DWD, is licensed under a Creative Commons Attribution 4.0 International License (CC BY 4.0; (see https://creativecommons.org/licenses/).</dd><dt><span>ConventionsURL :</span></dt><dd>http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html</dd><dt><span>realm :</span></dt><dd>atmos</dd><dt><span>product :</span></dt><dd>observations</dd><dt><span>input_data_status :</span></dt><dd>checked</dd><dt><span>filename :</span></dt><dd>tasmin_hyras_1_1989_v6-0_de.nc</dd></dl></div></li></ul></div></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0df86149">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.extremes.indices</span><span class="w"> </span><span class="kn">import</span> <span class="n">extreme_index</span> 
-<span class="n">geojson</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"FeatureCollection"</span><span class="p">,</span>
-  <span class="s2">"features"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Feature"</span><span class="p">,</span>
-      <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{},</span>
-      <span class="s2">"geometry"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Polygon"</span><span class="p">,</span>
-        <span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span>
-          <span class="p">[</span>
-            <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">55.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">55.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">]</span>
-          <span class="p">]</span>
-        <span class="p">]</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">climdata</span>
-<span class="n">clim</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span>
-    <span class="n">overrides</span><span class="o">=</span><span class="p">[</span>
-            <span class="s2">"dataset=cmip"</span><span class="p">,</span>
-            <span class="s2">"variables=['tasmin','tas']"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"time_range.start_date=2013-01-01"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"time_range.end_date=2014-12-31"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"aoi='</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">geojson</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">,</span>
-            <span class="s2">"dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json"</span><span class="p">,</span>
-    <span class="p">]</span>
-<span class="p">,</span>
-<span class="n">save_to_file</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-3">import json
-from climdata.extremes.indices import extreme_index 
-geojson = {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {},
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [8.0, 50.0],
-            [10.0, 50.0],
-            [10.0, 55.0],
-            [8.0, 55.0],
-            [8.0, 50.0]
-          ]
-        ]
-      }
-    }
-  ]
-}
-
-
-import climdata
-clim = climdata.extract_data(
-    overrides=[
-            "dataset=cmip",
-            "variables=['tasmin','tas']",
-            f"time_range.start_date=2013-01-01",
-            f"time_range.end_date=2014-12-31",
-            f"aoi='{json.dumps(geojson)}'",
-            "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",
-    ]
-,
-save_to_file=True
-)</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Saved NetCDF to cmip_surface_LAT50.0-55.0_LON8.0-10.0_20130101_20141231.nc
-ℹ️ No index selected (cfg.index is None). Skipping index computation.
-✅ Saved output to cmip_surface_LAT50.0-55.0_LON8.0-10.0_20130101_20141231.nc
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=309926a5">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">climdata</span>
-<span class="c1"># geojson = {</span>
-<span class="c1">#   "type": "FeatureCollection",</span>
-<span class="c1">#   "features": [</span>
-<span class="c1">#     {</span>
-<span class="c1">#       "type": "Feature",</span>
-<span class="c1">#       "properties": {},</span>
-<span class="c1">#       "geometry": {</span>
-<span class="c1">#         "coordinates": [</span>
-<span class="c1">#           13.246667038198012,</span>
-<span class="c1">#           52.891982026993958</span>
-<span class="c1">#         ],</span>
-<span class="c1">#         "type": "Point"</span>
-<span class="c1">#       }</span>
-<span class="c1">#     }</span>
-<span class="c1">#   ]</span>
-<span class="c1"># }</span>
-
-<span class="n">geojson</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"FeatureCollection"</span><span class="p">,</span>
-  <span class="s2">"features"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Feature"</span><span class="p">,</span>
-      <span class="s2">"properties"</span><span class="p">:</span> <span class="p">{},</span>
-      <span class="s2">"geometry"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"Polygon"</span><span class="p">,</span>
-        <span class="s2">"coordinates"</span><span class="p">:</span> <span class="p">[</span>
-          <span class="p">[</span>
-            <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">55.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">55.0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mf">8.0</span><span class="p">,</span> <span class="mf">50.0</span><span class="p">]</span>
-          <span class="p">]</span>
-        <span class="p">]</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-
-
-<span class="n">clim</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span>
-    <span class="n">overrides</span><span class="o">=</span><span class="p">[</span>
-            <span class="s2">"dataset=cmip"</span><span class="p">,</span>
-            <span class="s2">"variables=['tasmin']"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"time_range.start_date=1989-01-01"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"time_range.end_date=2014-12-31"</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"aoi='</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">geojson</span><span class="p">)</span><span class="si">}</span><span class="s2">'"</span><span class="p">,</span>
-            <span class="s2">"index=tn10p"</span><span class="p">,</span>
-            <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span> <span class="c1">#optional </span>
-            <span class="s2">"dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json"</span><span class="p">,</span>
-    <span class="p">]</span>
-<span class="p">,</span>
-<span class="n">save_to_file</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-4">import json
-import climdata
-# geojson = {
-#   "type": "FeatureCollection",
-#   "features": [
-#     {
-#       "type": "Feature",
-#       "properties": {},
-#       "geometry": {
-#         "coordinates": [
-#           13.246667038198012,
-#           52.891982026993958
-#         ],
-#         "type": "Point"
-#       }
-#     }
-#   ]
-# }
-
-geojson = {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {},
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [8.0, 50.0],
-            [10.0, 50.0],
-            [10.0, 55.0],
-            [8.0, 55.0],
-            [8.0, 50.0]
-          ]
-        ]
-      }
-    }
-  ]
-}
-
-
-clim = climdata.extract_data(
-    overrides=[
-            "dataset=cmip",
-            "variables=['tasmin']",
-            f"time_range.start_date=1989-01-01",
-            f"time_range.end_date=2014-12-31",
-            f"aoi='{json.dumps(geojson)}'",
-            "index=tn10p",
-            "data_dir=/beegfs/muduchuru/data", #optional 
-            "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",
-    ]
-,
-save_to_file=True
-)</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>Saved NetCDF to cmip_surface_LAT50.0-55.0_LON8.0-10.0_19890101_20141231.nc
-Calculating index: tn10p
-&lt;class 'xarray.core.dataset.Dataset'&gt;
-Saved index to: cmip_tn10p_LAT50.0-55.0_LON8.0-10.0_19890101_20141231.nc
-✅ Saved output to cmip_surface_LAT50.0-55.0_LON8.0-10.0_19890101_20141231.nc
-</pre>
+               '2004-12-22', '2004-12-23', '2004-12-24', '2004-12-25',
+               '2004-12-26', '2004-12-27', '2004-12-28', '2004-12-29',
+               '2004-12-30', '2004-12-31'],
+              dtype='datetime64[ns]', name='time', length=366, freq=None))</pre></div></input></input></li></ul></div></li><li class="xr-section-item"><input checked="" class="xr-section-summary-in" id="section-334a7417-54e4-46a8-8264-6243bc71fcf8" type="checkbox"/><label class="xr-section-summary" for="section-334a7417-54e4-46a8-8264-6243bc71fcf8">Attributes: <span>(9)</span></label><div class="xr-section-inline-details"></div><div class="xr-section-details"><dl class="xr-attrs"><dt><span>title :</span></dt><dd>20CRv3-W5E5 observational climate input data for ISIMIP3a</dd><dt><span>institution :</span></dt><dd>Potsdam Institute for Climate Impact Research (PIK)</dd><dt><span>project :</span></dt><dd>Inter-Sectoral Impact Model Intercomparison Project phase 3a (ISIMIP3a)</dd><dt><span>contact :</span></dt><dd>ISIMIP cross-sectoral science team &lt;info@isimip.org&gt; &lt;https://www.isimip.org&gt;</dd><dt><span>summary :</span></dt><dd>20CRv3, member 001, bias-adjusted to W5E5 v2.0 with ISIMIP3BASD v2.5.1 (for 1901-1978) combined with W5E5 v2.0 (for 1979-2019)</dd><dt><span>references :</span></dt><dd>Slivinski et al. (2019) &lt;https://doi.org/10.1002/qj.3598&gt; and Compo et al. (2011) &lt;https://doi.org/10.1002/qj.776&gt; for 20CRv3; Cucchi et al. (2020) &lt;https://doi.org/10.5194/essd-2020-28&gt; and Lange et al. (2021) &lt;https://doi.org/10.48364/ISIMIP.342217&gt; for W5E5; Lange (2019) &lt;https://doi.org/10.5194/gmd-12-3055-2019&gt; and Lange (2021) &lt;https://doi.org/10.5281/zenodo.5776126&gt; for ISIMIP3BASD</dd><dt><span>source :</span></dt><dd>W5E5 via ISIMIP</dd><dt><span>dataset :</span></dt><dd>W5E5v2.0</dd><dt><span>description :</span></dt><dd>WFDE5 over land merged with ERA5 over ocean</dd></dl></div></li></ul></div></div>
 </div>
 </div>
 </div>
@@ -2162,7 +1716,7 @@ Saved index to: cmip_tn10p_LAT50.0-55.0_LON8.0-10.0_19890101_20141231.nc
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 15, 2026 15:53:34 UTC"><span class="timeago" datetime="2026-01-15T15:53:34+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 15, 2026 15:53:34 UTC">2026-01-15</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 20, 2026 15:09:53 UTC"><span class="timeago" datetime="2026-01-20T15:09:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 20, 2026 15:09:53 UTC">2026-01-20</span>
   </span>
 
     
@@ -2172,7 +1726,7 @@ Saved index to: cmip_tn10p_LAT50.0-55.0_LON8.0-10.0_19890101_20141231.nc
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="November 24, 2025 19:09:20 UTC"><span class="timeago" datetime="2025-11-24T19:09:20+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="November 24, 2025 19:09:20 UTC">2025-11-24</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 20, 2026 15:09:53 UTC"><span class="timeago" datetime="2026-01-20T15:09:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 20, 2026 15:09:53 UTC">2026-01-20</span>
   </span>
 
     

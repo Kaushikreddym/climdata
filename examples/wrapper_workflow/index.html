@@ -18,7 +18,7 @@
         <link rel="prev" href="../../usage/">
       
       
-        <link rel="next" href="../../api/">
+        <link rel="next" href="../advanced/cmip_obs_comparison/">
       
       
         
@@ -437,6 +437,89 @@
   
 
       </a>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/cmip_obs_comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -1013,7 +1096,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </style>
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5b531257">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ce22e418">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1036,7 +1119,7 @@ Includes examples for point-based and box-based extraction, variable exploration
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=876c5a93">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9ee60915">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1083,7 +1166,7 @@ logging.basicConfig(
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e98fb569">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b89428d9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1094,7 +1177,7 @@ logging.basicConfig(
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=2e80f428">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=c4a584ab">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1130,7 +1213,7 @@ print(datasets)</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>['dwd', 'mswx', 'hyras', 'cmip', 'power']
+<pre>['dwd', 'mswx', 'hyras', 'cmip', 'power', 'w5e5']
 </pre>
 </div>
 </div>
@@ -1138,7 +1221,7 @@ print(datasets)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e22f2db8">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4694491a">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1149,12 +1232,12 @@ print(datasets)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=9abc314a">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=0ca221ef">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -1167,7 +1250,7 @@ print(datasets)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_variables</span><span class="p">(</span><span class="s1">'mswx'</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_variables</span><span class="p">(</span><span class="s1">'w5e5'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
 
 <span class="c1"># for CMIP</span>
@@ -1177,7 +1260,7 @@ print(datasets)</div>
 <span class="nb">print</span><span class="p">(</span><span class="n">extractor_CMIP</span><span class="o">.</span><span class="n">get_source_ids</span><span class="p">(</span><span class="s1">'ssp245'</span><span class="p">))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">extractor_CMIP</span><span class="o">.</span><span class="n">get_variables</span><span class="p">(</span><span class="n">experiment_id</span><span class="o">=</span><span class="s1">'ssp245'</span><span class="p">,</span><span class="n">source_id</span><span class="o">=</span><span class="s1">'ACCESS-CM2'</span><span class="p">))</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">variables = extractor.get_variables('mswx')
+<div class="clipboard-copy-txt" id="cell-3">variables = extractor.get_variables('w5e5')
 print(variables)
 
 # for CMIP
@@ -1198,7 +1281,7 @@ print(extractor_CMIP.get_variables(experiment_id='ssp245',source_id='ACCESS-CM2'
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>['tasmin', 'tasmax', 'tas', 'pr', 'rsds', 'hurs', 'sfcWind']
+<pre>['tas', 'tasmax', 'tasmin', 'pr', 'rsds', 'rlds', 'hurs', 'sfcWind', 'ps', 'huss']
 ['historical', 'ssp119', 'ssp126', 'ssp245', 'ssp370', 'ssp434', 'ssp460', 'ssp585']
 </pre>
 </div>
@@ -1206,7 +1289,9 @@ print(extractor_CMIP.get_variables(experiment_id='ssp245',source_id='ACCESS-CM2'
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>INFO | 46 models found for experiment 'ssp245'
+<pre>/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/intake_esm/core.py:475: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+  cat = self.__class__({'esmcat': self.esmcat.dict(), 'df': esmcat_results})
+INFO | 46 models found for experiment 'ssp245'
 </pre>
 </div>
 </div>
@@ -1222,7 +1307,7 @@ print(extractor_CMIP.get_variables(experiment_id='ssp245',source_id='ACCESS-CM2'
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=b04ed779">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=acd1aecf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1233,7 +1318,7 @@ print(extractor_CMIP.get_variables(experiment_id='ssp245',source_id='ACCESS-CM2'
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=38b87d03">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=8bd39ae5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1251,10 +1336,16 @@ print(extractor_CMIP.get_variables(experiment_id='ssp245',source_id='ACCESS-CM2'
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">varinfo</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_varinfo</span><span class="p">(</span><span class="s1">'tasmax'</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">variables</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_variables</span><span class="p">(</span><span class="s1">'w5e5'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"*"</span><span class="o">*</span><span class="mi">70</span><span class="p">)</span>
+<span class="n">varinfo</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">get_varinfo</span><span class="p">(</span><span class="s1">'tasmax'</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">varinfo</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">varinfo = extractor.get_varinfo('tasmax')
+<div class="clipboard-copy-txt" id="cell-4">variables = extractor.get_variables('w5e5')
+print(variables)
+print("*"*70)
+varinfo = extractor.get_varinfo('tasmax')
 print(varinfo)</div>
 </div>
 </div>
@@ -1267,7 +1358,9 @@ print(varinfo)</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>{'cf_name': 'air_temperature', 'long_name': 'Daily maximum near-surface air temperature', 'units': 'degC'}
+<pre>['tas', 'tasmax', 'tasmin', 'pr', 'rsds', 'rlds', 'hurs', 'sfcWind', 'ps', 'huss']
+**********************************************************************
+{'cf_name': 'air_temperature', 'long_name': 'Daily maximum near-surface air temperature', 'units': 'degC'}
 </pre>
 </div>
 </div>
@@ -1275,7 +1368,7 @@ print(varinfo)</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=c0217716">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=8d42779b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1286,7 +1379,7 @@ print(varinfo)</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=458f350e">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=cf692336">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1377,7 +1470,7 @@ dict_keys(['BRITS', 'XGBOOST', 'CDRec', 'SoftImpute'])
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d7b604eb">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=efa38dec">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1388,12 +1481,12 @@ dict_keys(['BRITS', 'XGBOOST', 'CDRec', 'SoftImpute'])
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=fc0d11d9">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=58d00b78">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-7">
@@ -1542,10 +1635,11 @@ INFO | Starting action: impute
 INFO | <span class="ansi-yellow-intense-fg">No missing data found. Imputation not required.</span>
 INFO | Completed action: impute
 INFO | Starting action: calc_index
-/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:569: UserWarning: Index tn10p usually requires ≥30 years, got 11
+/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:618: UserWarning: Index tn10p usually requires ≥30 years, got 11
   warnings.warn(f"Index {cfg.index} usually requires ≥30 years, got {n_years}", UserWarning)
 INFO | Completed action: calc_index
 INFO | Starting action: to_nc
+&lt;frozen importlib._bootstrap&gt;:241: RuntimeWarning: numpy.ndarray size changed, may indicate binary incompatibility. Expected 16 from C header, got 96 from PyObject
 INFO | Dataset saved to NetCDF file: cmip_tn10p_LAT12.891982026993958_LON24.246667038198012_2004-01-01_2014-12-31.nc
 INFO | Completed action: to_nc
 </pre>
@@ -1727,7 +1821,7 @@ extractor.to_csv(df_index, filename="index.csv")
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:564: UserWarning: Index tn10p usually requires ≥30 years, got 1
+<pre>/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:618: UserWarning: Index tn10p usually requires ≥30 years, got 1
   warnings.warn(f"Index {cfg.index} usually requires ≥30 years, got {n_years}", UserWarning)
 INFO | DataFrame saved to CSV file: index.csv
 </pre>
@@ -1743,7 +1837,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=23c43026">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=d84563c0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1754,7 +1848,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=11eb6b6a">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=802a0a9d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1796,7 +1890,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=78a3af10">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=93826b18">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1807,7 +1901,7 @@ INFO | DataFrame saved to CSV file: index.csv
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=acd69b20">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=e5270c58">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1859,10 +1953,56 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>INFO | Starting action: extract
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>✅ All 31 tasmin files already exist locally.
 ✅ All 31 tasmax files already exist locally.
 </pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>INFO | Completed action: extract
+INFO | Starting action: to_dataframe
+ERROR | Action 'to_dataframe' failed
+Traceback (most recent call last):
+  File "/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py", line 848, in run_workflow
+    raise ValueError(f"Unknown action '{action}'")
+ValueError: Unknown action 'to_dataframe'
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">ValueError</span>                                Traceback (most recent call last)
+Cell <span class="ansi-green-fg">In[10], line 11</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> box_overrides <span style="color: rgb(98,98,98)">=</span> [
+<span class="ansi-green-intense-fg ansi-bold">      2</span>     <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">dataset=mswx</span><span style="color: rgb(175,0,0)">"</span>,  <span style="color: rgb(95,135,135)"># Select the MSWX dataset for extraction</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span>     <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">region=europe</span><span style="color: rgb(175,0,0)">"</span>, <span style="color: rgb(95,135,135)"># Select the region</span>
+<span class="ansi-green-fg">   (...)</span>
+<span class="ansi-green-intense-fg ansi-bold">      7</span>     <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">data_dir=/beegfs/muduchuru/data</span><span style="color: rgb(175,0,0)">"</span>,    <span style="color: rgb(95,135,135)"># Local directory to store downloaded/intermediate files</span>
+<span class="ansi-green-intense-fg ansi-bold">      8</span> ]
+<span class="ansi-green-intense-fg ansi-bold">     10</span> extractor_box <span style="color: rgb(98,98,98)">=</span> ClimData(overrides<span style="color: rgb(98,98,98)">=</span>box_overrides)
+<span class="ansi-green-fg">---&gt; 11</span> result_box <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">extractor_box</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">run_workflow</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">actions</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">[</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">extract</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">to_dataframe</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg">]</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:848</span>, in <span class="ansi-cyan-fg">ClimateExtractor.run_workflow</span><span class="ansi-blue-fg">(self, overrides, actions, file)</span>
+<span class="ansi-green-intense-fg ansi-bold">    845</span>         result<span style="color: rgb(98,98,98)">.</span>impute_ds <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">getattr</span>(<span style="color: rgb(0,135,0)">self</span>, <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">impute_ds</span><span style="color: rgb(175,0,0)">"</span>, <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>)
+<span class="ansi-green-intense-fg ansi-bold">    847</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
+<span class="ansi-green-fg">--&gt; 848</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">ValueError</span>(<span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">Unknown action </span><span style="color: rgb(175,0,0)">'</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>action<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)">"</span>)
+<span class="ansi-green-intense-fg ansi-bold">    849</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>logger<span style="color: rgb(98,98,98)">.</span>info(<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">Completed action: </span><span class="ansi-bold" style="color: rgb(175,95,135)">%s</span><span style="color: rgb(175,0,0)">"</span>, action)
+<span class="ansi-green-intense-fg ansi-bold">    850</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">Exception</span>:
+
+<span class="ansi-red-fg">ValueError</span>: Unknown action 'to_dataframe'</pre>
 </div>
 </div>
 </div>
@@ -1874,7 +2014,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-11">
@@ -1899,7 +2039,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[11]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div>
 <style scoped="">
@@ -2049,7 +2189,7 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6c976eeb">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=1e800015">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2060,12 +2200,12 @@ result_box = extractor_box.run_workflow(actions=["extract", "to_dataframe"])
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7d92ba34">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=c39db361">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-12">
@@ -2136,7 +2276,7 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[12]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <div>
 <style scoped="">
@@ -2185,7 +2325,7 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bb6016a3">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7642df3b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2196,12 +2336,12 @@ result_idx.dataframe.head()</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d8915fd3">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7d606106">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-13">
@@ -2374,7 +2514,7 @@ ValueError: Action 'upload_netcdf' requires argument 'netcdf_file', but none was
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 12, 2026 08:39:28 UTC"><span class="timeago" datetime="2026-01-12T08:39:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 12, 2026 08:39:28 UTC">2026-01-12</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 21, 2026 14:50:31 UTC"><span class="timeago" datetime="2026-01-21T14:50:31+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 21, 2026 14:50:31 UTC">2026-01-21</span>
   </span>
 
     

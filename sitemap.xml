@@ -2,50 +2,66 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/INTEGRATION_GUIDE/</loc>
+         <lastmod>2026-01-21</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/W5E5_README/</loc>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/api/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/changelog/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/common/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/contributing/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/faq/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/installation/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/usage/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/climdata_cli/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/extremes/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/examples/w5e5_example/</loc>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/wrapper/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/wrapper_workflow/</loc>
-         <lastmod>2026-01-12</lastmod>
+         <lastmod>2026-01-21</lastmod>
+    </url>
+    <url>
+         <loc>https://Kaushikreddym.github.io/climdata/examples/advanced/cmip_obs_comparison/</loc>
+         <lastmod>2026-01-21</lastmod>
     </url>
 </urlset>
