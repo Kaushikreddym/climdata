@@ -140,7 +140,7 @@ class CMIPCloud:
 
         return self.col_subsets
     def convert_to_noleap(self, ds):
-        """Convert any CMIP dataset time to cftime.DatetimeNoLeap and floor to day."""
+        """Convert any CMIP dataset time to pandas Timestamp and floor to day."""
         if "time" not in ds.coords:
             return ds
         
@@ -149,17 +149,10 @@ class CMIPCloud:
 
         for ti in t:
             year, month, day = ti.year, ti.month, ti.day
+            
             # Floor to day: ignore hour, minute, second
-            if isinstance(ti, pd.Timestamp):
-                new_times.append(cftime.DatetimeNoLeap(year, month, day))
-            elif isinstance(ti, cftime.DatetimeNoLeap):
-                # still floor to day
-                new_times.append(cftime.DatetimeNoLeap(year, month, day))
-            elif isinstance(ti, cftime.DatetimeNoLeap):
-                # other cftime calendars → convert to NoLeap, floor to day
-                new_times.append(cftime.DatetimeNoLeap(year, month, day))
-            else:
-                raise TypeError(f"Unsupported time type: {type(ti)}")
+            # Convert all time types to pandas Timestamp for compatibility
+            new_times.append(pd.Timestamp(year=year, month=month, day=day))
         
         ds = ds.assign_coords(time=("time", new_times))
         return ds
