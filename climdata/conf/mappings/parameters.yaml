@@ -309,3 +309,55 @@ w5e5:
       long_name: Near-Surface Specific Humidity
       units: "1"
   Description: "Observed atmospheric climate. Version 2.0 of the W5E5 dataset covers the entire globe at 0.5° horizontal and daily temporal resolution from 1979 to 2019. The W5E5 dataset was compiled to support the bias adjustment of climate input data for the impact assessments carried out in phase 3b of the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."
+cmip_w5e5:
+  type: gridded
+  subsetting: None
+  params:
+    simulation_round: ISIMIP3b
+    product: SecondaryInputData
+    resolution: 0.5deg
+  experiment_id: ssp585
+  source_id: gfdl-esm4
+  member_id: r1i1p1f1
+  variables:
+    tas:
+      name: tas
+      long_name: Near-Surface Air Temperature
+      units: K
+    tasmax:
+      name: tasmax
+      long_name: Daily Maximum Near-Surface Air Temperature
+      units: K
+    tasmin:
+      name: tasmin
+      long_name: Daily Minimum Near-Surface Air Temperature
+      units: K
+    pr:
+      name: pr
+      long_name: Precipitation
+      units: kg m-2 s-1
+    rsds:
+      name: rsds
+      long_name: Surface Downwelling Shortwave Radiation
+      units: W m-2
+    rlds:
+      name: rlds
+      long_name: Surface Downwelling Longwave Radiation
+      units: W m-2
+    hurs:
+      name: hurs
+      long_name: Near-Surface Relative Humidity
+      units: "%"
+    sfcWind:
+      name: sfcwind
+      long_name: Near-Surface Wind Speed
+      units: m s-1
+    ps:
+      name: ps
+      long_name: Surface Air Pressure
+      units: Pa
+    psl:
+      name: psl
+      long_name: Sea Level Pressure
+      units: Pa
+  Description: "CMIP6 climate projections in W5E5 format from ISIMIP3b. Provides daily climate data at 0.5° resolution for various CMIP6 models and scenarios (historical, ssp126, ssp245, ssp370, ssp585). Data is bias-adjusted to W5E5 observations and used for climate impact assessments in the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."

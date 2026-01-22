@@ -581,6 +581,13 @@ class ClimateExtractor:
             w5e5.extract(**extract_kwargs)
             ds = w5e5.ds
             self.dataset_class = w5e5
+        elif dataset_upper == "CMIP_W5E5":
+            cmip_w5e5 = climdata.CMIPW5E5(cfg)
+            cmip_w5e5.fetch()  # Download CMIP6 data from ISIMIP
+            cmip_w5e5.load()   # Load into xarray
+            cmip_w5e5.extract(**extract_kwargs)
+            ds = cmip_w5e5.ds
+            self.dataset_class = cmip_w5e5
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 

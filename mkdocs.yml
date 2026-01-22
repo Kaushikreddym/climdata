@@ -80,6 +80,9 @@ nav:
     - Report Issues: https://github.com/Kaushikreddym/climdata/issues
     - Examples:
         - Workflow Notebook: examples/wrapper_workflow.ipynb
+        - Datasets:
+            - CMIP Downscaled (0.5 deg): examples/datasets/cmip_w5e5_example.ipynb
+            - W5E5 0.5 deg reference dataset: examples/datasets/w5e5_example.ipynb
         - Advanced:
             - CMIP validation: examples/advanced/cmip_obs_comparison.ipynb
     - API Reference:
