@@ -20,6 +20,7 @@ from typing import Optional, Tuple, Dict, List
 import warnings
 import requests
 from tqdm import tqdm
+import time
 
 warnings.filterwarnings("ignore", category=Warning)
 
@@ -136,10 +137,15 @@ class NEXGDDP:
         
         # Base URL for NASA THREDDS HTTP File Server
         self.base_url = "https://ds.nccs.nasa.gov/thredds/fileServer/AMES/NEX/GDDP-CMIP6"
+        self.catalog_base_url = "https://ds.nccs.nasa.gov/thredds/catalog/AMES/NEX/GDDP-CMIP6"
         
         # Validate inputs
         self._validate_inputs()
         self._validate_time_range()
+        
+        # Auto-discover member_id and grid_label if not explicitly set
+        self.grid_label = cfg.get('grid_label', 'gn')
+        self._auto_discover_metadata()
     
     def _validate_inputs(self):
         """Validate model, experiment, and variable selections."""
@@ -206,6 +212,159 @@ class NEXGDDP:
             print(f"   the typical {period_name} period ({valid_start}-{valid_end}).")
             print(f"   Data availability may be limited.")
     
+    def _auto_discover_metadata(self):
+        """
+        Auto-discover member_id and grid_label by querying THREDDS catalog.
+        If member_id was explicitly provided in config, use that instead.
+        """
+        # Only auto-discover if member_id was not explicitly set
+        if 'member_id' in self.cfg:
+            print(f"ℹ️  Using configured member_id: {self.member_id}")
+            return
+        
+        print(f"🔍 Auto-discovering metadata for {self.source_id}/{self.experiment_id}...")
+        
+        try:
+            # Get available member_ids from THREDDS catalog
+            member_ids = self._get_available_member_ids()
+            
+            if not member_ids:
+                print(f"⚠️  Could not auto-discover member_ids, using default: {self.member_id}")
+                return
+            
+            # Use the first available member_id
+            discovered_member_id = member_ids[0]
+            
+            # Get grid label from a sample file
+            grid_label = self._get_grid_label(discovered_member_id)
+            
+            if grid_label:
+                self.grid_label = grid_label
+                print(f"✓ Discovered grid_label: {self.grid_label}")
+            
+            if discovered_member_id != self.member_id:
+                self.member_id = discovered_member_id
+                print(f"✓ Discovered member_id: {self.member_id}")
+            
+        except Exception as e:
+            print(f"⚠️  Auto-discovery failed: {str(e)}")
+            print(f"   Using defaults: member_id={self.member_id}, grid_label={self.grid_label}")
+    
+    def _get_available_member_ids(self) -> List[str]:
+        """
+        Get available member_ids (realizations) for the current model and experiment
+        by probing the server with common member_id patterns.
+        
+        Returns
+        -------
+        List[str]
+            List of available member_ids (e.g., ['r1i1p1f1', 'r2i1p1f1'])
+        """
+        # Common member_id patterns to check
+        common_members = [
+            'r1i1p1f1', 'r1i1p1f2', 'r1i1p1f3',
+            'r2i1p1f1', 'r2i1p1f2', 'r3i1p1f1',
+            'r4i1p1f1', 'r5i1p1f1'
+        ]
+        
+        available_members = []
+        
+        # Use the first variable to check availability
+        if not self.cfg.variables:
+            return []
+        
+        test_var = self.cfg.variables[0]
+        
+        # Determine a test year based on experiment
+        if self.experiment_id == 'historical':
+            test_year = 2000  # Use a year that's more likely to exist
+        else:
+            test_year = 2050
+        
+        print(f"   Checking available realizations...")
+        
+        for member_id in common_members:
+            # Try common grid labels (gr1 is used by many models)
+            for grid_label in ['gr1', 'gn', 'gr']:
+                url = self._construct_test_url(test_var, test_year, member_id, grid_label)
+                
+                try:
+                    # Use HEAD request to check if file exists without downloading
+                    response = requests.head(url, timeout=10, allow_redirects=True)
+                    
+                    if response.status_code == 200:
+                        available_members.append(member_id)
+                        print(f"   ✓ Found: {member_id} (grid: {grid_label})")
+                        break  # Found this member_id, move to next
+                    
+                except requests.exceptions.RequestException:
+                    continue
+        
+        return sorted(set(available_members))
+    
+    def _construct_test_url(self, variable: str, year: int, member_id: str, grid_label: str) -> str:
+        """
+        Construct a test URL for probing file availability.
+        
+        Parameters
+        ----------
+        variable : str
+            Variable name
+        year : int
+            Year
+        member_id : str
+            Member/realization ID
+        grid_label : str
+            Grid label (e.g., 'gn', 'gr')
+            
+        Returns
+        -------
+        str
+            Complete URL for testing
+        """
+        filename = f"{variable}_day_{self.source_id}_{self.experiment_id}_{member_id}_{grid_label}_{year}_v2.0.nc"
+        url = f"{self.base_url}/{self.source_id}/{self.experiment_id}/{member_id}/{variable}/{filename}"
+        return url
+    
+    def _get_grid_label(self, member_id: str) -> Optional[str]:
+        """
+        Get grid label by probing with common grid labels.
+        
+        Parameters
+        ----------
+        member_id : str
+            The member_id to check
+            
+        Returns
+        -------
+        str or None
+            Grid label (e.g., 'gn', 'gr') or None if not found
+        """
+        # Use the first available variable
+        if not self.cfg.variables:
+            return None
+        
+        sample_var = self.cfg.variables[0]
+        
+        # Determine a test year based on experiment
+        if self.experiment_id == 'historical':
+            test_year = 2000  # Use a year that's more likely to exist
+        else:
+            test_year = 2050
+        
+        # Try common grid labels (gr1 is common for NEX-GDDP)
+        for grid_label in ['gr1', 'gn', 'gr']:
+            url = self._construct_test_url(sample_var, test_year, member_id, grid_label)
+            
+            try:
+                response = requests.head(url, timeout=10, allow_redirects=True)
+                if response.status_code == 200:
+                    return grid_label
+            except requests.exceptions.RequestException:
+                continue
+        
+        return None
+    
     def get_experiment_ids(self) -> List[str]:
         """
         Get available NEX-GDDP-CMIP6 experiment IDs.
@@ -244,6 +403,18 @@ class NEXGDDP:
         """
         return self.AVAILABLE_VARIABLES.copy()
     
+    def get_member_ids(self) -> List[str]:
+        """
+        Get available member IDs (realizations) for the current model and experiment
+        by querying the THREDDS server.
+        
+        Returns
+        -------
+        List[str]
+            List of available member_ids (e.g., ['r1i1p1f1', 'r2i1p1f1'])
+        """
+        return self._get_available_member_ids()
+    
     def _construct_download_url(self, variable: str, year: int) -> str:
         """
         Construct THREDDS HTTP file server URL for downloading NEX-GDDP data.
@@ -260,8 +431,8 @@ class NEXGDDP:
         tuple
             (url, filename) - Complete HTTP URL and filename
         """
-        # Filename format: {var}_day_{model}_{experiment}_{member}_gn_{year}_v2.0.nc
-        filename = f"{variable}_day_{self.source_id}_{self.experiment_id}_{self.member_id}_gn_{year}_v2.0.nc"
+        # Filename format: {var}_day_{model}_{experiment}_{member}_{grid}_{year}_v2.0.nc
+        filename = f"{variable}_day_{self.source_id}_{self.experiment_id}_{self.member_id}_{self.grid_label}_{year}_v2.0.nc"
         
         # Construct full URL using HTTP file server
         url = f"{self.base_url}/{self.source_id}/{self.experiment_id}/{self.member_id}/{variable}/{filename}"
@@ -297,30 +468,142 @@ class NEXGDDP:
                 url, filename = self._construct_download_url(var, year)
                 local_path = var_dir / filename
                 
-                # Skip if file already exists
-                if local_path.exists():
-                    # print(f"  ✓ Already exists: {filename}")
+                # Skip if file already exists and is complete
+                if local_path.exists() and self._verify_file_complete(local_path, url):
                     self.downloaded_files.append(str(local_path))
                     continue
                 
-                # Download file
-                try:
-                    response = requests.get(url, stream=True, timeout=120)
-                    response.raise_for_status()
-                    
-                    # Save file
-                    with open(local_path, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            f.write(chunk)
-                    
+                # Download file with retry logic
+                success = self._download_with_retry(url, local_path, max_retries=5)
+                
+                if success:
                     self.downloaded_files.append(str(local_path))
-                    # print(f"  ✓ Downloaded: {filename}")
-                    
-                except requests.exceptions.RequestException as e:
-                    print(f"  ❌ Failed to download {filename}: {str(e)}")
-                    continue
+                else:
+                    print(f"  ⚠️  Failed to download {filename} after multiple retries")
         
         print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
+    
+    def _verify_file_complete(self, local_path: Path, url: str) -> bool:
+        """
+        Verify if a local file is complete by comparing size with server.
+        
+        Parameters
+        ----------
+        local_path : Path
+            Path to local file
+        url : str
+            URL of the file on server
+            
+        Returns
+        -------
+        bool
+            True if file is complete, False otherwise
+        """
+        try:
+            local_size = local_path.stat().st_size
+            
+            # Get expected size from server
+            response = requests.head(url, timeout=30, allow_redirects=True)
+            if response.status_code == 200:
+                expected_size = int(response.headers.get('Content-Length', 0))
+                if expected_size > 0 and local_size == expected_size:
+                    return True
+            
+            return False
+        except Exception:
+            return False
+    
+    def _download_with_retry(self, url: str, local_path: Path, max_retries: int = 5) -> bool:
+        """
+        Download a file with retry logic and resume capability.
+        
+        Parameters
+        ----------
+        url : str
+            URL to download from
+        local_path : Path
+            Local path to save to
+        max_retries : int
+            Maximum number of retry attempts
+            
+        Returns
+        -------
+        bool
+            True if download succeeded, False otherwise
+        """
+        for attempt in range(max_retries):
+            try:
+                # Get expected file size
+                head_response = requests.head(url, timeout=30, allow_redirects=True)
+                head_response.raise_for_status()
+                expected_size = int(head_response.headers.get('Content-Length', 0))
+                
+                # Check if we have a partial download
+                existing_size = 0
+                if local_path.exists():
+                    existing_size = local_path.stat().st_size
+                    
+                    # If file is complete, we're done
+                    if existing_size == expected_size:
+                        return True
+                    
+                    # If partial, try to resume
+                    if existing_size > 0 and existing_size < expected_size:
+                        headers = {'Range': f'bytes={existing_size}-'}
+                        mode = 'ab'  # Append mode
+                    else:
+                        # File exists but wrong size, start over
+                        local_path.unlink()
+                        headers = {}
+                        mode = 'wb'
+                        existing_size = 0
+                else:
+                    headers = {}
+                    mode = 'wb'
+                
+                # Download with streaming
+                response = requests.get(
+                    url, 
+                    headers=headers,
+                    stream=True, 
+                    timeout=120,
+                    allow_redirects=True
+                )
+                response.raise_for_status()
+                
+                # Save file
+                with open(local_path, mode) as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                
+                # Verify download completed
+                final_size = local_path.stat().st_size
+                if final_size == expected_size or (existing_size > 0 and final_size == expected_size):
+                    return True
+                else:
+                    if attempt < max_retries - 1:
+                        print(f"  ↻ Incomplete download (attempt {attempt + 1}/{max_retries}), retrying...")
+                        time.sleep(2 ** attempt)  # Exponential backoff
+                        continue
+                    else:
+                        return False
+                
+            except (requests.exceptions.RequestException, IOError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt
+                    print(f"  ↻ Download error (attempt {attempt + 1}/{max_retries}): {type(e).__name__}")
+                    print(f"     Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"  ❌ Failed after {max_retries} attempts: {str(e)}")
+                    # Clean up partial file on final failure
+                    if local_path.exists():
+                        local_path.unlink()
+                    return False
+        
+        return False
     
     def load(self):
         """
