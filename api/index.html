@@ -1834,6 +1834,13 @@ extractor.to_csv(df)</p>
             <span class="n">cmip_w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
             <span class="n">ds</span> <span class="o">=</span> <span class="n">cmip_w5e5</span><span class="o">.</span><span class="n">ds</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">cmip_w5e5</span>
+        <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;NEXGDDP&quot;</span><span class="p">:</span>
+            <span class="n">nexgddp</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">NEXGDDP</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+            <span class="n">nexgddp</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Download NEX-GDDP-CMIP6 data from NASA THREDDS</span>
+            <span class="n">nexgddp</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>   <span class="c1"># Load into xarray</span>
+            <span class="n">nexgddp</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">nexgddp</span><span class="o">.</span><span class="n">ds</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">nexgddp</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">xclim</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">convert_units_to</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">cfg</span><span class="o">.</span><span class="n">varinfo</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
 
@@ -2676,6 +2683,13 @@ to fetch, load and extract datasets. When extraction completes, units are conver
         <span class="n">cmip_w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
         <span class="n">ds</span> <span class="o">=</span> <span class="n">cmip_w5e5</span><span class="o">.</span><span class="n">ds</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">cmip_w5e5</span>
+    <span class="k">elif</span> <span class="n">dataset_upper</span> <span class="o">==</span> <span class="s2">&quot;NEXGDDP&quot;</span><span class="p">:</span>
+        <span class="n">nexgddp</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">NEXGDDP</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">nexgddp</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Download NEX-GDDP-CMIP6 data from NASA THREDDS</span>
+        <span class="n">nexgddp</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>   <span class="c1"># Load into xarray</span>
+        <span class="n">nexgddp</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="o">**</span><span class="n">extract_kwargs</span><span class="p">)</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">nexgddp</span><span class="o">.</span><span class="n">ds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_class</span> <span class="o">=</span> <span class="n">nexgddp</span>
     <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
         <span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">xclim</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">convert_units_to</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">cfg</span><span class="o">.</span><span class="n">varinfo</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">units</span><span class="p">)</span>
 
