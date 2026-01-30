@@ -83,7 +83,9 @@ nav:
         - Datasets:
             - CMIP Downscaled (0.5 deg): examples/datasets/cmip_w5e5_example.ipynb
             - W5E5 0.5 deg reference dataset: examples/datasets/w5e5_example.ipynb
+            - CMIP NEX-GDDP Downscaled (0.25 deg): examples/datasets/cmip_nex_gddp.ipynb
         - Advanced:
             - CMIP validation: examples/advanced/cmip_obs_comparison.ipynb
+            - Bias Correction Downscaling: examples/sdba/sdba.ipynb
     - API Reference:
         - Workflow Reference: api.md
