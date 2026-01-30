@@ -588,6 +588,13 @@ class ClimateExtractor:
             cmip_w5e5.extract(**extract_kwargs)
             ds = cmip_w5e5.ds
             self.dataset_class = cmip_w5e5
+        elif dataset_upper == "NEXGDDP":
+            nexgddp = climdata.NEXGDDP(cfg)
+            nexgddp.fetch()  # Download NEX-GDDP-CMIP6 data from NASA THREDDS
+            nexgddp.load()   # Load into xarray
+            nexgddp.extract(**extract_kwargs)
+            ds = nexgddp.ds
+            self.dataset_class = nexgddp
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 

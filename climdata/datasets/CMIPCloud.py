@@ -4,6 +4,7 @@ import pandas as pd
 from omegaconf import DictConfig
 import logging
 import cftime
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 class CMIPCloud:
@@ -101,11 +102,60 @@ class CMIPCloud:
         self.variables = cfg.variables
         self.start_date = cfg.time_range.start_date
         self.end_date = cfg.time_range.end_date
-
+        self.cfg = cfg
         self.col_subsets = []
         self.ds = None
         self.col = None
-
+        self._validate_time_range()
+    def _validate_time_range(self):
+        """
+        Validate that the requested time range is appropriate for the experiment.
+        
+        Historical runs: 1850-2014
+        SSP scenarios: 2015-2100
+        
+        Raises
+        ------
+        ValueError
+            If the time range doesn't match the experiment period
+        """
+        start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
+        end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
+        
+        start_year = start_date.year
+        end_year = end_date.year
+        
+        # Define valid periods for each experiment type
+        if self.experiment_id == 'historical':
+            valid_start = 1850
+            valid_end = 2014
+            period_name = "Historical"
+        elif self.experiment_id.startswith('ssp'):
+            valid_start = 2015
+            valid_end = 2100
+            period_name = f"SSP scenario ({self.experiment_id})"
+        elif self.experiment_id == 'picontrol':
+            # Pre-industrial control - typically long runs, less strict
+            return
+        else:
+            # Unknown experiment, skip validation
+            return
+        
+        # Check if requested period is outside valid range
+        if end_year < valid_start or start_year > valid_end:
+            raise ValueError(
+                f"❌ Time range mismatch for experiment '{self.experiment_id}'!\n"
+                f"   Requested: {start_year}-{end_year}\n"
+                f"   Valid period for {period_name}: {valid_start}-{valid_end}\n"
+                f"   \n"
+                f"   Hint: Use 'historical' for years 1850-2014, and SSP scenarios (ssp126, ssp370, ssp585) for 2015-2100."
+            )
+        
+        # Warn if requested period extends beyond valid range
+        if start_year < valid_start or end_year > valid_end:
+            print(f"⚠️  Warning: Requested time range {start_year}-{end_year} extends beyond")
+            print(f"   the typical {period_name} period ({valid_start}-{valid_end}).")
+            print(f"   Data availability may be limited.")
     def fetch(self):
         """Collect intake catalog subsets for each variable."""
         col = intake.open_esm_datastore(

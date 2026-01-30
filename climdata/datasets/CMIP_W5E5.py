@@ -64,6 +64,66 @@ class CMIPW5E5:
                 "isimip-client is required for CMIP-W5E5 data access. "
                 "Install it with: pip install isimip-client"
             )
+        
+        # Validate time range for experiment
+        self._validate_time_range()
+    
+    def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
+        """Ensure latitude is ascending and longitude is in the range [0, 360]."""
+        ds = ds.cf.sortby("latitude")
+        lon_name = ds.cf["longitude"].name
+        ds = ds.assign_coords({lon_name: ds.cf["longitude"] % 360})
+        return ds.sortby(lon_name)
+    
+    def _validate_time_range(self):
+        """
+        Validate that the requested time range is appropriate for the experiment.
+        
+        Historical runs: 1850-2014
+        SSP scenarios: 2015-2100
+        
+        Raises
+        ------
+        ValueError
+            If the time range doesn't match the experiment period
+        """
+        start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
+        end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
+        
+        start_year = start_date.year
+        end_year = end_date.year
+        
+        # Define valid periods for each experiment type
+        if self.experiment_id == 'historical':
+            valid_start = 1850
+            valid_end = 2014
+            period_name = "Historical"
+        elif self.experiment_id.startswith('ssp'):
+            valid_start = 2015
+            valid_end = 2100
+            period_name = f"SSP scenario ({self.experiment_id})"
+        elif self.experiment_id == 'picontrol':
+            # Pre-industrial control - typically long runs, less strict
+            return
+        else:
+            # Unknown experiment, skip validation
+            return
+        
+        # Check if requested period is outside valid range
+        if end_year < valid_start or start_year > valid_end:
+            raise ValueError(
+                f"❌ Time range mismatch for experiment '{self.experiment_id}'!\n"
+                f"   Requested: {start_year}-{end_year}\n"
+                f"   Valid period for {period_name}: {valid_start}-{valid_end}\n"
+                f"   \n"
+                f"   Hint: Use 'historical' for years 1850-2014, and SSP scenarios (ssp126, ssp370, ssp585) for 2015-2100."
+            )
+        
+        # Warn if requested period extends beyond valid range
+        if start_year < valid_start or end_year > valid_end:
+            print(f"⚠️  Warning: Requested time range {start_year}-{end_year} extends beyond")
+            print(f"   the typical {period_name} period ({valid_start}-{valid_end}).")
+            print(f"   Data availability may be limited.")
     
     def get_experiment_ids(self) -> List[str]:
         """
@@ -96,7 +156,7 @@ class CMIPW5E5:
                     experiment_ids.add(climate_scenario)
             
             # Common CMIP6 experiments in ISIMIP3b
-            common_experiments = ['historical', 'ssp126', 'ssp245', 'ssp370', 'ssp585']
+            common_experiments = ['historical', 'ssp126', 'ssp370', 'ssp585']
             available = sorted([exp for exp in common_experiments if exp in experiment_ids or exp == 'historical'])
             
             print(f"✅ Found {len(available)} experiment IDs: {available}")
@@ -105,7 +165,7 @@ class CMIPW5E5:
         except Exception as e:
             print(f"❌ Error fetching experiment IDs: {str(e)}")
             # Return common CMIP6 experiments as fallback
-            return ['historical', 'ssp126', 'ssp245', 'ssp370', 'ssp585']
+            return ['historical', 'ssp126', 'ssp370', 'ssp585']
     
     def get_source_ids(self, experiment_id: Optional[str] = None) -> List[str]:
         """
@@ -315,9 +375,9 @@ class CMIPW5E5:
         
         # Merge all variables into one dataset
         if len(datasets) == 1:
-            self.ds = datasets[0]
+            self.ds = self._fix_coords(datasets[0])
         else:
-            self.ds = xr.merge(datasets)
+            self.ds = self._fix_coords(xr.merge(datasets))
         
         # Subset to requested time range
         start = self.cfg.time_range.start_date

@@ -43,7 +43,7 @@ xclim
 pyarrow
 fastparquet
 
-# ML stack
+# ML stack (basic, non-torch)
 mlflow
 scikit-learn
 xgboost  # GPU support may not work in Colab, CPU version installs fine
@@ -56,10 +56,8 @@ google-auth
 google-api-python-client
 # ipdb
 
-# imputegap (vendorized)
-
+# Basic dependencies for vendorized imputegap (non-ML parts)
 toml
-tensorflow
 shap
 pycatch22
 scikit-optimize
@@ -69,30 +67,24 @@ xlsxwriter
 types-toml
 types-setuptools
 wheel
-sktime
 statsmodels
-prophet
 plotly
-darts
-torchvision
-torchaudio
 ujson
 ipdb
-torchcde
 tables
 MissForest
 lightgbm
-tsfel
-tsfresh
 einops
 ray
 fire
 fastdtw
-torch-geometric
-pytorch-lightning
-torchmetrics
-lightning
-reformer-pytorch
-transformers
-timm
 pyqt5
+
+# Note: PyTorch packages (torch, torchvision, torchaudio, torch-geometric, etc.) 
+# and TensorFlow are OPTIONAL and only needed for advanced imputation functionality.
+# To install them with CPU support, run:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+#   pip install torch-cluster -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
+#   pip install pytorch-lightning torchmetrics lightning torchcde reformer-pytorch
+#   pip install tensorflow darts sktime prophet tsfel tsfresh transformers timm
+# For full imputation support, see: docs/installation.md#optional-imputation-dependencies

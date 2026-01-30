@@ -43,6 +43,22 @@ Install optional extras as needed (e.g., xclim, shapely, hydra, dask):
 pip install xarray xclim shapely hydra-core dask "pandas>=1.5"
 ```
 
+### Optional: Imputation Dependencies
+
+If you need the **imputation functionality** (gap filling with ML models), install PyTorch and related packages:
+
+```bash
+# Install PyTorch CPU version (recommended for most users)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install additional ML packages for imputation
+pip install torch-cluster -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
+pip install pytorch-lightning torchmetrics lightning torchcde reformer-pytorch
+pip install tensorflow darts sktime prophet tsfel tsfresh transformers timm
+```
+
+For GPU support, see [PyTorch installation guide](https://pytorch.org/get-started/locally/).
+
 ## Quick example
 ```python
 from climdata import ClimData  # or from climdata.utils.wrapper_workflow import ClimateExtractor

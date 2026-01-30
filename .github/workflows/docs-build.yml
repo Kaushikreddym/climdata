@@ -16,6 +16,13 @@ jobs:
               with:
                   python-version: "3.11"
 
+            - name: Free disk space
+              run: |
+                  sudo rm -rf /usr/share/dotnet
+                  sudo rm -rf /usr/local/lib/android
+                  sudo rm -rf /opt/ghc
+                  sudo apt-get clean
+
             - name: Install GDAL
               run: |
                   python -m pip install --upgrade pip
@@ -24,11 +31,15 @@ jobs:
               run: |
                   python -c "from osgeo import gdal"
                   gdalinfo --version
+            - name: Install PyTorch CPU-only (before requirements.txt to avoid CUDA)
+              run: |
+                  pip install --no-cache-dir Cython numpy
+                  pip install torch==2.3.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+                  pip install torch-cluster --no-build-isolation -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
             - name: Install dependencies
               run: |
-                  pip install --no-cache-dir Cython
                   pip install -r requirements.txt -r requirements_dev.txt
-                  pip install .
+                  pip install . --no-build-isolation
             - name: Discover typos with codespell
               run: codespell --skip="*.csv,*.geojson,*.json,*.js,*.html,*cff,*.pdf,*.yaml,*.ipynb,./.git" --ignore-words-list="aci,acount,hist"
             - name: PKG-TEST

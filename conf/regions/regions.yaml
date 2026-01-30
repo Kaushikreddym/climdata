@@ -1,0 +1,35 @@
+europe:
+  lat_min: 34.0
+  lat_max: 71.0
+  lon_min: -25.0
+  lon_max: 45.0
+
+germany:
+  lat_min: 47.0
+  lat_max: 55.1
+  lon_min: 5.9
+  lon_max: 15.0
+
+asia:
+  lat_min: -10.0
+  lat_max: 80.0
+  lon_min: 25.0
+  lon_max: 180.0
+
+india:
+  lat_min: 6.5
+  lat_max: 37.5
+  lon_min: 68.0
+  lon_max: 97.5
+
+usa:
+  lat_min: 24.5
+  lat_max: 49.5
+  lon_min: -125.0
+  lon_max: -66.5
+
+custom:
+  lat_min: null
+  lat_max: null
+  lon_min: null
+  lon_max: null

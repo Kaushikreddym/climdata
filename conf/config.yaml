@@ -1,0 +1,38 @@
+defaults:
+  - _self_
+  - mappings/parameters@dsinfo
+  - mappings/variables@varinfo 
+  - mappings/indices@extinfo
+  - mappings/actions@actionsinfo
+  - mappings/imputation@imputeinfo
+  - regions/regions.yaml@bounds
+
+dataset: mswx
+lat: null
+lon: null
+aoi: null
+shapefile: null
+
+variables: ["tasmin","tasmax","pr"]
+data_dir: ./data
+
+region: null
+
+time_range:
+  start_date: "1989-01-01"
+  end_date: "2020-12-31"
+
+index: null
+impute: null
+
+experiment_id: historical
+source_id: MIROC6
+table_id: day
+
+
+output:
+  out_dir: '.'
+  filename_csv: "{provider}_{parameter}_LAT_{lat}_LON_{lon}_{start}_{end}.csv"
+  filename_zarr: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.zarr"
+  filename_nc: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.nc"
+  fmt: "standard"
