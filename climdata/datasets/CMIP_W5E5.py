@@ -142,14 +142,15 @@ class CMIPW5E5:
                 simulation_round='ISIMIP3b',
                 product='InputData'
             )
-            
-            if not response.get('results'):
+
+            results = self._normalize_dataset_results(response)
+            if not results:
                 print("⚠️ No datasets found")
                 return []
-            
+
             # Extract unique experiment IDs from results
             experiment_ids = set()
-            for dataset in response['results']:
+            for dataset in results:
                 # Parse experiment ID from dataset metadata or path
                 climate_scenario = dataset.get('climate_scenario', '')
                 if climate_scenario and climate_scenario not in ['obsclim', 'counterclim']:
@@ -197,13 +198,14 @@ class CMIPW5E5:
                 climate_scenario=climate_scenario
             )
             
-            if not response.get('results'):
+            results = self._normalize_dataset_results(response)
+            if not results:
                 print(f"⚠️ No datasets found for experiment '{experiment_id}'")
                 return []
             
             # Extract unique source IDs from results
             source_ids = set()
-            for dataset in response['results']:
+            for dataset in results:
                 # Parse source ID from dataset metadata or filename
                 climate_forcing = dataset.get('climate_forcing', '')
                 if climate_forcing:
@@ -294,16 +296,17 @@ class CMIPW5E5:
                     climate_variable=cmip_var
                 )
                 
-                if not response.get('results'):
+                results = self._normalize_dataset_results(response)
+                if not results:
                     print(f"⚠️ No CMIP6 datasets found for {var} with model {self.source_id}")
                     continue
                 
                 # Get the first matching dataset
-                dataset = response['results'][0]
+                dataset = results[0]
                 print(f"✅ Found dataset: {dataset.get('name', 'unnamed')}")
                 
                 # Filter files by date range
-                for file_info in dataset.get('files', []):
+                for file_info in self._extract_files_list(dataset):
                     file_path = file_info['path']
                     file_name = file_info['name']
                     
@@ -333,6 +336,28 @@ class CMIPW5E5:
                 continue
         
         print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
+
+    def _normalize_dataset_results(self, response) -> List[Dict]:
+        """Normalize isimip-client dataset responses to a list of dataset dicts."""
+        if response is None:
+            return []
+        if isinstance(response, list):
+            return response
+        if isinstance(response, dict):
+            results = response.get('results')
+            if isinstance(results, list):
+                return results
+        return []
+
+    def _extract_files_list(self, dataset: Dict) -> List[Dict]:
+        """Extract file list from a dataset record, handling multiple response shapes."""
+        files = dataset.get('files')
+        if isinstance(files, list):
+            return files
+        single_file = dataset.get('file')
+        if isinstance(single_file, dict):
+            return [single_file]
+        return []
     
     def load(self):
         """

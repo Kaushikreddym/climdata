@@ -87,17 +87,18 @@ class W5E5:
                     climate_scenario='obsclim',  # Observed climate
                     climate_variable=w5e5_var
                 )
-                
-                if not response.get('results'):
+
+                results = self._normalize_dataset_results(response)
+                if not results:
                     print(f"⚠️ No W5E5 datasets found for {var}")
                     continue
-                
+
                 # Get the first matching dataset
-                dataset = response['results'][0]
+                dataset = results[0]
                 print(f"✅ Found dataset: {dataset.get('name', 'unnamed')}")
                 
                 # Filter files by date range
-                for file_info in dataset.get('files', []):
+                for file_info in self._extract_files_list(dataset):
                     file_path = file_info['path']
                     file_name = file_info['name']
                     
@@ -125,6 +126,28 @@ class W5E5:
                 continue
         
         print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
+
+    def _normalize_dataset_results(self, response) -> List[Dict]:
+        """Normalize isimip-client dataset responses to a list of dataset dicts."""
+        if response is None:
+            return []
+        if isinstance(response, list):
+            return response
+        if isinstance(response, dict):
+            results = response.get('results')
+            if isinstance(results, list):
+                return results
+        return []
+
+    def _extract_files_list(self, dataset: Dict) -> List[Dict]:
+        """Extract file list from a dataset record, handling multiple response shapes."""
+        files = dataset.get('files')
+        if isinstance(files, list):
+            return files
+        single_file = dataset.get('file')
+        if isinstance(single_file, dict):
+            return [single_file]
+        return []
     
     def load(self):
         """
