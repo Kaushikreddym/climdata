@@ -1,11 +1,4 @@
-import climdata
-import xarray as xr
-import xclim
-import pandas as pd
-from climdata.utils.config import _ensure_local_conf
-from omegaconf import DictConfig
-import hydra
-from hydra.core.global_hydra import GlobalHydra
+from climdata import ClimData
 import sys
 
 # Example usage:
@@ -19,8 +12,8 @@ import sys
 #       time_range.start_date=2000-01-01 \
 #       time_range.end_date=2000-12-31 \
 #       dsinfo.mswx.params.google_service_account=/home/muduchuru/.climdata_conf/service.json \
-#       data_dir=/beegfs/muduchuru/data/ \
-#       variables=['tas']
+#       data_dir=./data \
+#       variables=[tas]
 #
 # All Hydra overrides follow the format key=value.
 
@@ -37,13 +30,22 @@ import sys
 # )
 # from multiprocessing import freeze_support
 
-_ensure_local_conf()
-@hydra.main(config_path="./conf", config_name="config", version_base=None)
-def main(cfg: DictConfig) -> None:
-    overrides = sys.argv[1:]
-
-    # Extract data
-    cfg, filename, ds = climdata.extract_data(overrides=overrides)
-
 if __name__ == "__main__":
-    main()
+    # Get command line overrides
+    overrides = sys.argv[1:]
+    
+    # Initialize ClimData with overrides
+    extractor = ClimData(overrides=overrides)
+    
+    # Extract data (returns xarray.Dataset)
+    ds = extractor.extract()
+    
+    # Optional: compute index if configured
+    if extractor.cfg.get('index'):
+        ds_index = extractor.calc_index(ds)
+        df = extractor.to_dataframe(ds_index)
+        extractor.to_csv(df)
+    else:
+        # Convert to dataframe and save
+        df = extractor.to_dataframe(ds)
+        extractor.to_csv(df)

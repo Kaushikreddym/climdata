@@ -1867,7 +1867,7 @@ Future period: 2015-01-01 to 2050-12-31
     <span class="s2">"variables=[tas]"</span><span class="p">,</span>
     <span class="sa">f</span><span class="s2">"time_range.start_date=</span><span class="si">{</span><span class="n">hist_start</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># Start date of extraction</span>
     <span class="sa">f</span><span class="s2">"time_range.end_date=</span><span class="si">{</span><span class="n">hist_end</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>    <span class="c1"># End date of extraction</span>
-    <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
+    <span class="s2">"data_dir=./data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
 <span class="p">]</span>
 <span class="n">mswx</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">options</span><span class="p">)</span>
 
@@ -1887,7 +1887,7 @@ options = [
     "variables=[tas]",
     f"time_range.start_date={hist_start}",  # Start date of extraction
     f"time_range.end_date={hist_end}",    # End date of extraction
-    "data_dir=/beegfs/muduchuru/data",    # Local directory to store downloaded/intermediate files
+    "data_dir=./data",    # Local directory to store downloaded/intermediate files
 ]
 mswx = ClimData(overrides=options)
 
@@ -1961,7 +1961,7 @@ print(f"  Time range: {obs_fine_real.time.values[0]} to {obs_fine_real.time.valu
     <span class="s2">"variables=[tas]"</span><span class="p">,</span>
     <span class="sa">f</span><span class="s2">"time_range.start_date=</span><span class="si">{</span><span class="n">hist_start</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># Start date of extraction</span>
     <span class="sa">f</span><span class="s2">"time_range.end_date=</span><span class="si">{</span><span class="n">hist_end</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>    <span class="c1"># End date of extraction</span>
-    <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
+    <span class="s2">"data_dir=./data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
     <span class="sa">f</span><span class="s2">"source_id=</span><span class="si">{</span><span class="n">cmip_model</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
     <span class="sa">f</span><span class="s2">"experiment_id=historical"</span><span class="p">,</span>
 <span class="p">]</span>
@@ -1984,7 +1984,7 @@ options = [
     "variables=[tas]",
     f"time_range.start_date={hist_start}",  # Start date of extraction
     f"time_range.end_date={hist_end}",    # End date of extraction
-    "data_dir=/beegfs/muduchuru/data",    # Local directory to store downloaded/intermediate files
+    "data_dir=./data",    # Local directory to store downloaded/intermediate files
     f"source_id={cmip_model}",
     f"experiment_id=historical",
 ]
@@ -2048,7 +2048,7 @@ print(f"  Time range: {sim_hist_coarse_real.time.values[0]} to {sim_hist_coarse_
     <span class="s2">"variables=[tas]"</span><span class="p">,</span>
     <span class="sa">f</span><span class="s2">"time_range.start_date=</span><span class="si">{</span><span class="n">fut_start</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># Start date of extraction</span>
     <span class="sa">f</span><span class="s2">"time_range.end_date=</span><span class="si">{</span><span class="n">fut_end</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>    <span class="c1"># End date of extraction</span>
-    <span class="s2">"data_dir=/beegfs/muduchuru/data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
+    <span class="s2">"data_dir=./data"</span><span class="p">,</span>    <span class="c1"># Local directory to store downloaded/intermediate files</span>
     <span class="sa">f</span><span class="s2">"source_id=</span><span class="si">{</span><span class="n">cmip_model</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
     <span class="sa">f</span><span class="s2">"experiment_id=ssp585"</span><span class="p">,</span>
 <span class="p">]</span>
@@ -2070,7 +2070,7 @@ options = [
     "variables=[tas]",
     f"time_range.start_date={fut_start}",  # Start date of extraction
     f"time_range.end_date={fut_end}",    # End date of extraction
-    "data_dir=/beegfs/muduchuru/data",    # Local directory to store downloaded/intermediate files
+    "data_dir=./data",    # Local directory to store downloaded/intermediate files
     f"source_id={cmip_model}",
     f"experiment_id=ssp585",
 ]
@@ -6865,7 +6865,7 @@ print(f"Output resolution: {(result.lat.values[1] - result.lat.values[0]):.3f}°
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 30, 2026 15:09:24 UTC"><span class="timeago" datetime="2026-01-30T15:09:24+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 30, 2026 15:09:24 UTC">2026-01-30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 24, 2026 12:01:46 UTC"><span class="timeago" datetime="2026-02-24T12:01:46+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 24, 2026 12:01:46 UTC">2026-02-24</span>
   </span>
 
     

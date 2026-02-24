@@ -1533,7 +1533,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=8ddf1cd7">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=f5c436ea">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1551,24 +1551,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">climdata</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">xclim</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ensure_local_conf</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">omegaconf</span><span class="w"> </span><span class="kn">import</span> <span class="n">DictConfig</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">hydra</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">hydra.core.global_hydra</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalHydra</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">climdata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClimData</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-1">import climdata
-import xarray as xr
-import xclim
-import pandas as pd
-from climdata.utils.config import _ensure_local_conf
-from omegaconf import DictConfig
-import hydra
-from hydra.core.global_hydra import GlobalHydra
+<div class="clipboard-copy-txt" id="cell-1">from climdata import ClimData
 import sys</div>
 </div>
 </div>
@@ -1576,7 +1562,7 @@ import sys</div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=0e5b7e13">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=4c24bcf0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1591,14 +1577,14 @@ lon=13.137 <br/>
 time_range.start_date=2000-01-01 <br/>
 time_range.end_date=2000-12-31 <br/>
 dsinfo.mswx.params.google_service_account=/home/muduchuru/.climdata_conf/service.json <br/>
-data_dir=/beegfs/muduchuru/data/ <br/>
-variables=['tas']</p>
+data_dir=./data <br/>
+variables=[tas]</p>
 <p>All Hydra overrides follow the format key=value.</p>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bfe01827">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=dbfa0f0c">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1610,7 +1596,7 @@ from dask.distributed import Client</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=ba070eb6">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a192a249">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1626,7 +1612,7 @@ from multiprocessing import freeze_support</p>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=da734f71">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=b850c980">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -1644,50 +1630,45 @@ from multiprocessing import freeze_support</p>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">_ensure_local_conf</span><span class="p">()</span>
-<span class="nd">@hydra</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="s2">"./conf"</span><span class="p">,</span> <span class="n">config_name</span><span class="o">=</span><span class="s2">"config"</span><span class="p">,</span> <span class="n">version_base</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">overrides</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-
-    <span class="c1"># Extract data</span>
-    <span class="n">cfg</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">ds</span> <span class="o">=</span> <span class="n">climdata</span><span class="o">.</span><span class="n">extract_data</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
-</pre></div>
-<div class="clipboard-copy-txt" id="cell-2">_ensure_local_conf()
-@hydra.main(config_path="./conf", config_name="config", version_base=None)
-def main(cfg: DictConfig) -&gt; None:
-    overrides = sys.argv[1:]
-
-    # Extract data
-    cfg, filename, ds = climdata.extract_data(overrides=overrides)</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ea974815">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="CodeMirror cm-s-jupyter">
-<div class="zeroclipboard-container">
-<clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
-<div>
-<span class="notice" hidden="">Copied!</span>
-<svg aria-hidden="true" class="clipboard-copy-icon" data-view-component="true" height="20" version="1.1" viewbox="0 0 16 16" width="20">
-<path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-<path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-</clipboard-copy>
-</div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">()</span>
+    <span class="c1"># Get command line overrides</span>
+    <span class="n">overrides</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    
+    <span class="c1"># Initialize ClimData with overrides</span>
+    <span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
+    
+    <span class="c1"># Extract data (returns xarray.Dataset)</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">extract</span><span class="p">()</span>
+    
+    <span class="c1"># Optional: compute index if configured</span>
+    <span class="k">if</span> <span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'index'</span><span class="p">):</span>
+        <span class="n">ds_index</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">calc_index</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">ds_index</span><span class="p">)</span>
+        <span class="n">extractor</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Convert to dataframe and save</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+        <span class="n">extractor</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-3">if __name__ == "__main__":
-    main()</div>
+<div class="clipboard-copy-txt" id="cell-2">if __name__ == "__main__":
+    # Get command line overrides
+    overrides = sys.argv[1:]
+    
+    # Initialize ClimData with overrides
+    extractor = ClimData(overrides=overrides)
+    
+    # Extract data (returns xarray.Dataset)
+    ds = extractor.extract()
+    
+    # Optional: compute index if configured
+    if extractor.cfg.get('index'):
+        ds_index = extractor.calc_index(ds)
+        df = extractor.to_dataframe(ds_index)
+        extractor.to_csv(df)
+    else:
+        # Convert to dataframe and save
+        df = extractor.to_dataframe(ds)
+        extractor.to_csv(df)</div>
 </div>
 </div>
 </div>
@@ -1719,7 +1700,7 @@ def main(cfg: DictConfig) -&gt; None:
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="November 18, 2025 13:04:52 UTC"><span class="timeago" datetime="2025-11-18T13:04:52+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="November 18, 2025 13:04:52 UTC">2025-11-18</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="February 24, 2026 12:01:46 UTC"><span class="timeago" datetime="2026-02-24T12:01:46+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="February 24, 2026 12:01:46 UTC">2026-02-24</span>
   </span>
 
     
