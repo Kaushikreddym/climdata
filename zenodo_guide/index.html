@@ -12,7 +12,7 @@
         <meta name="author" content="Kaushikreddym">
       
       
-        <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/INTEGRATION_GUIDE/">
+        <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/zenodo_guide/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>W5E5 Dataset Integration Guide - climdata</title>
+        <title>Zenodo Archival & DOI Guide - climdata</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#w5e5-dataset-integration-guide" class="md-skip">
+        <a href="#zenodo-archival-doi-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              W5E5 Dataset Integration Guide
+              Zenodo Archival &amp; DOI Guide
             
           </span>
         </div>
@@ -931,10 +931,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#why-zenodo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
+        Why Zenodo?
       
     </span>
   </a>
@@ -942,22 +942,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-was-added" class="md-nav__link">
+  <a href="#step-1-create-a-zenodo-account" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What Was Added
+        Step 1: Create a Zenodo Account
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="What Was Added">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-enable-github-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Enable GitHub Integration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: Enable GitHub Integration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-new-dataset-module" class="md-nav__link">
+  <a href="#option-a-automatic-archival-on-release-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. New Dataset Module
+        Option A: Automatic Archival on Release (Recommended)
       
     </span>
   </a>
@@ -965,32 +976,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-configuration" class="md-nav__link">
+  <a href="#option-b-manual-upload" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-dependency" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Dependency
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-documentation-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Documentation &amp; Examples
+        Option B: Manual Upload
       
     </span>
   </a>
@@ -1003,22 +992,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#usage-comparison" class="md-nav__link">
+  <a href="#step-3-prepare-release-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Usage Comparison
+        Step 3: Prepare Release Metadata
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Usage Comparison">
+    <nav class="md-nav" aria-label="Step 3: Prepare Release Metadata">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#w5e5-vs-other-datasets" class="md-nav__link">
+  <a href="#citationcff-already-created" class="md-nav__link">
     <span class="md-ellipsis">
       
-        W5E5 vs Other Datasets
+        ✅ CITATION.cff (Already Created)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#codemetajson-already-created" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ codemeta.json (Already Created)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-these-fields-in-citationcff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update These Fields in CITATION.cff:
       
     </span>
   </a>
@@ -1031,22 +1042,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration-examples" class="md-nav__link">
+  <a href="#step-4-create-a-github-release" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration Examples
+        Step 4: Create a GitHub Release
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration Examples">
+    <nav class="md-nav" aria-label="Step 4: Create a GitHub Release">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-config-file" class="md-nav__link">
+  <a href="#release-description-template" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Config File
+        Release Description Template:
       
     </span>
   </a>
@@ -1054,10 +1065,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#using-python-overrides" class="md-nav__link">
+  <a href="#update-pyprojecttoml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using Python Overrides
+        Update pyproject.toml:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-citationcff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update CITATION.cff:
       
     </span>
   </a>
@@ -1070,44 +1092,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#data-access-flow" class="md-nav__link">
+  <a href="#step-7-update-documentation-links" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Data Access Flow
+        Step 7: Update Documentation Links
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#integration-with-existing-workflows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Integration with Existing Workflows
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Integration with Existing Workflows">
+    <nav class="md-nav" aria-label="Step 7: Update Documentation Links">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#works-with-wrapperpy" class="md-nav__link">
+  <a href="#in-readmemd" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Works with wrapper.py
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#works-with-cli" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Works with CLI
+        In README.md:
       
     </span>
   </a>
@@ -1120,22 +1120,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#testing-the-implementation" class="md-nav__link">
+  <a href="#verifying-your-zenodo-record" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Testing the Implementation
+        Verifying Your Zenodo Record
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Testing the Implementation">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-doi-in-publications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the DOI in Publications
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the DOI in Publications">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-quick-test-python-script" class="md-nav__link">
+  <a href="#journal-submission" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Quick Test (Python Script)
+        Journal Submission:
       
     </span>
   </a>
@@ -1143,10 +1154,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-notebook-test" class="md-nav__link">
+  <a href="#grant-proposals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Notebook Test
+        Grant Proposals:
       
     </span>
   </a>
@@ -1154,10 +1165,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-manual-test" class="md-nav__link">
+  <a href="#phd-thesis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Manual Test
+        PhD Thesis:
       
     </span>
   </a>
@@ -1166,67 +1177,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps-optional-enhancements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps (Optional Enhancements)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Next Steps (Optional Enhancements)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-add-to-wrappercli" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Add to Wrapper/CLI
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-add-unit-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Add Unit Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-add-to-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Add to Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#dataset-comparison-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dataset Comparison Summary
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1243,10 +1193,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#import-error" class="md-nav__link">
+  <a href="#problem-github-release-not-appearing-on-zenodo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Import Error
+        Problem: GitHub release not appearing on Zenodo
       
     </span>
   </a>
@@ -1254,10 +1204,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#download-error" class="md-nav__link">
+  <a href="#problem-doi-link-returns-404" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Download Error
+        Problem: DOI link returns 404
       
     </span>
   </a>
@@ -1265,10 +1215,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#memory-error" class="md-nav__link">
+  <a href="#problem-metadata-not-appearing-in-citation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Memory Error
+        Problem: Metadata not appearing in citation
       
     </span>
   </a>
@@ -1281,49 +1231,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#files-createdmodified" class="md-nav__link">
+  <a href="#additional-resources" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Files Created/Modified
+        Additional Resources
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Files Created/Modified">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#created" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#modified" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Modified
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
+  <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Summary
+        Next Steps
       
     </span>
   </a>
@@ -1353,34 +1275,153 @@
   
 
 
-<h1 id="w5e5-dataset-integration-guide">W5E5 Dataset Integration Guide<a class="headerlink" href="#w5e5-dataset-integration-guide" title="Permanent link">&para;</a></h1>
-<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<p>The W5E5 dataset from ISIMIP has been successfully integrated into the climdata package. Here's everything you need to know:</p>
-<h2 id="what-was-added">What Was Added<a class="headerlink" href="#what-was-added" title="Permanent link">&para;</a></h2>
-<h3 id="1-new-dataset-module">1. New Dataset Module<a class="headerlink" href="#1-new-dataset-module" title="Permanent link">&para;</a></h3>
-<p><strong>File</strong>: <code>climdata/datasets/W5E5.py</code></p>
-<p>A complete implementation following the same pattern as existing datasets (ERA5, MSWX, POWER) with:
-- <code>fetch()</code> - Download data from ISIMIP repository
-- <code>load()</code> - Load NetCDF files into xarray
-- <code>extract()</code> - Spatial subsetting (point, box, shapefile)
-- <code>save_csv()</code> / <code>save_netcdf()</code> - Save results</p>
-<h3 id="2-configuration">2. Configuration<a class="headerlink" href="#2-configuration" title="Permanent link">&para;</a></h3>
-<p><strong>File</strong>: <code>climdata/conf/mappings/parameters.yaml</code></p>
-<p>Added W5E5 configuration section with:
-- Dataset parameters (simulation_round, product, forcing, scenario)
-- Variable mappings (tas, tasmax, tasmin, pr, rsds, hurs, sfcWind, etc.)
-- Metadata (units, long names)</p>
-<h3 id="3-dependency">3. Dependency<a class="headerlink" href="#3-dependency" title="Permanent link">&para;</a></h3>
-<p><strong>File</strong>: <code>requirements.txt</code></p>
-<p>Added <code>isimip-client</code> package for accessing ISIMIP data repository</p>
-<h3 id="4-documentation-examples">4. Documentation &amp; Examples<a class="headerlink" href="#4-documentation-examples" title="Permanent link">&para;</a></h3>
+<h1 id="zenodo-archival-doi-guide">Zenodo Archival &amp; DOI Guide<a class="headerlink" href="#zenodo-archival-doi-guide" title="Permanent link">&para;</a></h1>
+<p>This document provides instructions for archiving <strong>climdata</strong> on <strong>Zenodo</strong> to obtain a persistent Digital Object Identifier (DOI) for research reproducibility and citation purposes.</p>
+<h2 id="why-zenodo">Why Zenodo?<a class="headerlink" href="#why-zenodo" title="Permanent link">&para;</a></h2>
+<p><strong>Zenodo</strong> is an open-access repository funded by CERN and the European Commission. Archiving climdata on Zenodo:</p>
+<p>✅ <strong>Creates a DOI</strong> — Persistent identifier for stable citation
+✅ <strong>Enables reproducibility</strong> — Exact versions are archived indefinitely
+✅ <strong>Improves discoverability</strong> — Listed in CERN, OpenDOAR, and global registries
+✅ <strong>Supports open science</strong> — Free access, no publication fees
+✅ <strong>Integrates with GitHub</strong> — Automatic archival on each release</p>
+<hr />
+<h2 id="step-1-create-a-zenodo-account">Step 1: Create a Zenodo Account<a class="headerlink" href="#step-1-create-a-zenodo-account" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Go to <a href="https://zenodo.org/">https://zenodo.org/</a></li>
+<li>Click <strong>"Sign up"</strong> or login with GitHub</li>
+<li>Complete your profile (name, email, affiliation)</li>
+<li>Verify your email address</li>
+</ol>
+<hr />
+<h2 id="step-2-enable-github-integration">Step 2: Enable GitHub Integration<a class="headerlink" href="#step-2-enable-github-integration" title="Permanent link">&para;</a></h2>
+<h3 id="option-a-automatic-archival-on-release-recommended">Option A: Automatic Archival on Release (Recommended)<a class="headerlink" href="#option-a-automatic-archival-on-release-recommended" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Go to <a href="https://zenodo.org/account/settings/github/">Zenodo GitHub Settings</a></li>
+<li>Click <strong>"Connect"</strong> to link your GitHub account</li>
+<li>Grant Zenodo permission to access your repositories</li>
+<li>Select the <strong>climdata</strong> repository from the list</li>
+<li>Enable the toggle to activate automatic archival on releases</li>
+</ol>
+<p>Now, every time you create a GitHub release, Zenodo will automatically:
+- Download the release assets
+- Create a new DOI
+- Archive the version indefinitely</p>
+<h3 id="option-b-manual-upload">Option B: Manual Upload<a class="headerlink" href="#option-b-manual-upload" title="Permanent link">&para;</a></h3>
+<p>If you prefer manual control:</p>
+<ol>
+<li>Go to <a href="https://zenodo.org/deposit/">Zenodo Upload</a></li>
+<li>Click <strong>"New Upload"</strong></li>
+<li>Follow the instructions below (Step 3)</li>
+</ol>
+<hr />
+<h2 id="step-3-prepare-release-metadata">Step 3: Prepare Release Metadata<a class="headerlink" href="#step-3-prepare-release-metadata" title="Permanent link">&para;</a></h2>
+<p>Before creating a GitHub release, ensure your project has proper metadata files:</p>
+<h3 id="citationcff-already-created">✅ CITATION.cff (Already Created)<a class="headerlink" href="#citationcff-already-created" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Example Notebook</strong>: <code>docs/examples/w5e5_example.ipynb</code></li>
-<li><strong>Test Script</strong>: <code>tests/test_w5e5.py</code></li>
-<li><strong>Full Documentation</strong>: <code>docs/W5E5_README.md</code></li>
+<li>Located: <code>/CITATION.cff</code></li>
+<li>Zenodo automatically reads this for citation information</li>
+<li>GitHub displays a "Cite this repository" button using this file</li>
 </ul>
-<h2 id="usage-comparison">Usage Comparison<a class="headerlink" href="#usage-comparison" title="Permanent link">&para;</a></h2>
-<h3 id="w5e5-vs-other-datasets">W5E5 vs Other Datasets<a class="headerlink" href="#w5e5-vs-other-datasets" title="Permanent link">&para;</a></h3>
+<h3 id="codemetajson-already-created">✅ codemeta.json (Already Created)<a class="headerlink" href="#codemetajson-already-created" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Located: <code>/codemeta.json</code></li>
+<li>Machine-readable metadata following CodeMeta standard</li>
+<li>Used by registries and search engines</li>
+</ul>
+<h3 id="update-these-fields-in-citationcff">Update These Fields in CITATION.cff:<a class="headerlink" href="#update-these-fields-in-citationcff" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5.0</span><span class="w">  </span><span class="c1"># Match your release tag</span>
+<span class="nt">date-released</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-01-01&quot;</span><span class="w">  </span><span class="c1"># Update with release date</span>
+<span class="nt">authors</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">family-names</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Muduchuru</span>
+<span class="w">    </span><span class="nt">given-names</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kaushik</span>
+<span class="w">    </span><span class="nt">orcid</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://orcid.org/XXXX-XXXX-XXXX-XXXX&quot;</span><span class="w">  </span><span class="c1"># Add your ORCID</span>
+</code></pre></div></td></tr></table></div>
+<hr />
+<h2 id="step-4-create-a-github-release">Step 4: Create a GitHub Release<a class="headerlink" href="#step-4-create-a-github-release" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Go to <a href="https://github.com/Kaushikreddym/climdata/releases">climdata Releases</a></li>
+<li>Click <strong>"Create a new release"</strong></li>
+<li>Enter:</li>
+<li><strong>Tag version</strong>: <code>v0.5.0</code> (must match pyproject.toml version)</li>
+<li><strong>Release title</strong>: <code>climdata v0.5.0</code></li>
+<li><strong>Description</strong>: Include key features, bug fixes, and links</li>
+</ol>
+<h3 id="release-description-template">Release Description Template:<a class="headerlink" href="#release-description-template" title="Permanent link">&para;</a></h3>
+<p><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="gh"># climdata v0.5.0</span>
+
+<span class="gu">## ✨ New Features</span>
+<span class="k">-</span><span class="w"> </span>Multi-provider weather data extraction (MSWX, CMIP, ERA5, DWD, HYRAS, POWER)
+<span class="k">-</span><span class="w"> </span>Climate extreme indices calculation
+<span class="k">-</span><span class="w"> </span>Bias correction and statistical downscaling (BCSD)
+<span class="k">-</span><span class="w"> </span>Imputation for missing data gaps
+
+<span class="gu">## 🐛 Bug Fixes</span>
+<span class="k">-</span><span class="w"> </span>Fixed Google Drive API authentication
+<span class="k">-</span><span class="w"> </span>Improved error handling for failed downloads
+
+<span class="gu">## 📚 Documentation</span>
+<span class="k">-</span><span class="w"> </span>Added MSWX dataset guide with licensing information
+<span class="k">-</span><span class="w"> </span>Enhanced installation instructions
+<span class="k">-</span><span class="w"> </span>New example notebooks
+
+<span class="gu">## 🔗 Links</span>
+<span class="k">-</span><span class="w"> </span>Documentation: https://Kaushikreddym.github.io/climdata
+<span class="k">-</span><span class="w"> </span>MSWX Access: https://www.gloh2o.org/mswx/
+<span class="k">-</span><span class="w"> </span>Changelog: https://github.com/Kaushikreddym/climdata/releases
+
+<span class="gu">### Citation</span>
+
+If you use climdata in your research, please cite:
+
+```bibtex
+<span class="ni">@software</span>{muduchuru2024climdata,
+  title={climdata: Automated Climate Data Extraction and Processing},
+  author={Muduchuru, Kaushik},
+  year={2024},
+  version={0.5.0},
+  url={https://github.com/Kaushikreddym/climdata},
+  doi={&lt;DOI will be provided by Zenodo&gt;}
+}
+</code></pre></div></td></tr></table></div>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -1407,107 +1448,67 @@
 <span class="normal">24</span>
 <span class="normal">25</span>
 <span class="normal">26</span>
-<span class="normal">27</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># ========== W5E5 (NEW) ==========</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.W5E5</span><span class="w"> </span><span class="kn">import</span> <span class="n">W5E5</span>
-<span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-<span class="n">w5e5</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>  <span class="c1"># Downloads from ISIMIP</span>
-<span class="n">w5e5</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">w5e5</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">))</span>
-<span class="n">w5e5</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="s1">&#39;output.csv&#39;</span><span class="p">)</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span></pre></div></td><td class="code"><div><pre><span></span><code>4. Attach release artifacts (optional):
+   - Source code ZIP/tarball
+   - Wheels or distributions
 
-<span class="c1"># ========== ERA5 (Existing) ==========</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.ERA5</span><span class="w"> </span><span class="kn">import</span> <span class="n">ERA5Mirror</span>
-<span class="n">era5</span> <span class="o">=</span> <span class="n">ERA5Mirror</span><span class="p">(</span><span class="n">base_path</span><span class="p">,</span> <span class="n">fs</span><span class="p">)</span>
-<span class="n">era5</span><span class="o">.</span><span class="n">download_chunk</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">)</span>
-<span class="c1"># ... different API</span>
+5. Click **&quot;Publish release&quot;**
 
-<span class="c1"># ========== MSWX (Existing) ==========</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.MSWX</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSWXmirror</span>
-<span class="n">mswx</span> <span class="o">=</span> <span class="n">MSWXmirror</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-<span class="n">mswx</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">folder_id</span><span class="p">,</span> <span class="n">variable</span><span class="p">)</span>
-<span class="n">mswx</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">mswx</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">))</span>
+---
 
-<span class="c1"># ========== NASA POWER (Existing) ==========</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.NASAPOWER</span><span class="w"> </span><span class="kn">import</span> <span class="n">POWER</span>
-<span class="n">power</span> <span class="o">=</span> <span class="n">POWER</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-<span class="n">power</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
-<span class="n">power</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">power</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+## Step 5: Verify Zenodo Archival
+
+After creating a GitHub release (if auto-integration is enabled):
+
+1. Go to [https://zenodo.org/account/settings/github/](https://zenodo.org/account/settings/github/)
+2. Look for **climdata** in the list
+3. Click on it to see archived versions
+4. Each version will have a unique DOI
+
+### Manual Verification:
+
+1. Search [Zenodo](https://zenodo.org/search?q=climdata) for &quot;climdata&quot;
+2. Your project should appear with all versions listed
+3. Each version shows its DOI
+
+---
+
+## Step 6: Update Project with DOI
+
+Once you have a DOI from Zenodo, update your project:
+
+### Update README.md:
+
+```markdown
+[![DOI](https://zenodo.org/badge/XXXXX/climdata.svg)](https://zenodo.org/record/XXXXX)
+</code></pre></div></td></tr></table></div></p>
+<p>Replace <code>XXXXX</code> with your Zenodo record ID (found in the DOI: <code>https://doi.org/10.5281/zenodo.XXXXX</code>).</p>
+<h3 id="update-pyprojecttoml">Update pyproject.toml:<a class="headerlink" href="#update-pyprojecttoml" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">[project.urls]</span>
+<span class="s2">&quot;DOI&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://doi.org/10.5281/zenodo.XXXXX&quot;</span>
+<span class="s2">&quot;Zenodo&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://zenodo.org/record/XXXXX&quot;</span>
 </code></pre></div></td></tr></table></div>
-<p><strong>W5E5 follows the MSWX/POWER pattern</strong> - simpler and more consistent!</p>
-<h2 id="configuration-examples">Configuration Examples<a class="headerlink" href="#configuration-examples" title="Permanent link">&para;</a></h2>
-<h3 id="using-config-file">Using Config File<a class="headerlink" href="#using-config-file" title="Permanent link">&para;</a></h3>
+<h3 id="update-citationcff">Update CITATION.cff:<a class="headerlink" href="#update-citationcff" title="Permanent link">&para;</a></h3>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span>
-<span class="normal">8</span>
-<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># In config.yaml or as overrides</span>
-<span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">w5e5</span>
-<span class="nt">lat</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">52.52</span>
-<span class="nt">lon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">13.405</span>
-<span class="nt">variables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">tas</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tasmax</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tasmin</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">pr</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">rsds</span><span class="p p-Indicator">]</span>
-<span class="nt">time_range</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">start_date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2010-01-01&quot;</span>
-<span class="w">  </span><span class="nt">end_date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2010-12-31&quot;</span>
-<span class="nt">data_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./data</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">identifiers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DOI</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">zenodo</span><span class="nv"> </span><span class="s">archive&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">doi</span>
+<span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.5281/zenodo.XXXXX&quot;</span>
 </code></pre></div></td></tr></table></div>
-<h3 id="using-python-overrides">Using Python Overrides<a class="headerlink" href="#using-python-overrides" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
-
-<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span>
-    <span class="n">config_name</span><span class="o">=</span><span class="s1">&#39;config&#39;</span><span class="p">,</span>
-    <span class="n">overrides</span><span class="o">=</span><span class="p">[</span>
-        <span class="s1">&#39;dataset=w5e5&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;lat=40.7128&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;lon=-74.0060&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;variables=[tas,pr,rsds]&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;time_range.start_date=2015-01-01&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;time_range.end_date=2015-12-31&#39;</span>
-    <span class="p">]</span>
-<span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="data-access-flow">Data Access Flow<a class="headerlink" href="#data-access-flow" title="Permanent link">&para;</a></h2>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code>User Request
-    ↓
-W5E5(cfg) - Initialize with config
-    ↓
-fetch() - Search ISIMIP API → Download files → Cache locally
-    ↓
-load() - Open NetCDF → Merge variables → Subset time range
-    ↓
-extract() - Spatial subset (point/box/shape)
-    ↓
-save_csv() / save_netcdf() - Export results
-</code></pre></div></td></tr></table></div>
-<h2 id="integration-with-existing-workflows">Integration with Existing Workflows<a class="headerlink" href="#integration-with-existing-workflows" title="Permanent link">&para;</a></h2>
-<h3 id="works-with-wrapperpy">Works with wrapper.py<a class="headerlink" href="#works-with-wrapperpy" title="Permanent link">&para;</a></h3>
+<hr />
+<h2 id="step-7-update-documentation-links">Step 7: Update Documentation Links<a class="headerlink" href="#step-7-update-documentation-links" title="Permanent link">&para;</a></h2>
+<h3 id="in-readmemd">In README.md:<a class="headerlink" href="#in-readmemd" title="Permanent link">&para;</a></h3>
+<p>Add a "Citation" section:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
 <span class="normal"> 2</span>
 <span class="normal"> 3</span>
@@ -1521,53 +1522,24 @@ save_csv() / save_netcdf() - Export results
 <span class="normal">11</span>
 <span class="normal">12</span>
 <span class="normal">13</span>
-<span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># If you&#39;re using the wrapper workflow, W5E5 can be integrated:</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.utils.wrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetWrapper</span>
+<span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="gu">## Citation</span>
 
-<span class="n">wrapper</span> <span class="o">=</span> <span class="n">DatasetWrapper</span><span class="p">(</span>
-    <span class="n">dataset</span><span class="o">=</span><span class="s1">&#39;w5e5&#39;</span><span class="p">,</span>
-    <span class="n">lat</span><span class="o">=</span><span class="mf">52.52</span><span class="p">,</span>
-    <span class="n">lon</span><span class="o">=</span><span class="mf">13.405</span><span class="p">,</span>
-    <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span> <span class="s1">&#39;pr&#39;</span><span class="p">],</span>
-    <span class="n">start_date</span><span class="o">=</span><span class="s1">&#39;2010-01-01&#39;</span><span class="p">,</span>
-    <span class="n">end_date</span><span class="o">=</span><span class="s1">&#39;2010-12-31&#39;</span>
-<span class="p">)</span>
+If you use climdata in your research, please cite:
 
-<span class="c1"># The wrapper would need to be updated to recognize &#39;w5e5&#39; dataset</span>
-<span class="c1"># and instantiate the W5E5 class accordingly</span>
+<span class="gs">**BibTeX:**</span>
+```bibtex
+<span class="ni">@software</span>{muduchuru2024climdata,
+  title={climdata: Automated Climate Data Extraction and Processing},
+  author={Muduchuru, Kaushik},
+  year={2024},
+  version={0.5.0},
+  url={https://github.com/Kaushikreddym/climdata},
+  doi={10.5281/zenodo.XXXXX}
+}
 </code></pre></div></td></tr></table></div>
-<h3 id="works-with-cli">Works with CLI<a class="headerlink" href="#works-with-cli" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># After updating the CLI to recognize w5e5:</span>
-climdata<span class="w"> </span>fetch<span class="w"> </span>--dataset<span class="w"> </span>w5e5<span class="w"> </span>--lat<span class="w"> </span><span class="m">52</span>.52<span class="w"> </span>--lon<span class="w"> </span><span class="m">13</span>.405<span class="w"> </span><span class="se">\</span>
-<span class="w">               </span>--variables<span class="w"> </span>tas,pr<span class="w"> </span>--start<span class="w"> </span><span class="m">2010</span>-01-01<span class="w"> </span>--end<span class="w"> </span><span class="m">2010</span>-12-31
-</code></pre></div></td></tr></table></div>
-<h2 id="testing-the-implementation">Testing the Implementation<a class="headerlink" href="#testing-the-implementation" title="Permanent link">&para;</a></h2>
-<h3 id="1-quick-test-python-script">1. Quick Test (Python Script)<a class="headerlink" href="#1-quick-test-python-script" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/beegfs/muduchuru/pkgs_fnl/climdata
-python<span class="w"> </span>tests/test_w5e5.py
-</code></pre></div></td></tr></table></div>
-<h3 id="2-notebook-test">2. Notebook Test<a class="headerlink" href="#2-notebook-test" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>jupyter<span class="w"> </span>notebook<span class="w"> </span>docs/examples/w5e5_example.ipynb
-</code></pre></div></td></tr></table></div>
-<h3 id="3-manual-test">3. Manual Test<a class="headerlink" href="#3-manual-test" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.W5E5</span><span class="w"> </span><span class="kn">import</span> <span class="n">W5E5</span>
-
-<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dataset=w5e5&#39;</span><span class="p">,</span> <span class="s1">&#39;lat=52.52&#39;</span><span class="p">,</span> <span class="s1">&#39;lon=13.405&#39;</span><span class="p">])</span>
-<span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ W5E5 initialized successfully!&quot;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="next-steps-optional-enhancements">Next Steps (Optional Enhancements)<a class="headerlink" href="#next-steps-optional-enhancements" title="Permanent link">&para;</a></h2>
-<h3 id="1-add-to-wrappercli">1. Add to Wrapper/CLI<a class="headerlink" href="#1-add-to-wrappercli" title="Permanent link">&para;</a></h3>
-<p>Update <code>climdata/utils/wrapper.py</code> or CLI to recognize 'w5e5' dataset:</p>
+<p><strong>APA:</strong>
+Muduchuru, K. (2024). climdata: Automated Climate Data Extraction and Processing (v0.5.0). Zenodo. https://doi.org/10.5281/zenodo.XXXXX</p>
+<p><strong>BibLaTeX:</strong>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>
@@ -1575,140 +1547,154 @@ python<span class="w"> </span>tests/test_w5e5.py
 <span class="normal">5</span>
 <span class="normal">6</span>
 <span class="normal">7</span>
-<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_instance</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="n">cfg</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">dataset_name</span> <span class="o">==</span> <span class="s1">&#39;w5e5&#39;</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.W5E5</span><span class="w"> </span><span class="kn">import</span> <span class="n">W5E5</span>
-        <span class="k">return</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">dataset_name</span> <span class="o">==</span> <span class="s1">&#39;mswx&#39;</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.MSWX</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSWXmirror</span>
-        <span class="k">return</span> <span class="n">MSWXmirror</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-    <span class="c1"># ... etc</span>
+<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nc">@software</span><span class="p">{</span><span class="nl">muduchuru2024climdata</span><span class="p">,</span>
+<span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{climdata}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Muduchuru, Kaushik}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">date</span><span class="p">=</span><span class="s">{2024}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">version</span><span class="p">=</span><span class="s">{0.5.0}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">url</span><span class="p">=</span><span class="s">{https://github.com/Kaushikreddym/climdata}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">doi</span><span class="p">=</span><span class="s">{10.5281/zenodo.XXXXX}</span><span class="p">,</span>
+<span class="p">}</span>
 </code></pre></div></td></tr></table></div>
-<h3 id="2-add-unit-tests">2. Add Unit Tests<a class="headerlink" href="#2-add-unit-tests" title="Permanent link">&para;</a></h3>
-<p>Create proper unit tests in <code>tests/test_climdata.py</code>:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>
 <span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span>
-<span class="normal">8</span>
-<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_w5e5_init</span><span class="p">():</span>
-    <span class="n">cfg</span> <span class="o">=</span> <span class="n">create_test_config</span><span class="p">(</span><span class="s1">&#39;w5e5&#39;</span><span class="p">)</span>
-    <span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">w5e5</span><span class="o">.</span><span class="n">client</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code>---
 
-<span class="k">def</span><span class="w"> </span><span class="nf">test_w5e5_variable_mapping</span><span class="p">():</span>
-    <span class="n">w5e5</span> <span class="o">=</span> <span class="n">W5E5</span><span class="p">(</span><span class="n">test_cfg</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">w5e5</span><span class="o">.</span><span class="n">_map_variable_name</span><span class="p">(</span><span class="s1">&#39;tas&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;tas&#39;</span>
-    <span class="k">assert</span> <span class="n">w5e5</span><span class="o">.</span><span class="n">_map_variable_name</span><span class="p">(</span><span class="s1">&#39;sfcWind&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;sfcwind&#39;</span>
+## Zenodo DOI Format
+
+Your DOI will look like:
 </code></pre></div></td></tr></table></div>
-<h3 id="3-add-to-documentation">3. Add to Documentation<a class="headerlink" href="#3-add-to-documentation" title="Permanent link">&para;</a></h3>
-<p>Update main documentation files:
-- <code>README.md</code> - Add W5E5 to list of supported datasets
-- <code>docs/usage.md</code> - Add W5E5 usage examples
-- <code>docs/api.md</code> - Add W5E5 API documentation</p>
-<h2 id="dataset-comparison-summary">Dataset Comparison Summary<a class="headerlink" href="#dataset-comparison-summary" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>W5E5</th>
-<th>ERA5</th>
-<th>MSWX</th>
-<th>POWER</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Resolution</strong></td>
-<td>0.5°</td>
-<td>0.25°</td>
-<td>0.1°</td>
-<td>0.5°</td>
-</tr>
-<tr>
-<td><strong>Period</strong></td>
-<td>1979+</td>
-<td>1950+</td>
-<td>1979-2020</td>
-<td>1981+</td>
-</tr>
-<tr>
-<td><strong>Variables</strong></td>
-<td>10+</td>
-<td>100+</td>
-<td>7</td>
-<td>6+</td>
-</tr>
-<tr>
-<td><strong>Source</strong></td>
-<td>ISIMIP</td>
-<td>CDS</td>
-<td>Google Drive</td>
-<td>NASA API</td>
-</tr>
-<tr>
-<td><strong>Access</strong></td>
-<td>isimip-client</td>
-<td>cdsapi</td>
-<td>Google API</td>
-<td>REST API</td>
-</tr>
-<tr>
-<td><strong>Speed</strong></td>
-<td>Medium</td>
-<td>Slow</td>
-<td>Fast</td>
-<td>Very Fast</td>
-</tr>
-<tr>
-<td><strong>Quality</strong></td>
-<td>High</td>
-<td>Very High</td>
-<td>High</td>
-<td>Good</td>
-</tr>
-</tbody>
-</table>
+https://doi.org/10.5281/zenodo.XXXXXXX
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code>- `10.5281` = Zenodo&#39;s DOI prefix (assigned by CERN)
+- `zenodo.XXXXXXX` = Your unique record identifier
+
+---
+
+## Benefits of DOI
+
+✅ **Permanent link** — Never broken, even if GitHub URL changes
+✅ **Citable** — Use in papers, proposals, and CV
+✅ **Discoverable** — Listed in Google Scholar, Crossref, DataCite
+✅ **Version-specific** — Each release has its own DOI
+✅ **Machine-readable** — Metadata harvestable by registries
+
+---
+
+## Publishing on PyPI with Zenodo
+
+When you publish to PyPI, add Zenodo metadata:
+
+```toml
+[project]
+name = &quot;climdata&quot;
+version = &quot;0.5.0&quot;
+# ... other fields ...
+
+[project.urls]
+&quot;Homepage&quot; = &quot;https://github.com/Kaushikreddym/climdata&quot;
+&quot;DOI&quot; = &quot;https://doi.org/10.5281/zenodo.XXXXX&quot;
+&quot;Zenodo&quot; = &quot;https://zenodo.org/record/XXXXX&quot;
+</code></pre></div></td></tr></table></div></p>
+<hr />
+<h2 id="verifying-your-zenodo-record">Verifying Your Zenodo Record<a class="headerlink" href="#verifying-your-zenodo-record" title="Permanent link">&para;</a></h2>
+<p>Check these registries to verify your software is discoverable:</p>
+<ol>
+<li><strong>OpenDOAR</strong> (https://www.opendoar.org/) — Directory of open-access repositories</li>
+<li><strong>Zenodo</strong> (https://zenodo.org/search?q=climdata)</li>
+<li><strong>DataCite</strong> (https://search.datacite.org/) — Global data citation index</li>
+<li><strong>Software Heritage</strong> (https://www.softwareheritage.org/) — Code preservation</li>
+<li><strong>Google Scholar</strong> (https://scholar.google.com/) — Academic search</li>
+</ol>
+<hr />
+<h2 id="using-the-doi-in-publications">Using the DOI in Publications<a class="headerlink" href="#using-the-doi-in-publications" title="Permanent link">&para;</a></h2>
+<h3 id="journal-submission">Journal Submission:<a class="headerlink" href="#journal-submission" title="Permanent link">&para;</a></h3>
+<p>Include in "Data and Code Availability" section:</p>
+<blockquote>
+<p>The climdata software is available on GitHub (https://github.com/Kaushikreddym/climdata) and archived on Zenodo (https://doi.org/10.5281/zenodo.XXXXX).</p>
+</blockquote>
+<h3 id="grant-proposals">Grant Proposals:<a class="headerlink" href="#grant-proposals" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>We will use climdata (Muduchuru, 2024; https://doi.org/10.5281/zenodo.XXXXX) for automated weather data extraction...</p>
+</blockquote>
+<h3 id="phd-thesis">PhD Thesis:<a class="headerlink" href="#phd-thesis" title="Permanent link">&para;</a></h3>
+<p>Include in bibliography with DOI:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>Muduchuru, K. (2024). climdata: Automated Climate Data Extraction and Processing (v0.5.0). Zenodo. https://doi.org/10.5281/zenodo.XXXXX
+</code></pre></div></td></tr></table></div>
+<hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="import-error">Import Error<a class="headerlink" href="#import-error" title="Permanent link">&para;</a></h3>
-<p><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="ne">ImportError</span><span class="p">:</span> <span class="n">isimip</span><span class="o">-</span><span class="n">client</span> <span class="ow">is</span> <span class="n">required</span>
-</code></pre></div></td></tr></table></div>
-<strong>Solution</strong>: <code>pip install isimip-client</code></p>
-<h3 id="download-error">Download Error<a class="headerlink" href="#download-error" title="Permanent link">&para;</a></h3>
-<p><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">Error</span> <span class="n">fetching</span> <span class="n">tas</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div></td></tr></table></div>
-<strong>Solution</strong>: Check internet connection and ISIMIP API status</p>
-<h3 id="memory-error">Memory Error<a class="headerlink" href="#memory-error" title="Permanent link">&para;</a></h3>
-<p><div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="ne">MemoryError</span> <span class="n">during</span> <span class="n">load</span>
-</code></pre></div></td></tr></table></div>
-<strong>Solution</strong>: Extract smaller region or shorter time period</p>
-<h2 id="files-createdmodified">Files Created/Modified<a class="headerlink" href="#files-createdmodified" title="Permanent link">&para;</a></h2>
-<h3 id="created">Created<a class="headerlink" href="#created" title="Permanent link">&para;</a></h3>
+<h3 id="problem-github-release-not-appearing-on-zenodo">Problem: GitHub release not appearing on Zenodo<a class="headerlink" href="#problem-github-release-not-appearing-on-zenodo" title="Permanent link">&para;</a></h3>
+<p><strong>Solution:</strong>
+1. Ensure Zenodo GitHub integration is enabled in account settings
+2. Use a semantic version tag (v0.5.0, not just 0.5.0)
+3. Wait 5-10 minutes for Zenodo to sync
+4. If still not appearing, manually upload to Zenodo</p>
+<h3 id="problem-doi-link-returns-404">Problem: DOI link returns 404<a class="headerlink" href="#problem-doi-link-returns-404" title="Permanent link">&para;</a></h3>
+<p><strong>Solution:</strong>
+1. Verify DOI spelling and format
+2. Wait 24 hours for DOI propagation to registries
+3. Check Zenodo record directly: https://zenodo.org/record/XXXXX
+4. Contact Zenodo support if persistent</p>
+<h3 id="problem-metadata-not-appearing-in-citation">Problem: Metadata not appearing in citation<a class="headerlink" href="#problem-metadata-not-appearing-in-citation" title="Permanent link">&para;</a></h3>
+<p><strong>Solution:</strong>
+1. Ensure CITATION.cff is valid YAML
+2. Check codemeta.json is valid JSON
+3. Run <code>cff-converter-python</code> to validate:
+   <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>cff-converter-python
+cff-convert<span class="w"> </span>-f<span class="w"> </span>cff<span class="w"> </span>-t<span class="w"> </span>bibtex<span class="w"> </span>CITATION.cff
+</code></pre></div></td></tr></table></div></p>
+<hr />
+<h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
 <ul>
-<li>✅ <code>climdata/datasets/W5E5.py</code> - Main implementation</li>
-<li>✅ <code>docs/W5E5_README.md</code> - Full documentation</li>
-<li>✅ <code>docs/examples/w5e5_example.ipynb</code> - Example notebook</li>
-<li>✅ <code>tests/test_w5e5.py</code> - Test script</li>
-<li>✅ <code>docs/INTEGRATION_GUIDE.md</code> - This file</li>
+<li><strong>Zenodo Documentation</strong>: https://zenodo.org/help/</li>
+<li><strong>CITATION.cff Standard</strong>: https://citation-file-format.github.io/</li>
+<li><strong>CodeMeta Standard</strong>: https://codemeta.github.io/</li>
+<li><strong>DOI Guide</strong>: https://www.doi.org/</li>
+<li><strong>DataCite Metadata</strong>: https://datacite.org/</li>
+<li><strong>Force11 Software Citation</strong>: https://www.force11.org/software-citation</li>
 </ul>
-<h3 id="modified">Modified<a class="headerlink" href="#modified" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ <code>requirements.txt</code> - Added isimip-client</li>
-<li>✅ <code>climdata/conf/mappings/parameters.yaml</code> - Added w5e5 config</li>
-</ul>
-<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>✅ <strong>W5E5 dataset is fully integrated and ready to use!</strong></p>
-<p>The implementation:
-- ✅ Follows existing dataset patterns
-- ✅ Uses ISIMIP API via isimip-client
-- ✅ Supports all standard operations (fetch, load, extract, save)
-- ✅ Includes comprehensive documentation and examples
-- ✅ Is configurable via YAML/Python
-- ✅ Works with existing climdata infrastructure</p>
-<p><strong>You can start using W5E5 immediately with the examples provided!</strong></p>
+<hr />
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li>✅ Create a GitHub release with proper version tag</li>
+<li>✅ Wait for Zenodo archival (automatic if integrated)</li>
+<li>✅ Update README with DOI badge</li>
+<li>✅ Share DOI in publications and documentation</li>
+<li>✅ Encourage users to cite using DOI</li>
+</ol>
+<hr />
+<p><strong>Created</strong>: 2024
+<strong>Last Updated</strong>: 2024-04-13</p>
 
 
 
@@ -1731,7 +1717,7 @@ python<span class="w"> </span>tests/test_w5e5.py
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 20, 2026 15:09:53 UTC"><span class="timeago" datetime="2026-01-20T15:09:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 20, 2026 15:09:53 UTC">2026-01-20</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 13, 2026 13:19:28 UTC"><span class="timeago" datetime="2026-04-13T13:19:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 13, 2026 13:19:28 UTC">2026-04-13</span>
   </span>
 
     
@@ -1741,7 +1727,7 @@ python<span class="w"> </span>tests/test_w5e5.py
     <span class="md-icon" title="Created">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="January 20, 2026 15:09:53 UTC"><span class="timeago" datetime="2026-01-20T15:09:53+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="January 20, 2026 15:09:53 UTC">2026-01-20</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 13, 2026 13:19:28 UTC"><span class="timeago" datetime="2026-04-13T13:19:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 13, 2026 13:19:28 UTC">2026-04-13</span>
   </span>
 
     

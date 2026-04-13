@@ -1,0 +1,2098 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="This project automates the fetching, extraction and processing of weather data from multiple sources — such as MSWX, DWD HYRAS, ERA5-Land, NASA-NEX-GDDP, and more — for a given location and time range.">
+      
+      
+        <meta name="author" content="Kaushikreddym">
+      
+      
+        <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/MSWX_guide/">
+      
+      
+        <link rel="prev" href="../usage/">
+      
+      
+        <link rel="next" href="../examples/wrapper_workflow/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>MSWX Guide - climdata</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Google+Sans:300,300i,400,400i,700,700i%7CRegular:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Google Sans";--md-code-font:"Regular"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/timeago.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="light-green" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#mswx-dataset-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="climdata" class="md-header__button md-logo" aria-label="climdata" data-md-component="logo">
+      
+  <img src="../assets/climdata_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            climdata
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MSWX Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="light-green" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Kaushikreddym/climdata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="climdata" class="md-nav__button md-logo" aria-label="climdata" data-md-component="logo">
+      
+  <img src="../assets/climdata_logo.png" alt="logo">
+
+    </a>
+    climdata
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Kaushikreddym/climdata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Datasets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MSWX Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MSWX Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-access-licensing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Access &amp; Licensing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Access &amp; Licensing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#license-cc-by-nc-40-non-commercial-use-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License: CC BY-NC 4.0 (Non-Commercial Use Only)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="License: CC BY-NC 4.0 (Non-Commercial Use Only)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permitted-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Permitted Uses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prohibited-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Prohibited Uses
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-request-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Request Access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-drive-api-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Drive API Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Google Drive API Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-create-a-google-cloud-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create a Google Cloud Project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-enable-google-drive-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Enable Google Drive API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-create-a-service-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Create a Service Account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-generate-and-download-json-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Generate and Download JSON Key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-store-the-key-securely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Store the Key Securely
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-configure-climdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Configure climdata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#available-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spatial-and-temporal-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial and Temporal Coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-quality-methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Quality &amp; Methodology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bounding-box-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounding Box Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-with-climate-indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow with Climate Indices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-no-authentication-provided-or-google-drive-api-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "No authentication provided" or "Google Drive API error"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-service-account-not-authorized-to-access-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Service Account not authorized to access folder"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#downloads-are-slow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Downloads are slow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-citation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Citation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Kaushikreddym/climdata/issues" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/wrapper_workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow Notebook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Datasets
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Datasets
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/datasets/cmip_w5e5_example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP Downscaled (0.5 deg)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/datasets/w5e5_example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    W5E5 0.5 deg reference dataset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/datasets/cmip_nex_gddp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP NEX-GDDP Downscaled (0.25 deg)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/datasets/mswx_example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MSWX Example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/advanced/cmip_obs_comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/sdba/sdba.ipynb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bias Correction Downscaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/datasets/multi_dataset_comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Dataset Climate Comparison - point location
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-access-licensing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Access &amp; Licensing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Access &amp; Licensing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#license-cc-by-nc-40-non-commercial-use-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License: CC BY-NC 4.0 (Non-Commercial Use Only)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="License: CC BY-NC 4.0 (Non-Commercial Use Only)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permitted-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Permitted Uses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prohibited-uses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ❌ Prohibited Uses
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-request-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to Request Access
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-drive-api-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Drive API Setup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Google Drive API Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-create-a-google-cloud-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create a Google Cloud Project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-enable-google-drive-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Enable Google Drive API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-create-a-service-account" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Create a Service Account
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-generate-and-download-json-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Generate and Download JSON Key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-store-the-key-securely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Store the Key Securely
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-configure-climdata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Configure climdata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#available-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Available Variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spatial-and-temporal-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spatial and Temporal Coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-quality-methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Quality &amp; Methodology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bounding-box-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bounding Box Extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow-with-climate-indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflow with Climate Indices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-no-authentication-provided-or-google-drive-api-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "No authentication provided" or "Google Drive API error"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-service-account-not-authorized-to-access-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Service Account not authorized to access folder"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#downloads-are-slow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Downloads are slow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-citation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Citation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+
+
+
+                  
+
+
+  
+  
+
+
+<h1 id="mswx-dataset-guide">MSWX Dataset Guide<a class="headerlink" href="#mswx-dataset-guide" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p><strong>MSWX</strong> (Multi-Source Weather) is a global, daily, 0.1° meteorological dataset based on ERA5 reanalysis data, bias-corrected and validated against in-situ station observations. It provides consistent, high-quality weather data for climate and hydrological applications worldwide.</p>
+<h2 id="data-access-licensing">Data Access &amp; Licensing<a class="headerlink" href="#data-access-licensing" title="Permanent link">&para;</a></h2>
+<h3 id="license-cc-by-nc-40-non-commercial-use-only">License: CC BY-NC 4.0 (Non-Commercial Use Only)<a class="headerlink" href="#license-cc-by-nc-40-non-commercial-use-only" title="Permanent link">&para;</a></h3>
+<p>MSWX is released under the <strong>Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)</strong> license.</p>
+<h4 id="permitted-uses">✅ Permitted Uses<a class="headerlink" href="#permitted-uses" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Academic research</strong> at universities and research institutions</li>
+<li><strong>Non-profit scientific studies</strong></li>
+<li><strong>Personal projects</strong> and non-commercial analysis</li>
+<li><strong>Government and NGO applications</strong> for public benefit</li>
+<li>Educational purposes and teaching</li>
+</ul>
+<h4 id="prohibited-uses">❌ Prohibited Uses<a class="headerlink" href="#prohibited-uses" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Commercial products or services</strong> using MSWX data</li>
+<li><strong>For-profit companies</strong> incorporating MSWX into commercial offerings</li>
+<li><strong>Commercial consulting services</strong> based on MSWX data</li>
+<li>Any revenue-generating use without explicit permission</li>
+</ul>
+<h3 id="how-to-request-access">How to Request Access<a class="headerlink" href="#how-to-request-access" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Visit the MSWX website</strong>: <a href="https://www.gloh2o.org/mswx/">https://www.gloh2o.org/mswx/</a></li>
+<li><strong>Submit a data request</strong> describing your intended use</li>
+<li><strong>Confirm non-commercial use</strong> in your application</li>
+<li><strong>Receive approval</strong> and download instructions from the MSWX team</li>
+<li><strong>Configure climdata</strong> with your Google Service Account credentials (see below)</li>
+</ol>
+<blockquote>
+<p>⚠️ <strong>Compliance</strong>: By using MSWX via climdata, you agree to the CC BY-NC 4.0 license terms. Violations may result in legal action.</p>
+</blockquote>
+<hr />
+<h2 id="google-drive-api-setup">Google Drive API Setup<a class="headerlink" href="#google-drive-api-setup" title="Permanent link">&para;</a></h2>
+<p>MSWX data is hosted on Google Drive and accessed through the <strong>Google Drive API</strong> using a Service Account. This ensures secure, traceable access without sharing passwords.</p>
+<h3 id="step-1-create-a-google-cloud-project">Step 1: Create a Google Cloud Project<a class="headerlink" href="#step-1-create-a-google-cloud-project" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Go to <a href="https://console.cloud.google.com/">Google Cloud Console</a></li>
+<li>Click <strong>"Select Project"</strong> → <strong>"New Project"</strong></li>
+<li>Enter a project name (e.g., <code>climdata-mswx</code>)</li>
+<li>Click <strong>"Create"</strong></li>
+</ol>
+<h3 id="step-2-enable-google-drive-api">Step 2: Enable Google Drive API<a class="headerlink" href="#step-2-enable-google-drive-api" title="Permanent link">&para;</a></h3>
+<ol>
+<li>In the left sidebar, go to <strong>APIs &amp; Services</strong> → <strong>Library</strong></li>
+<li>Search for <strong>"Google Drive API"</strong></li>
+<li>Click on it and click <strong>"Enable"</strong></li>
+</ol>
+<h3 id="step-3-create-a-service-account">Step 3: Create a Service Account<a class="headerlink" href="#step-3-create-a-service-account" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Go to <strong>IAM &amp; Admin</strong> → <strong>Service Accounts</strong></li>
+<li>Click <strong>"Create Service Account"</strong></li>
+<li>Enter a name (e.g., <code>climdata-mswx-sa</code>)</li>
+<li>Click <strong>"Create and Continue"</strong></li>
+<li>Click <strong>"Done"</strong> (you can skip role assignments for read-only Drive access)</li>
+</ol>
+<h3 id="step-4-generate-and-download-json-key">Step 4: Generate and Download JSON Key<a class="headerlink" href="#step-4-generate-and-download-json-key" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Click on the Service Account email you just created</li>
+<li>Go to the <strong>"Keys"</strong> tab</li>
+<li>Click <strong>"Add Key"</strong> → <strong>"Create new key"</strong></li>
+<li>Select <strong>"JSON"</strong> and click <strong>"Create"</strong></li>
+<li>A JSON file will download automatically — <strong>store it securely!</strong></li>
+</ol>
+<h3 id="step-5-store-the-key-securely">Step 5: Store the Key Securely<a class="headerlink" href="#step-5-store-the-key-securely" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Create a hidden directory for credentials</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>~/.climdata_conf
+
+<span class="c1"># Move the downloaded JSON file</span>
+mv<span class="w"> </span>~/Downloads/service-account-key.json<span class="w"> </span>~/.climdata_conf/service.json
+
+<span class="c1"># Restrict file permissions (Linux/macOS)</span>
+chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~/.climdata_conf/service.json
+
+<span class="c1"># Add to .gitignore to prevent accidental version control commits</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;~/.climdata_conf/&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>.gitignore
+</code></pre></div></td></tr></table></div>
+<h3 id="step-6-configure-climdata">Step 6: Configure climdata<a class="headerlink" href="#step-6-configure-climdata" title="Permanent link">&para;</a></h3>
+<p>Update your climdata configuration to point to your service account JSON:</p>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClimData</span>
+
+<span class="n">overrides</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;dataset=mswx&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lat=52.5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lon=13.4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_range.start_date=2010-01-01&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_range.end_date=2020-12-31&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;variables=[tasmin,tasmax,pr]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;data_dir=./data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dsinfo.mswx.params.google_service_account=~/.climdata_conf/service.json&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">extract</span><span class="p">()</span>
+</code></pre></div></td></tr></table></div>
+<hr />
+<h2 id="available-variables">Available Variables<a class="headerlink" href="#available-variables" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Units</th>
+<th>Long Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tasmin</code></td>
+<td>Daily minimum air temperature</td>
+<td>°C</td>
+<td>Minimum Temperature</td>
+</tr>
+<tr>
+<td><code>tasmax</code></td>
+<td>Daily maximum air temperature</td>
+<td>°C</td>
+<td>Maximum Temperature</td>
+</tr>
+<tr>
+<td><code>tas</code></td>
+<td>Daily mean air temperature</td>
+<td>°C</td>
+<td>Mean Temperature</td>
+</tr>
+<tr>
+<td><code>pr</code></td>
+<td>Daily precipitation</td>
+<td>mm/day</td>
+<td>Precipitation</td>
+</tr>
+<tr>
+<td><code>rsds</code></td>
+<td>Downward shortwave radiation</td>
+<td>W/m²</td>
+<td>Solar Radiation</td>
+</tr>
+<tr>
+<td><code>hurs</code></td>
+<td>Relative humidity</td>
+<td>%</td>
+<td>Relative Humidity</td>
+</tr>
+<tr>
+<td><code>sfcWind</code></td>
+<td>Wind speed</td>
+<td>m/s</td>
+<td>Surface Wind Speed</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="spatial-and-temporal-coverage">Spatial and Temporal Coverage<a class="headerlink" href="#spatial-and-temporal-coverage" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Spatial Resolution</strong>: 0.1° × 0.1° (approximately 10 km at equator)</li>
+<li><strong>Temporal Resolution</strong>: Daily</li>
+<li><strong>Global Coverage</strong>: Worldwide</li>
+<li><strong>Time Period</strong>: 1979–present (continuously updated)</li>
+</ul>
+<hr />
+<h2 id="data-quality-methodology">Data Quality &amp; Methodology<a class="headerlink" href="#data-quality-methodology" title="Permanent link">&para;</a></h2>
+<p>MSWX combines ERA5 reanalysis with bias correction using in-situ observations:</p>
+<ol>
+<li><strong>ERA5 as baseline</strong>: High-resolution atmospheric reanalysis</li>
+<li><strong>Station bias correction</strong>: Adjusted using quality-controlled weather station data</li>
+<li><strong>Validation</strong>: Cross-validated against independent observations</li>
+<li><strong>Uncertainty estimates</strong>: Available for selected variables</li>
+</ol>
+<p>For detailed methodology, see the MSWX publications on <a href="https://www.gloh2o.org/mswx/">https://www.gloh2o.org/mswx/</a></p>
+<hr />
+<h2 id="usage-examples">Usage Examples<a class="headerlink" href="#usage-examples" title="Permanent link">&para;</a></h2>
+<h3 id="point-extraction">Point Extraction<a class="headerlink" href="#point-extraction" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClimData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">climdata.datasets.MSWX</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSWXmirror</span>
+
+<span class="n">overrides</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;dataset=mswx&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lat=52.5&quot;</span><span class="p">,</span>  <span class="c1"># Berlin</span>
+    <span class="s2">&quot;lon=13.4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_range.start_date=2020-01-01&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_range.end_date=2020-12-31&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;variables=[tasmin,tasmax,pr]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;data_dir=./data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dsinfo.mswx.params.google_service_account=~/.climdata_conf/service.json&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
+<span class="n">mswx</span> <span class="o">=</span> <span class="n">MSWXmirror</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">mswx</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>
+
+<span class="n">ds</span> <span class="o">=</span> <span class="n">mswx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s2">&quot;tasmax&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="bounding-box-extraction">Bounding Box Extraction<a class="headerlink" href="#bounding-box-extraction" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Extract a region (Germany)</span>
+<span class="n">mswx</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">box</span><span class="o">=</span><span class="p">{</span>
+    <span class="s2">&quot;lon_min&quot;</span><span class="p">:</span> <span class="mf">5.8</span><span class="p">,</span>
+    <span class="s2">&quot;lon_max&quot;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">,</span>
+    <span class="s2">&quot;lat_min&quot;</span><span class="p">:</span> <span class="mf">47.3</span><span class="p">,</span>
+    <span class="s2">&quot;lat_max&quot;</span><span class="p">:</span> <span class="mf">55.1</span>
+<span class="p">})</span>
+
+<span class="n">ds</span> <span class="o">=</span> <span class="n">mswx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s2">&quot;pr&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>  <span class="c1"># Returns spatiotemporal data for the region</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="workflow-with-climate-indices">Workflow with Climate Indices<a class="headerlink" href="#workflow-with-climate-indices" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">overrides_wf</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;dataset=mswx&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lat=52.5&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lon=13.4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_range.start_date=2010-01-01&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;time_range.end_date=2020-12-31&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;variables=[tasmin,tasmax,pr]&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;data_dir=./data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dsinfo.mswx.params.google_service_account=~/.climdata_conf/service.json&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;index=tn10p&quot;</span><span class="p">,</span>      <span class="c1"># Cold nights index</span>
+    <span class="s2">&quot;impute=BRITS&quot;</span><span class="p">,</span>     <span class="c1"># Optional: gap-filling</span>
+<span class="p">]</span>
+
+<span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides_wf</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">run_workflow</span><span class="p">(</span><span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;extract&quot;</span><span class="p">,</span> <span class="s2">&quot;impute&quot;</span><span class="p">,</span> <span class="s2">&quot;calc_index&quot;</span><span class="p">,</span> <span class="s2">&quot;to_nc&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<hr />
+<h2 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h2>
+<h3 id="error-no-authentication-provided-or-google-drive-api-error">Error: "No authentication provided" or "Google Drive API error"<a class="headerlink" href="#error-no-authentication-provided-or-google-drive-api-error" title="Permanent link">&para;</a></h3>
+<p><strong>Solution</strong>: Ensure:
+1. Service account JSON key exists at the specified path
+2. File path is correctly spelled in the config
+3. Service account email has been shared with MSWX Google Drive folders</p>
+<h3 id="error-service-account-not-authorized-to-access-folder">Error: "Service Account not authorized to access folder"<a class="headerlink" href="#error-service-account-not-authorized-to-access-folder" title="Permanent link">&para;</a></h3>
+<p><strong>Solution</strong>: 
+1. Check your MSWX data request approval status
+2. Confirm the service account email was shared with the correct folder
+3. Contact MSWX support if access was granted but still failing</p>
+<h3 id="downloads-are-slow">Downloads are slow<a class="headerlink" href="#downloads-are-slow" title="Permanent link">&para;</a></h3>
+<p><strong>Solution</strong>: 
+1. Use <code>time_range</code> to limit data to only what you need
+2. Consider requesting multiple points instead of a large bounding box
+3. MSWX files are large; parallel downloads may be rate-limited by Google Drive</p>
+<hr />
+<h2 id="data-citation">Data Citation<a class="headerlink" href="#data-citation" title="Permanent link">&para;</a></h2>
+<p>When publishing results using MSWX data accessed via climdata, cite:</p>
+<ol>
+<li><strong>MSWX Dataset</strong>: Include the MSWX publication and DOI from <a href="https://www.gloh2o.org/mswx/">https://www.gloh2o.org/mswx/</a></li>
+<li><strong>climdata Package</strong>: Include version and GitHub repository</li>
+<li><strong>License Compliance</strong>: State "Data used under CC BY-NC 4.0 license"</li>
+</ol>
+<p>Example:</p>
+<blockquote>
+<p>We used Multi-Source Weather (MSWX) data [citation] accessed via the climdata package [version X.X.X] under the CC BY-NC 4.0 license. Data were extracted for [location] during [time period].</p>
+</blockquote>
+<hr />
+<h2 id="related-resources">Related Resources<a class="headerlink" href="#related-resources" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>MSWX Homepage</strong>: <a href="https://www.gloh2o.org/mswx/">https://www.gloh2o.org/mswx/</a></li>
+<li><strong>Climate Data Store (ERA5)</strong>: <a href="https://cds.climate.copernicus.eu/">https://cds.climate.copernicus.eu/</a></li>
+<li><strong>climdata GitHub</strong>: <a href="https://github.com/Kaushikreddym/climdata">https://github.com/Kaushikreddym/climdata</a></li>
+</ul>
+<hr />
+<h2 id="support">Support<a class="headerlink" href="#support" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>MSWX Issues</strong>: Contact the MSWX team via <a href="https://www.gloh2o.org/mswx/">https://www.gloh2o.org/mswx/</a></li>
+<li><strong>climdata Issues</strong>: Open an issue on <a href="https://github.com/Kaushikreddym/climdata/issues">GitHub</a></li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 13, 2026 13:19:28 UTC"><span class="timeago" datetime="2026-04-13T13:19:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 13, 2026 13:19:28 UTC">2026-04-13</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 13, 2026 13:19:28 UTC"><span class="timeago" datetime="2026-04-13T13:19:28+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 13, 2026 13:19:28 UTC">2026-04-13</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 - 2024 Kaushik Muduchuru
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "search.highlight", "search.share"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../js/timeago.min.js"></script>
+      
+        <script src="../js/timeago_mkdocs_material.js"></script>
+      
+    
+  </body>
+</html>
