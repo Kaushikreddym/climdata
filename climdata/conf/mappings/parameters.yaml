@@ -111,6 +111,10 @@ dwd:
 mswx:
   type: image
   subsetting: None
+  license: "CC BY-NC 4.0 (Non-Commercial Use Only)"
+  access_url: "https://www.gloh2o.org/mswx/"
+  description: "Multi-Source Weather (MSWX) - Global, daily, 0.1° meteorological dataset based on ERA5, bias-corrected with station observations."
+  usage_restrictions: "Non-commercial research, academic studies, personal projects, and non-profit applications only. Commercial use is prohibited."
   params:
     google_service_account: None
   variables:

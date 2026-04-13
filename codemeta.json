@@ -1,0 +1,98 @@
+{
+  "@context": "https://w3id.org/codemeta/v2.0",
+  "@type": "SoftwareSourceCode",
+  "identifier": "climdata",
+  "name": "climdata",
+  "description": "climdata provides a unified interface for extracting climate data from multiple providers (MSWX, CMIP, POWER, DWD, HYRAS), computing extreme climate indices, and converting results to tabular form. It automates the fetching and processing of weather data from diverse sources for any location and time range.",
+  "version": "0.5.0",
+  "license": "MIT",
+  "url": "https://github.com/Kaushikreddym/climdata",
+  "codeRepository": "https://github.com/Kaushikreddym/climdata",
+  "issueTracker": "https://github.com/Kaushikreddym/climdata/issues",
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Kaushik",
+      "familyName": "Muduchuru",
+      "email": "kaushik.reddy.m@gmail.com",
+      "affiliation": {
+        "@type": "Organization",
+        "name": "Research Institution"
+      }
+    }
+  ],
+  "keywords": [
+    "climate-data",
+    "weather-extraction",
+    "climate-indices",
+    "mswx",
+    "cmip",
+    "era5",
+    "data-processing",
+    "xarray",
+    "hydrology"
+  ],
+  "programmingLanguage": [
+    "Python"
+  ],
+  "operatingSystem": [
+    "Linux",
+    "macOS",
+    "Windows"
+  ],
+  "softwareRequirements": [
+    "Python >= 3.8",
+    "xarray",
+    "numpy",
+    "pandas",
+    "hydra-core"
+  ],
+  "downloadUrl": "https://github.com/Kaushikreddym/climdata/releases",
+  "applicationSuite": [
+    "Climate Data Science",
+    "Hydrology",
+    "Weather Data Processing"
+  ],
+  "relatedLinks": [
+    "https://www.gloh2o.org/mswx/",
+    "https://cds.climate.copernicus.eu/",
+    "https://pangeo.io/"
+  ],
+  "documentation": "https://Kaushikreddym.github.io/climdata",
+  "referencePublication": [
+    {
+      "@type": "ScholarlyArticle",
+      "name": "Trend-preserving bias adjustment and statistical downscaling with ISIMIP3BASD (v1.0)",
+      "author": [
+        {
+          "@type": "Person",
+          "givenName": "Stefan",
+          "familyName": "Lange"
+        }
+      ],
+      "datePublished": "2019",
+      "journal": "Geoscientific Model Development",
+      "volume": "12",
+      "issue": "7",
+      "pageStart": "3055",
+      "pageEnd": "3070",
+      "doi": "10.5194/gmd-12-3055-2019"
+    }
+  ],
+  "developmentStatus": "active",
+  "funding": [
+    {
+      "@type": "Grant",
+      "funder": {
+        "@type": "Organization",
+        "name": "Open Science"
+      },
+      "description": "Funded through open science initiatives"
+    }
+  ],
+  "sourceCode": "https://github.com/Kaushikreddym/climdata",
+  "dateCreated": "2024-01-01",
+  "isPartOf": [
+    "Climate and Hydrological Data Processing"
+  ]
+}

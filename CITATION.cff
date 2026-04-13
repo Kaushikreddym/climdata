@@ -1,0 +1,62 @@
+cff-version: 1.2.0
+title: climdata
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+authors:
+  - family-names: Muduchuru
+    given-names: Kaushik
+    email: kaushik.reddy.m@gmail.com
+    affiliation: "Research Institution"
+    orcid: "https://orcid.org/0000-0002-8967-7872"  # Add your ORCID if available
+repository-code: "https://github.com/Kaushikreddym/climdata"
+url: "https://Kaushikreddym.github.io/climdata"
+repository: "https://github.com/Kaushikreddym/climdata"
+documentation: "https://Kaushikreddym.github.io/climdata"
+license: MIT
+version: 0.5.0
+date-released: "2024-04-13"
+identifiers:
+  - description: "DOI for Zenodo archive"
+    type: doi
+    value: "10.5281/zenodo.19554926"
+keywords:
+  - climate data
+  - weather data extraction
+  - climate indices
+  - MSWX
+  - CMIP
+  - ERA5
+  - data processing
+  - xarray
+  - hydrology
+abstract: "climdata provides a unified interface for extracting climate data from multiple providers (MSWX, CMIP, POWER, DWD, HYRAS), computing extreme climate indices, and converting results to tabular form. It automates the fetching and processing of weather data from diverse sources for any location and time range."
+references:
+  - type: software
+    title: "xarray: N-D labeled arrays and datasets in Python"
+    authors:
+      - family-names: Hoyer
+        given-names: Stephan
+      - family-names: Hamman
+        given-names: Joe
+    year: 2017
+    url: "https://openreview.net/forum?id=HyEKx-_0Z"
+  - type: article
+    title: "Bias correction and downscaling of climate models for climate change impact assessment: A bootstrap approach for structural equation modeling"
+    authors:
+      - family-names: Lange
+        given-names: Stefan
+    year: 2019
+    journal: "Geoscientific Model Development"
+    volume: 12
+    issue: 7
+    pages: "3055-3070"
+    doi: "10.5194/gmd-12-3055-2019"
+preferred-citation:
+  type: software
+  title: "climdata: Automated climate data extraction and processing"
+  authors:
+    - family-names: Muduchuru
+      given-names: Kaushik
+  year: 2024
+  url: "https://github.com/Kaushikreddym/climdata"
+  version: 0.5.0

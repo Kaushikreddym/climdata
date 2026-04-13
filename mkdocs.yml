@@ -74,6 +74,8 @@ nav:
     - Home: index.md
     - Installation: installation.md
     - Usage: usage.md
+    - Datasets:
+        - MSWX Guide: MSWX_guide.md
     # - Contributing: contributing.md
     # - FAQ: faq.md
     # - Changelog: changelog.md
@@ -84,6 +86,7 @@ nav:
             - CMIP Downscaled (0.5 deg): examples/datasets/cmip_w5e5_example.ipynb
             - W5E5 0.5 deg reference dataset: examples/datasets/w5e5_example.ipynb
             - CMIP NEX-GDDP Downscaled (0.25 deg): examples/datasets/cmip_nex_gddp.ipynb
+            - MSWX Example: examples/datasets/mswx_example.ipynb
         - Advanced:
             - CMIP validation: examples/advanced/cmip_obs_comparison.ipynb
             - Bias Correction Downscaling: examples/sdba/sdba.ipynb\

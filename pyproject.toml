@@ -82,6 +82,9 @@ max-line-length = 88
 
 [project.urls]
 Homepage = "https://github.com/Kaushikreddym/climdata"
+Documentation = "https://Kaushikreddym.github.io/climdata"
+DOI = "https://doi.org/10.5281/zenodo.19554926"
+Zenodo = "https://zenodo.org/record/19554926"
 
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]

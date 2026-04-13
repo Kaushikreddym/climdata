@@ -1,7 +1,6 @@
 # Welcome to climdata
 
-
-
+[![DOI](https://zenodo.org/badge/19554926/climdata.svg)](https://zenodo.org/record/19554926)
 [![image](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
 [![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata)
 
@@ -103,6 +102,38 @@ result = extractor.run_workflow(actions=["extract", "calc_index", "to_dataframe"
 - Run tests and lint locally.
 - Follow project coding and documentation conventions; submit PRs with tests.
 
+## Citation
+
+If you use **climdata** in your research or projects, please cite it using the following formats:
+
+### BibTeX
+```bibtex
+@software{muduchuru2024climdata,
+  title={climdata: Automated Climate Data Extraction and Processing},
+  author={Muduchuru, Kaushik},
+  year={2024},
+  version={0.5.0},
+  url={https://github.com/Kaushikreddym/climdata},
+  note={Available at https://Kaushikreddym.github.io/climdata}
+}
+```
+
+### APA
+Muduchuru, K. (2024). climdata: Automated climate data extraction and processing (v0.5.0). Retrieved from https://github.com/Kaushikreddym/climdata
+
+### Citation.cff Format
+Our repository includes a `CITATION.cff` file. GitHub will automatically show a "Cite this repository" button with ready-to-use citation formats.
+
+### DOI (Zenodo)
+[![DOI](https://zenodo.org/badge/19554926/climdata.svg)](https://zenodo.org/record/19554926)
+
+**DOI**: https://doi.org/10.5281/zenodo.19554926  
+**Zenodo Record**: https://zenodo.org/record/19554926
+
+For archival setup details, see [Zenodo & DOI Guide](docs/zenodo_guide.md).
+
+---
+
 ## License
 Refer to the repository LICENSE file for terms.
 
@@ -133,6 +164,31 @@ Refer to the repository LICENSE file for terms.
 - **Easily reproducible runs using Hydra**
 
 ---
+## ⚖️ Data Licensing & Access
+
+### MSWX Dataset — Non-Commercial Use Only
+
+**MSWX** (Multi-Source Weather) is released under the **CC BY-NC 4.0 license**. This means:
+
+✅ **Allowed uses:**
+- Academic research
+- Non-profit scientific studies
+- Personal projects
+- Government or NGO applications (non-commercial)
+
+❌ **Not allowed:**
+- Commercial use or products
+- For-profit services
+
+**To access MSWX data:**
+1. Visit [https://www.gloh2o.org/mswx/](https://www.gloh2o.org/mswx/)
+2. Submit a data request for non-commercial use
+3. Once approved, follow the Google Drive API setup below to configure climdata
+
+> ⚠️ **Important:** By using MSWX via climdata, you agree to the CC BY-NC 4.0 license terms. Unauthorized commercial use is prohibited.
+
+---
+
 ## 📡 Google Drive API Setup
 
 This project uses the **Google Drive API** with a **Service Account** to securely download weather data files from a shared Google Drive folder.
