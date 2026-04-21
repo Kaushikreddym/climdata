@@ -1,16 +1,4 @@
 dwd:
-  # Explore module metadata
-  explore:
-    full_name: Deutscher Wetterdienst (German Weather Service)
-    type: Observation (Station)
-    coverage: Germany
-    resolution: station-based
-    frequency: daily / hourly
-    time_range: varies by station
-    source: wetterdienst library
-    notes: Retrieves the nearest station(s) to a given coordinate.
-  
-  # Data access configuration
   type: in-situ 
   subsetting: None
   variables:
@@ -121,18 +109,6 @@ dwd:
 #       name: hurs
 #       unit: "%"
 mswx:
-  # Explore module metadata
-  explore:
-    full_name: Multi-Source Weather – GloH2O
-    type: Observation
-    coverage: Global
-    resolution: 0.1°
-    frequency: daily
-    time_range: 1979-01-01 to present
-    source: Google Drive
-    notes: Fetched via Google Drive API; supply a service-account JSON.
-  
-  # Data access configuration
   type: image
   subsetting: None
   license: "CC BY-NC 4.0 (Non-Commercial Use Only)"
@@ -144,52 +120,26 @@ mswx:
   variables:
     tasmin:
       name: air_temperature
-      long_name: Daily Minimum Air Temperature
-      basd_unit: K
       folder_id: 1_h0hgJThJLXhVOk905IJ7EFpkFV5KDSC
     tasmax:
       name: air_temperature
-      long_name: Daily Maximum Air Temperature
-      basd_unit: K
       folder_id: 1BKvHhO1JsBKKzMPCbzl5UpvqpRXHTj9c
     tas:
       name: air_temperature
-      long_name: Mean Air Temperature
-      basd_unit: K
       folder_id: 10l3ThTEkabK0yfk7DvpEcNgXkhbF9NNt
     pr:
       name: precipitation
-      long_name: Precipitation
-      basd_unit: kg m-2 s-1
       folder_id: 1gWoZ2bK2u5osJ8Iw-dvguZ56Kmz2QWrL
     rsds:
       name: downward_shortwave_radiation
-      long_name: Surface Downwelling Shortwave Radiation
-      basd_unit: W m-2
       folder_id: 1usXbIOi4_jBUdDaZbzPKXznx9PTYzHRv
     hurs:
       name: relative_humidity
-      long_name: Relative Humidity
-      basd_unit: "%"
       folder_id: 1EcBx7pdD23P7G2V8-HDrk0Sr7uJm9uvc
     sfcWind:
       name: wind_speed
-      long_name: Wind Speed
-      basd_unit: m s-1
       folder_id: 1ZaL1-1SitnlovSdnYdbNecC0dnlN3Qou
 hyras:
-  # Explore module metadata
-  explore:
-    full_name: Hydrologische Rasterdaten (DWD Gridded)
-    type: Observation (Gridded)
-    coverage: Germany
-    resolution: 1 km
-    frequency: daily
-    time_range: 1951-01-01 to present
-    source: DWD open-data server
-    notes: High-resolution gridded climatology over Germany.
-  
-  # Data access configuration
   lat_dim: y
   lon_dim: x
   variables:
@@ -224,18 +174,6 @@ hyras:
       prefix: "hurs_hyras_1"
       version: "v6-0"
 cmip:
-  # Explore module metadata
-  explore:
-    full_name: CMIP6 via Pangeo Cloud Catalog
-    type: ESM (Raw)
-    coverage: Global
-    resolution: model-dependent (~1°)
-    frequency: daily
-    time_range: 1850-01-01 to 2100-12-31
-    source: Google Cloud Storage / Pangeo (intake-esm)
-    notes: Requires internet; queries Pangeo CMIP6 JSON catalogue.
-  
-  # Data access configuration
   experiment_id: historical
   source_id: MIROC6
   table_id: day
@@ -244,50 +182,32 @@ cmip:
       name: air_temperature
       long_name: Near-Surface Air Temperature
       units: K
-      basd_unit: K
 
     tasmax:
       name: air_temperature_maximum
       long_name: Daily Maximum Near-Surface Air Temperature
       units: K
-      basd_unit: K
 
     tasmin:
       name: air_temperature_minimum
       long_name: Daily Minimum Near-Surface Air Temperature
       units: K
-      basd_unit: K
 
     rsds:
       name: surface_downwelling_shortwave_flux_in_air
       long_name: Surface Downwelling Shortwave Radiation
       units: W m-2
-      basd_unit: W m-2
 
     sfcWind:
       name: wind_speed
       long_name: Near-Surface Wind Speed
       units: m s-1
-      basd_unit: m s-1
 
     pr:
       name: precipitation_flux
       long_name: Precipitation
       units: kg m-2 s-1
-      basd_unit: kg m-2 s-1
 power:
-  # Explore module metadata
-  explore:
-    full_name: NASA POWER Agroclimatology
-    type: Observation (Reanalysis-derived)
-    coverage: Global
-    resolution: point / 0.5°
-    frequency: daily
-    time_range: 1981-01-01 to present
-    source: NASA POWER REST API
-    notes: Point queries; no credentials required.
-  
-  # Data access configuration
   community: AG
   temporal_resolution: daily
 
@@ -297,47 +217,36 @@ power:
       name: air_temperature
       long_name: Near-Surface Air Temperature (2m)
       units: degC
-      basd_unit: K
-      basd_note: "Convert °C → K before BASD (+ 273.15)."
 
     tasmax:
       api_id: T2M_MAX
       name: air_temperature_maximum
       long_name: Daily Maximum 2m Air Temperature
       units: degC
-      basd_unit: K
-      basd_note: "Convert °C → K before BASD (+ 273.15)."
 
     tasmin:
       api_id: T2M_MIN
       name: air_temperature_minimum
       long_name: Daily Minimum 2m Air Temperature
       units: degC
-      basd_unit: K
-      basd_note: "Convert °C → K before BASD (+ 273.15)."
 
     rsds:
       api_id: ALLSKY_SFC_SW_DWN
       name: surface_downwelling_shortwave_flux_in_air
       long_name: Surface Downwelling Shortwave Radiation
       units: MJ m-2 d-1
-      basd_unit: W m-2
-      basd_note: "Convert MJ m⁻² day⁻¹ → W m⁻² before BASD (÷ 0.0864)."
 
     sfcWind:
       api_id: WS2M
       name: wind_speed
       long_name: 2m Wind Speed
       units: m s-1
-      basd_unit: m s-1
 
     pr:
       api_id: PRECTOTCORR
       name: precipitation_flux
       long_name: Precipitation (Corrected Total)
       units: mm d-1
-      basd_unit: kg m-2 s-1
-      basd_note: "Convert mm/day → kg m⁻² s⁻¹ before BASD (÷ 86400)."
 
 # era5_cds:
 #   params:
@@ -354,18 +263,6 @@ power:
 #     rsds:
 #       name: surface_solar_radiation_downwards
 w5e5:
-  # Explore module metadata
-  explore:
-    full_name: WFDE5 over Land merged with ERA5 over Ocean
-    type: Observation
-    coverage: Global
-    resolution: 0.5°
-    frequency: daily
-    time_range: 1979-01-01 to 2019-12-31
-    source: ISIMIP repository (isimip-client)
-    notes: Reference dataset for ISIMIP3b bias adjustment.
-  
-  # Data access configuration
   type: gridded
   subsetting: None
   params:
@@ -379,66 +276,44 @@ w5e5:
       name: tas
       long_name: Near-Surface Air Temperature
       units: K
-      basd_unit: K
     tasmax:
       name: tasmax
       long_name: Daily Maximum Near-Surface Air Temperature
       units: K
-      basd_unit: K
     tasmin:
       name: tasmin
       long_name: Daily Minimum Near-Surface Air Temperature
       units: K
-      basd_unit: K
     pr:
       name: pr
       long_name: Precipitation
       units: kg m-2 s-1
-      basd_unit: kg m-2 s-1
     rsds:
       name: rsds
       long_name: Surface Downwelling Shortwave Radiation
       units: W m-2
-      basd_unit: W m-2
     rlds:
       name: rlds
       long_name: Surface Downwelling Longwave Radiation
       units: W m-2
-      basd_unit: W m-2
     hurs:
       name: hurs
       long_name: Near-Surface Relative Humidity
       units: "%"
-      basd_unit: "%"
     sfcWind:
       name: sfcwind
       long_name: Near-Surface Wind Speed
       units: m s-1
-      basd_unit: m s-1
     ps:
       name: ps
       long_name: Surface Air Pressure
       units: Pa
-      basd_unit: Pa
     huss:
       name: huss
       long_name: Near-Surface Specific Humidity
       units: "1"
-      basd_unit: kg kg-1
   Description: "Observed atmospheric climate. Version 2.0 of the W5E5 dataset covers the entire globe at 0.5° horizontal and daily temporal resolution from 1979 to 2019. The W5E5 dataset was compiled to support the bias adjustment of climate input data for the impact assessments carried out in phase 3b of the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."
 cmip_w5e5:
-  # Explore module metadata
-  explore:
-    full_name: CMIP6 corrected based on W5E5 (ISIMIP3BASD)
-    type: ESM (Bias-Corrected)
-    coverage: Global
-    resolution: 0.5°
-    frequency: daily
-    time_range: 1850-01-01 to 2100-12-31
-    source: ISIMIP repository (isimip-client)
-    notes: Bias-adjusted & statistically downscaled by ISIMIP3b protocol.
-  
-  # Data access configuration
   type: gridded
   subsetting: None
   params:
@@ -453,66 +328,44 @@ cmip_w5e5:
       name: tas
       long_name: Near-Surface Air Temperature
       units: K
-      basd_unit: K
     tasmax:
       name: tasmax
       long_name: Daily Maximum Near-Surface Air Temperature
       units: K
-      basd_unit: K
     tasmin:
       name: tasmin
       long_name: Daily Minimum Near-Surface Air Temperature
       units: K
-      basd_unit: K
     pr:
       name: pr
       long_name: Precipitation
       units: kg m-2 s-1
-      basd_unit: kg m-2 s-1
     rsds:
       name: rsds
       long_name: Surface Downwelling Shortwave Radiation
       units: W m-2
-      basd_unit: W m-2
     rlds:
       name: rlds
       long_name: Surface Downwelling Longwave Radiation
       units: W m-2
-      basd_unit: W m-2
     hurs:
       name: hurs
       long_name: Near-Surface Relative Humidity
       units: "%"
-      basd_unit: "%"
     sfcWind:
       name: sfcwind
       long_name: Near-Surface Wind Speed
       units: m s-1
-      basd_unit: m s-1
     ps:
       name: ps
       long_name: Surface Air Pressure
       units: Pa
-      basd_unit: Pa
     psl:
       name: psl
       long_name: Sea Level Pressure
       units: Pa
-      basd_unit: Pa
   Description: "CMIP6 climate projections in W5E5 format from ISIMIP3b. Provides daily climate data at 0.5° resolution for various CMIP6 models and scenarios (historical, ssp126, ssp245, ssp370, ssp585). Data is bias-adjusted to W5E5 observations and used for climate impact assessments in the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."
 nexgddp:
-  # Explore module metadata
-  explore:
-    full_name: NASA Earth Exchange Global Daily Downscaled Projections
-    type: ESM (Bias-Corrected)
-    coverage: Global
-    resolution: 0.25°
-    frequency: daily
-    time_range: 1950-01-01 to 2100-12-31
-    source: NASA THREDDS server (HTTP)
-    notes: Statistically downscaled NEX-GDDP-CMIP6 at 0.25° resolution.
-  
-  # Data access configuration
   type: gridded
   subsetting: None
   params:
@@ -526,47 +379,29 @@ nexgddp:
       name: tas
       long_name: Near-Surface Air Temperature
       units: K
-      basd_unit: K
     tasmax:
       name: tasmax
       long_name: Daily Maximum Near-Surface Air Temperature
       units: K
-      basd_unit: K
     tasmin:
       name: tasmin
       long_name: Daily Minimum Near-Surface Air Temperature
       units: K
-      basd_unit: K
     pr:
       name: pr
       long_name: Precipitation
       units: kg m-2 s-1
-      basd_unit: kg m-2 s-1
     hurs:
       name: hurs
       long_name: Near-Surface Relative Humidity
       units: "%"
-      basd_unit: "%"
     huss:
       name: huss
       long_name: Near-Surface Specific Humidity
       units: "1"
-      basd_unit: kg kg-1
     sfcWind:
       name: sfcWind
       long_name: Near-Surface Wind Speed
-      units: m s-1
-      basd_unit: m s-1
-    rsds:
-      name: rsds
-      long_name: Surface Downwelling Shortwave Radiation
-      units: W m-2
-      basd_unit: W m-2
-    rlds:
-      name: rlds
-      long_name: Surface Downwelling Longwave Radiation
-      units: W m-2
-      basd_unit: W m-2
       units: m s-1
     rsds:
       name: rsds

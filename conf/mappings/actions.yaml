@@ -1,0 +1,34 @@
+extract:
+  type: primary
+  output: dataset
+  description: "Download climate data and and convert to xarray Dataset"
+  
+calc_index:
+  type: primary
+  output: dataset
+  description: "Compute extreme index from Dataset"
+
+impute:
+  type: primary
+  output: dataset
+  description: "Impute missing values in the dataset"
+
+to_nc:
+  type: secondary
+  output: filename
+  description: "Save xarray dataset to NetCDF"
+
+to_csv:
+  type: secondary
+  output: filename
+  description: "Save current long-form DataFrame to CSV file"
+
+upload_netcdf:
+  type: secondary
+  output: dataset
+  description: "Upload a NetCDF file and store it as xarray Dataset"
+
+upload_csv:
+  type: secondary
+  output: dataset
+  description: "Upload a CSV file and convert it to xarray Dataset"
