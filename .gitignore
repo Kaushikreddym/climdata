@@ -112,3 +112,4 @@ outputs
 *.nc
 
 usecase/*
+climdata_gui

@@ -12,7 +12,6 @@ from functools import wraps
 import xclim
 import climdata
 from climdata.utils.config import _ensure_local_conf
-from climdata.utils.utils_download import get_output_filename
 from climdata.extremes.indices import extreme_index
 from climdata.impute.impute_xarray import Imputer
     
@@ -23,6 +22,32 @@ from shapely.geometry import shape, Polygon, Point
 import logging
 
 logger = logging.getLogger(__name__)
+
+# ----------------------------
+# CF to DWD Variable Mapping
+# ----------------------------
+# Maps Climate and Forecast (CF) standard names to DWD (Deutscher Wetterdienst) names
+CF_TO_DWD_NAMES = {
+    # Temperature variables
+    'tas': 'TempMean',           # Daily mean temperature
+    'tasmin': 'TempMin',         # Daily minimum temperature
+    'tasmax': 'TempMax',         # Daily maximum temperature
+    # Precipitation
+    'pr': 'Precipitation',       # Daily precipitation
+    # Solar radiation
+    'rsds': 'Radiation',         # Shortwave downwelling radiation
+    'rlds': 'LongwaveRadiation', # Longwave downwelling radiation
+    # Wind
+    'sfcWind': 'Windspeed',      # Surface wind speed
+    # Humidity
+    'hurs': 'RelHum',            # Relative humidity
+    'huss': 'SpecHum',           # Specific humidity
+    # Other
+    'ps': 'SurfPressure',        # Surface pressure
+}
+
+# Reverse mapping for reference
+DWD_TO_CF_NAMES = {v: k for k, v in CF_TO_DWD_NAMES.items()}
 
 # ----------------------------
 # Dataclass for workflow result
@@ -317,7 +342,7 @@ class ClimateExtractor:
             lat_range = lon_range = None   # single point
             lat_str = str(cfg.lat)
             lon_str = str(cfg.lon)
-        else:
+        elif cfg.region is not None:
             b = cfg.bounds[cfg.region]
             lat_min, lat_max = b["lat_min"], b["lat_max"]
             lon_min, lon_max = b["lon_min"], b["lon_max"]
@@ -326,6 +351,12 @@ class ClimateExtractor:
             lon_str = f"{lon_min}_{lon_max}"
             lat_range = f"{lat_min}-{lat_max}"
             lon_range = f"{lon_min}-{lon_max}"
+        else:
+            # Fallback for undefined regions
+            lat_str = "unknown"
+            lon_str = "unknown"
+            lat_range = None
+            lon_range = None
 
         # --------------------------------
         # Time range from cfg
@@ -342,10 +373,10 @@ class ClimateExtractor:
                 parameter=parameter,
                 lat=lat_str,
                 lon=lon_str,
+                lat_or_lat_range=lat_range or lat_str,
+                lon_or_lon_range=lon_range or lon_str,
                 start=start,
                 end=end,
-                lat_range=lat_range or lat_str,
-                lon_range=lon_range or lon_str,
             )
 
         out_dir = Path(self.cfg.output.out_dir)
@@ -683,33 +714,297 @@ class ClimateExtractor:
     # ----------------------------
     # Save CSV
     # ----------------------------
-    def to_csv(self, df: Optional[pd.DataFrame] = None, filename: Optional[str] = None) -> str:
-        """Save a DataFrame to CSV.
+    def to_csv(self, df: Optional[pd.DataFrame] = None, filename: Optional[str] = None, format: str = "default") -> str:
+        """Save a DataFrame to CSV with optional format specification.
 
         Args:
             df (pd.DataFrame, optional): DataFrame to save. Defaults to ``self.current_df``.
-            filename (str, optional): Output filename. Defaults to ``self.filename_csv``.
+            filename (str, optional): Output filename/directory. Defaults to ``self.filename_csv``.
+            format (str): Output format. Options:
+                - 'default': Long-form (single file)
+                - 'simplace': SIMPLACE format (splits by location, tab-separated)
+                - 'monica': MONICA format (splits by location, tab-separated)
+                Defaults to 'default'.
 
         Returns:
-            str: The path of the written CSV file.
+            str: The path of the written CSV file(s). For SIMPLACE/MONICA, returns base directory.
+            
+        Raises:
+            ValueError: If format is not supported or required data is missing.
         """
         df = df if df is not None else self.current_df
+        format_lower = format.lower()
 
-        filename = filename or getattr(self, "filename_csv", None)
+        # Apply format conversion if requested
+        if format_lower in ("simplace", "monica"):
+            return self._convert_to_gridded_format(df, filename, format=format_lower)
+        elif format_lower == "default":
+            filename = filename or getattr(self, "filename_csv", None)
+            if filename is None:
+                raise ValueError("No filename provided and filename_csv is not set")
+
+            path = Path(filename)
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            df.to_csv(filename, index=False, sep='\t')
+            self.filename_csv = str(path)
+            self.current_filename = str(path)
+            
+            self.logger.info(f"DataFrame saved to CSV file ({format} format): {self.current_filename}")
+
+            return filename
+        else:
+            raise ValueError(f"Unsupported format: {format}. Supported formats: 'default', 'simplace', 'monica'")
+
+    def _convert_to_gridded_format(self, df: pd.DataFrame, filename: Optional[str] = None, format: str = "simplace") -> str:
+        """Convert long-form DataFrame to gridded SIMPLACE/MONICA format by row/column indices.
+
+        Creates a folder structure: <base_dir>/col_<col_number>/<format>_variables_row_<r>_col_<c>.csv
+
+        Args:
+            df (pd.DataFrame): Long-form DataFrame with columns: date/time, lat/x, lon/y, variable, value
+            filename (str, optional): Base output directory. If None, creates 'simplace_output' or 'monica_output'
+            format (str): Format type - 'simplace' or 'monica'
+
+        Returns:
+            str: Base directory path where all files were created
+
+        Raises:
+            ValueError: If DataFrame format is incompatible or required columns missing.
+        """
+        # Validate input DataFrame structure
+        time_col = None
+        for col in df.columns:
+            if col.lower() in ('date', 'time'):
+                time_col = col
+                break
+        if time_col is None:
+            raise ValueError("DataFrame must contain 'date' or 'time' column")
+
+        var_col = None
+        for col in df.columns:
+            if col.lower() == 'variable':
+                var_col = col
+                break
+        if var_col is None:
+            raise ValueError("DataFrame must contain 'variable' column")
+
+        val_col = None
+        for col in df.columns:
+            if col.lower() in ('value', 'data'):
+                val_col = col
+                break
+        if val_col is None:
+            raise ValueError("DataFrame must contain 'value' or 'data' column")
+
+        # Handle both lat/lon and x/y dimensions
+        lat_col = next((c for c in df.columns if c.lower() in ('lat', 'latitude', 'y')), None)
+        lon_col = next((c for c in df.columns if c.lower() in ('lon', 'longitude', 'x')), None)
+
+        if lat_col is None or lon_col is None:
+            raise ValueError("DataFrame must contain 'lat'/'latitude'/'y' and 'lon'/'longitude'/'x' columns")
+
+        # Get dimensions from xarray Dataset if available
+        if hasattr(self, 'ds') and self.ds is not None:
+            ds = self.ds
+            # Determine dimension names (handle lat/lon or y/x)
+            lat_dim = next((d for d in ds.dims if d.lower() in ('lat', 'latitude', 'y')), None)
+            lon_dim = next((d for d in ds.dims if d.lower() in ('lon', 'longitude', 'x')), None)
+            
+            if lat_dim and lon_dim:
+                n_rows = ds.sizes[lat_dim]
+                n_cols = ds.sizes[lon_dim]
+                self.logger.info(f"Dataset dimensions: {n_rows} rows (lat/y) × {n_cols} columns (lon/x)")
+            else:
+                n_rows = df[lat_col].nunique()
+                n_cols = df[lon_col].nunique()
+                self.logger.info(f"Inferred dimensions: {n_rows} rows × {n_cols} columns")
+        else:
+            n_rows = df[lat_col].nunique()
+            n_cols = df[lon_col].nunique()
+            self.logger.info(f"DataFrame dimensions: {n_rows} rows × {n_cols} columns")
+
+        # Create base output directory
         if filename is None:
-            raise ValueError("No filename provided and filename_csv is not set")
+            filename = f"{format}_{self.cfg.dataset}"
+        base_dir = Path(filename)
+        base_dir.mkdir(parents=True, exist_ok=True)
 
-        path = Path(filename)
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        df.to_csv(filename, index=False)
-        self.filename_csv = str(path)
-        self.current_filename = str(path)
+        # Get unique lat/lon pairs and assign row/column indices
+        unique_locations = df.drop_duplicates(subset=[lat_col, lon_col]).sort_values([lat_col, lon_col]).reset_index(drop=True)
         
-        # print(f"DataFrame saved to CSV file: {self.current_filename}")
-        self.logger.info(f"DataFrame saved to CSV file: {self.current_filename}")
+        # Create mapping from lat/lon to row/col indices
+        lat_sorted = sorted(df[lat_col].unique(), reverse=True)  # rows decrease from north to south
+        lon_sorted = sorted(df[lon_col].unique())  # columns increase from west to east
+        
+        lat_to_row = {lat: i for i, lat in enumerate(lat_sorted)}
+        lon_to_col = {lon: j for j, lon in enumerate(lon_sorted)}
+        
+        n_locations = len(unique_locations)
+        self.logger.info(f"Converting to {format.upper()} format with {n_locations} unique locations")
 
-        return filename
+        created_files = []
+
+        # Process each location
+        for idx, (_, loc_row) in enumerate(unique_locations.iterrows(), 1):
+            lat = loc_row[lat_col]
+            lon = loc_row[lon_col]
+            
+            row_num = lat_to_row[lat]
+            col_num = lon_to_col[lon]
+
+            # Filter data for this location
+            df_loc = df[(df[lat_col] == lat) & (df[lon_col] == lon)].copy()
+
+            # Pivot: time x variables
+            loc_df = df_loc.pivot_table(
+                index=time_col,
+                columns=var_col,
+                values=val_col,
+                aggfunc='first'
+            ).reset_index()
+
+            # Rename Date column
+            loc_df.rename(columns={time_col: 'Date'}, inplace=True)
+
+            # Rename variables from CF names to DWD/standard names
+            rename_mapping = {}
+            for col in loc_df.columns:
+                if col in CF_TO_DWD_NAMES:
+                    rename_mapping[col] = CF_TO_DWD_NAMES[col]
+            loc_df.rename(columns=rename_mapping, inplace=True)
+
+            # Generate filename
+            variables_list = df_loc[var_col].unique()
+            variables_named = [CF_TO_DWD_NAMES.get(v, v) for v in variables_list]
+            variables_str = "_".join(variables_named)
+            
+            # Get dataset name from config
+            dataset_name = getattr(self.cfg, 'dataset', 'unknown')
+            
+            # Create column-based folder: col_<col_number> (no zero-padding)
+            col_folder = base_dir / f"{col_num}"
+            col_folder.mkdir(parents=True, exist_ok=True)
+
+            # Save file: <format>_<variables>_<dataset>.csv
+            output_filename = col_folder / f"{dataset_name.upper()}_Daily_C{col_num}R{row_num}.csv"
+            loc_df.to_csv(output_filename, index=False, sep='\t')
+
+            created_files.append(str(output_filename))
+            self.logger.debug(f"[{idx}/{n_locations}] Saved col_{col_num} (row {row_num}) -> {output_filename}")
+
+        self.logger.info(f"Successfully created {len(created_files)} {format.upper()} format files in {base_dir}")
+        self.logger.info(f"Grid dimensions: {n_rows} rows × {n_cols} columns")
+        
+        self.filename_csv = str(base_dir)
+        self.current_filename = str(base_dir)
+
+        return str(base_dir)
+
+    def _convert_to_dwd_format(self, df: pd.DataFrame) -> tuple:
+        """Convert long-form DataFrame to DWD single-station tabular format.
+
+        DWD format characteristics:
+        - One row per date (time series)
+        - Columns: Date, Variables (Precipitation, TempMin, TempMean, TempMax, etc.)
+        - Single location (gridcell identifier from source)
+        - Tab-separated values
+        - Filename: dwd_<n_lat>x<n_lon>_<variables>_<gridcell_id>.csv
+
+        Args:
+            df (pd.DataFrame): Long-form DataFrame with columns: date/time, lat, lon, variable, value
+
+        Returns:
+            tuple: (converted_df, suggested_filename)
+            
+        Raises:
+            ValueError: If DataFrame format is incompatible or has multiple stations.
+        """
+        # Validate input DataFrame structure
+        required_cols = {'date', 'time', 'variable', 'value'}
+        df_cols_lower = {c.lower() for c in df.columns}
+        
+        # Check for time column
+        time_col = None
+        for col in df.columns:
+            if col.lower() in ('date', 'time'):
+                time_col = col
+                break
+        if time_col is None:
+            raise ValueError("DataFrame must contain 'date' or 'time' column")
+
+        # Check for variable column
+        var_col = None
+        for col in df.columns:
+            if col.lower() == 'variable':
+                var_col = col
+                break
+        if var_col is None:
+            raise ValueError("DataFrame must contain 'variable' column")
+
+        # Check for value column
+        val_col = None
+        for col in df.columns:
+            if col.lower() in ('value', 'data'):
+                val_col = col
+                break
+        if val_col is None:
+            raise ValueError("DataFrame must contain 'value' or 'data' column")
+
+        # Get location info (lat, lon, gridcell)
+        lat_col = next((c for c in df.columns if c.lower() in ('lat', 'latitude')), None)
+        lon_col = next((c for c in df.columns if c.lower() in ('lon', 'longitude')), None)
+        
+        # Get unique stations/locations
+        location_cols = [c for c in df.columns if c.lower() in ('lat', 'lon', 'latitude', 'longitude', 'gridcell', 'station_id', 'station')]
+        if location_cols:
+            n_locations = len(df.groupby(location_cols, sort=False))
+            if n_locations > 1:
+                raise ValueError(f"DWD format supports single station only, but found {n_locations} locations")
+
+        # Pivot: time x variables
+        dwd_df = df.pivot_table(
+            index=time_col,
+            columns=var_col,
+            values=val_col,
+            aggfunc='first'
+        ).reset_index()
+        
+        # Rename Date column to match DWD standard
+        dwd_df.rename(columns={time_col: 'Date'}, inplace=True)
+        
+        # Rename variables from CF names to DWD names
+        rename_mapping = {}
+        for col in dwd_df.columns:
+            if col in CF_TO_DWD_NAMES:
+                rename_mapping[col] = CF_TO_DWD_NAMES[col]
+        dwd_df.rename(columns=rename_mapping, inplace=True)
+        
+        # Add gridcell identifier if available (from source data)
+        if 'gridcell' in df.columns:
+            gridcell = df['gridcell'].iloc[0]
+        elif 'station_id' in df.columns:
+            gridcell = df['station_id'].iloc[0]
+        else:
+            gridcell = "unknown"
+
+        # Generate filename: dwd_<n_lat>x<n_lon>_<variables>_<gridcell_id>.csv
+        n_lat = df[lat_col].nunique() if lat_col else 1
+        n_lon = df[lon_col].nunique() if lon_col else 1
+        
+        # Use DWD names in filename for consistency
+        variables_list = df[var_col].unique()
+        variables_dwd = [CF_TO_DWD_NAMES.get(v, v) for v in variables_list]
+        variables = "_".join(variables_dwd)
+        
+        # Clean gridcell identifier for filename (replace : with _)
+        gridcell_safe = str(gridcell).replace(":", "_").replace("/", "_").replace(" ", "_")
+        
+        filename = f"dwd_{n_lat}x{n_lon}_{variables}_{gridcell_safe}.csv"
+        
+        self.logger.debug(f"Converted to DWD format: {n_lat}x{n_lon} grid, {dwd_df.shape[0]} time steps, {dwd_df.shape[1]-1} variables; renamed variables to DWD names: {rename_mapping}")
+
+        return dwd_df, filename
     
     def to_nc(self, ds: Optional[xr.Dataset] = None, filename: Optional[str] = None) -> str:
         """Save an xarray Dataset to NetCDF.

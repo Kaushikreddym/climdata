@@ -567,13 +567,4 @@ nexgddp:
       long_name: Surface Downwelling Longwave Radiation
       units: W m-2
       basd_unit: W m-2
-      units: m s-1
-    rsds:
-      name: rsds
-      long_name: Surface Downwelling Shortwave Radiation
-      units: W m-2
-    rlds:
-      name: rlds
-      long_name: Surface Downwelling Longwave Radiation
-      units: W m-2
   Description: "NASA Earth Exchange Global Daily Downscaled Projections (NEX-GDDP-CMIP6). Provides statistically downscaled CMIP6 climate projections at 0.25° resolution (~25km) globally. Available for multiple CMIP6 models and scenarios (historical: 1950-2014, ssp126, ssp245, ssp370, ssp585: 2015-2100) with daily temporal resolution."

@@ -4,9 +4,7 @@ __author__ = """Kaushik Muduchuru"""
 __email__ = "kaushik.reddy.m@gmail.com"
 __version__ = "0.5.0"
 
-from .utils.utils_download import * # etc.
 from .utils.config import load_config
-from .utils.wrapper import extract_data, extract_index
 from .datasets.DWD import DWDmirror as DWD
 from .datasets.MSWX import MSWXmirror as MSWX
 from .datasets.ERA5 import ERA5Mirror as ERA5

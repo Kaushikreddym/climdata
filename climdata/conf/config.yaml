@@ -32,7 +32,7 @@ table_id: day
 
 output:
   out_dir: '.'
-  filename_csv: "{provider}_{parameter}_LAT_{lat}_LON_{lon}_{start}_{end}.csv"
-  filename_zarr: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.zarr"
-  filename_nc: "{provider}_{parameter}_LAT{lat}_LON{lon}_{start}_{end}.nc"
+  filename_csv: "{provider}_{parameter}_LAT{lat_or_lat_range}_LON{lon_or_lon_range}_{start}_{end}.csv"
+  filename_zarr: "{provider}_{parameter}_LAT{lat_or_lat_range}_LON{lon_or_lon_range}_{start}_{end}.zarr"
+  filename_nc: "{provider}_{parameter}_LAT{lat_or_lat_range}_LON{lon_or_lon_range}_{start}_{end}.nc"
   fmt: "standard"
