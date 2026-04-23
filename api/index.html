@@ -1757,7 +1757,7 @@ extractor.to_csv(df)</p>
             <span class="n">lat_range</span> <span class="o">=</span> <span class="n">lon_range</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1"># single point</span>
             <span class="n">lat_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span>
             <span class="n">lon_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">lon</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">cfg</span><span class="o">.</span><span class="n">region</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">b</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="n">cfg</span><span class="o">.</span><span class="n">region</span><span class="p">]</span>
             <span class="n">lat_min</span><span class="p">,</span> <span class="n">lat_max</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;lat_min&quot;</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;lat_max&quot;</span><span class="p">]</span>
             <span class="n">lon_min</span><span class="p">,</span> <span class="n">lon_max</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;lon_min&quot;</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="s2">&quot;lon_max&quot;</span><span class="p">]</span>
@@ -1766,6 +1766,12 @@ extractor.to_csv(df)</p>
             <span class="n">lon_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">lon_max</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="n">lat_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lat_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">lat_max</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="n">lon_range</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">lon_min</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">lon_max</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Fallback for undefined regions</span>
+            <span class="n">lat_str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+            <span class="n">lon_str</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+            <span class="n">lat_range</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">lon_range</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># --------------------------------</span>
         <span class="c1"># Time range from cfg</span>
@@ -1782,10 +1788,10 @@ extractor.to_csv(df)</p>
                 <span class="n">parameter</span><span class="o">=</span><span class="n">parameter</span><span class="p">,</span>
                 <span class="n">lat</span><span class="o">=</span><span class="n">lat_str</span><span class="p">,</span>
                 <span class="n">lon</span><span class="o">=</span><span class="n">lon_str</span><span class="p">,</span>
+                <span class="n">lat_or_lat_range</span><span class="o">=</span><span class="n">lat_range</span> <span class="ow">or</span> <span class="n">lat_str</span><span class="p">,</span>
+                <span class="n">lon_or_lon_range</span><span class="o">=</span><span class="n">lon_range</span> <span class="ow">or</span> <span class="n">lon_str</span><span class="p">,</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
                 <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
-                <span class="n">lat_range</span><span class="o">=</span><span class="n">lat_range</span> <span class="ow">or</span> <span class="n">lat_str</span><span class="p">,</span>
-                <span class="n">lon_range</span><span class="o">=</span><span class="n">lon_range</span> <span class="ow">or</span> <span class="n">lon_str</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">out_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">out_dir</span><span class="p">)</span>
@@ -2123,33 +2129,297 @@ extractor.to_csv(df)</p>
     <span class="c1"># ----------------------------</span>
     <span class="c1"># Save CSV</span>
     <span class="c1"># ----------------------------</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a DataFrame to CSV.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save a DataFrame to CSV with optional format specification.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            df (pd.DataFrame, optional): DataFrame to save. Defaults to ``self.current_df``.</span>
-<span class="sd">            filename (str, optional): Output filename. Defaults to ``self.filename_csv``.</span>
+<span class="sd">            filename (str, optional): Output filename/directory. Defaults to ``self.filename_csv``.</span>
+<span class="sd">            format (str): Output format. Options:</span>
+<span class="sd">                - &#39;default&#39;: Long-form (single file)</span>
+<span class="sd">                - &#39;simplace&#39;: SIMPLACE format (splits by location, tab-separated)</span>
+<span class="sd">                - &#39;monica&#39;: MONICA format (splits by location, tab-separated)</span>
+<span class="sd">                Defaults to &#39;default&#39;.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            str: The path of the written CSV file.</span>
+<span class="sd">            str: The path of the written CSV file(s). For SIMPLACE/MONICA, returns base directory.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If format is not supported or required data is missing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span> <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_df</span>
+        <span class="n">format_lower</span> <span class="o">=</span> <span class="nb">format</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;filename_csv&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># Apply format conversion if requested</span>
+        <span class="k">if</span> <span class="n">format_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;simplace&quot;</span><span class="p">,</span> <span class="s2">&quot;monica&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_gridded_format</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="n">format_lower</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">format_lower</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;filename_csv&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No filename provided and filename_csv is not set&quot;</span><span class="p">)</span>
+
+            <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DataFrame saved to CSV file (</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2"> format): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">filename</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported format: </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">. Supported formats: &#39;default&#39;, &#39;simplace&#39;, &#39;monica&#39;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_gridded_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;simplace&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert long-form DataFrame to gridded SIMPLACE/MONICA format by row/column indices.</span>
+
+<span class="sd">        Creates a folder structure: &lt;base_dir&gt;/col_&lt;col_number&gt;/&lt;format&gt;_variables_row_&lt;r&gt;_col_&lt;c&gt;.csv</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df (pd.DataFrame): Long-form DataFrame with columns: date/time, lat/x, lon/y, variable, value</span>
+<span class="sd">            filename (str, optional): Base output directory. If None, creates &#39;simplace_output&#39; or &#39;monica_output&#39;</span>
+<span class="sd">            format (str): Format type - &#39;simplace&#39; or &#39;monica&#39;</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Base directory path where all files were created</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If DataFrame format is incompatible or required columns missing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Validate input DataFrame structure</span>
+        <span class="n">time_col</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">):</span>
+                <span class="n">time_col</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">time_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;date&#39; or &#39;time&#39; column&quot;</span><span class="p">)</span>
+
+        <span class="n">var_col</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;variable&#39;</span><span class="p">:</span>
+                <span class="n">var_col</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">var_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;variable&#39; column&quot;</span><span class="p">)</span>
+
+        <span class="n">val_col</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">):</span>
+                <span class="n">val_col</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">val_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;value&#39; or &#39;data&#39; column&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Handle both lat/lon and x/y dimensions</span>
+        <span class="n">lat_col</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">lon_col</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">lat_col</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lon_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;lat&#39;/&#39;latitude&#39;/&#39;y&#39; and &#39;lon&#39;/&#39;longitude&#39;/&#39;x&#39; columns&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get dimensions from xarray Dataset if available</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;ds&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span>
+            <span class="c1"># Determine dimension names (handle lat/lon or y/x)</span>
+            <span class="n">lat_dim</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span> <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">lon_dim</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">dims</span> <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">lat_dim</span> <span class="ow">and</span> <span class="n">lon_dim</span><span class="p">:</span>
+                <span class="n">n_rows</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">lat_dim</span><span class="p">]</span>
+                <span class="n">n_cols</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="n">lon_dim</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset dimensions: </span><span class="si">{</span><span class="n">n_rows</span><span class="si">}</span><span class="s2"> rows (lat/y) × </span><span class="si">{</span><span class="n">n_cols</span><span class="si">}</span><span class="s2"> columns (lon/x)&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n_rows</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">lat_col</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+                <span class="n">n_cols</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">lon_col</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Inferred dimensions: </span><span class="si">{</span><span class="n">n_rows</span><span class="si">}</span><span class="s2"> rows × </span><span class="si">{</span><span class="n">n_cols</span><span class="si">}</span><span class="s2"> columns&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_rows</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">lat_col</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+            <span class="n">n_cols</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">lon_col</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DataFrame dimensions: </span><span class="si">{</span><span class="n">n_rows</span><span class="si">}</span><span class="s2"> rows × </span><span class="si">{</span><span class="n">n_cols</span><span class="si">}</span><span class="s2"> columns&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create base output directory</span>
         <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No filename provided and filename_csv is not set&quot;</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">dataset</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">base_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">base_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Get unique lat/lon pairs and assign row/column indices</span>
+        <span class="n">unique_locations</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="n">lat_col</span><span class="p">,</span> <span class="n">lon_col</span><span class="p">])</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="n">lat_col</span><span class="p">,</span> <span class="n">lon_col</span><span class="p">])</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># Create mapping from lat/lon to row/col indices</span>
+        <span class="n">lat_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">lat_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">(),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># rows decrease from north to south</span>
+        <span class="n">lon_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">lon_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>  <span class="c1"># columns increase from west to east</span>
 
-        <span class="c1"># print(f&quot;DataFrame saved to CSV file: {self.current_filename}&quot;)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DataFrame saved to CSV file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">lat_to_row</span> <span class="o">=</span> <span class="p">{</span><span class="n">lat</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">lat</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lat_sorted</span><span class="p">)}</span>
+        <span class="n">lon_to_col</span> <span class="o">=</span> <span class="p">{</span><span class="n">lon</span><span class="p">:</span> <span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">lon</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lon_sorted</span><span class="p">)}</span>
 
-        <span class="k">return</span> <span class="n">filename</span>
+        <span class="n">n_locations</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_locations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Converting to </span><span class="si">{</span><span class="nb">format</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2"> format with </span><span class="si">{</span><span class="n">n_locations</span><span class="si">}</span><span class="s2"> unique locations&quot;</span><span class="p">)</span>
+
+        <span class="n">created_files</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Process each location</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">loc_row</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unique_locations</span><span class="o">.</span><span class="n">iterrows</span><span class="p">(),</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">lat</span> <span class="o">=</span> <span class="n">loc_row</span><span class="p">[</span><span class="n">lat_col</span><span class="p">]</span>
+            <span class="n">lon</span> <span class="o">=</span> <span class="n">loc_row</span><span class="p">[</span><span class="n">lon_col</span><span class="p">]</span>
+
+            <span class="n">row_num</span> <span class="o">=</span> <span class="n">lat_to_row</span><span class="p">[</span><span class="n">lat</span><span class="p">]</span>
+            <span class="n">col_num</span> <span class="o">=</span> <span class="n">lon_to_col</span><span class="p">[</span><span class="n">lon</span><span class="p">]</span>
+
+            <span class="c1"># Filter data for this location</span>
+            <span class="n">df_loc</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="p">[</span><span class="n">lat_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">lat</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">lon_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">lon</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="c1"># Pivot: time x variables</span>
+            <span class="n">loc_df</span> <span class="o">=</span> <span class="n">df_loc</span><span class="o">.</span><span class="n">pivot_table</span><span class="p">(</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">time_col</span><span class="p">,</span>
+                <span class="n">columns</span><span class="o">=</span><span class="n">var_col</span><span class="p">,</span>
+                <span class="n">values</span><span class="o">=</span><span class="n">val_col</span><span class="p">,</span>
+                <span class="n">aggfunc</span><span class="o">=</span><span class="s1">&#39;first&#39;</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+            <span class="c1"># Rename Date column</span>
+            <span class="n">loc_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">time_col</span><span class="p">:</span> <span class="s1">&#39;Date&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Rename variables from CF names to DWD/standard names</span>
+            <span class="n">rename_mapping</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">loc_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">CF_TO_DWD_NAMES</span><span class="p">:</span>
+                    <span class="n">rename_mapping</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">CF_TO_DWD_NAMES</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+            <span class="n">loc_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_mapping</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Generate filename</span>
+            <span class="n">variables_list</span> <span class="o">=</span> <span class="n">df_loc</span><span class="p">[</span><span class="n">var_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+            <span class="n">variables_named</span> <span class="o">=</span> <span class="p">[</span><span class="n">CF_TO_DWD_NAMES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables_list</span><span class="p">]</span>
+            <span class="n">variables_str</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">variables_named</span><span class="p">)</span>
+
+            <span class="c1"># Get dataset name from config</span>
+            <span class="n">dataset_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="p">,</span> <span class="s1">&#39;dataset&#39;</span><span class="p">,</span> <span class="s1">&#39;unknown&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Create column-based folder: col_&lt;col_number&gt; (no zero-padding)</span>
+            <span class="n">col_folder</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col_num</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">col_folder</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Save file: &lt;format&gt;_&lt;variables&gt;_&lt;dataset&gt;.csv</span>
+            <span class="n">output_filename</span> <span class="o">=</span> <span class="n">col_folder</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2">_Daily_C</span><span class="si">{</span><span class="n">col_num</span><span class="si">}</span><span class="s2">R</span><span class="si">{</span><span class="n">row_num</span><span class="si">}</span><span class="s2">.csv&quot;</span>
+            <span class="n">loc_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="n">created_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_filename</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">n_locations</span><span class="si">}</span><span class="s2">] Saved col_</span><span class="si">{</span><span class="n">col_num</span><span class="si">}</span><span class="s2"> (row </span><span class="si">{</span><span class="n">row_num</span><span class="si">}</span><span class="s2">) -&gt; </span><span class="si">{</span><span class="n">output_filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully created </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">created_files</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nb">format</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2"> format files in </span><span class="si">{</span><span class="n">base_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Grid dimensions: </span><span class="si">{</span><span class="n">n_rows</span><span class="si">}</span><span class="s2"> rows × </span><span class="si">{</span><span class="n">n_cols</span><span class="si">}</span><span class="s2"> columns&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">base_dir</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_dwd_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert long-form DataFrame to DWD single-station tabular format.</span>
+
+<span class="sd">        DWD format characteristics:</span>
+<span class="sd">        - One row per date (time series)</span>
+<span class="sd">        - Columns: Date, Variables (Precipitation, TempMin, TempMean, TempMax, etc.)</span>
+<span class="sd">        - Single location (gridcell identifier from source)</span>
+<span class="sd">        - Tab-separated values</span>
+<span class="sd">        - Filename: dwd_&lt;n_lat&gt;x&lt;n_lon&gt;_&lt;variables&gt;_&lt;gridcell_id&gt;.csv</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df (pd.DataFrame): Long-form DataFrame with columns: date/time, lat, lon, variable, value</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (converted_df, suggested_filename)</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If DataFrame format is incompatible or has multiple stations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Validate input DataFrame structure</span>
+        <span class="n">required_cols</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;variable&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">}</span>
+        <span class="n">df_cols_lower</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+
+        <span class="c1"># Check for time column</span>
+        <span class="n">time_col</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">):</span>
+                <span class="n">time_col</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">time_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;date&#39; or &#39;time&#39; column&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check for variable column</span>
+        <span class="n">var_col</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;variable&#39;</span><span class="p">:</span>
+                <span class="n">var_col</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">var_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;variable&#39; column&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check for value column</span>
+        <span class="n">val_col</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">):</span>
+                <span class="n">val_col</span> <span class="o">=</span> <span class="n">col</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">val_col</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;DataFrame must contain &#39;value&#39; or &#39;data&#39; column&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get location info (lat, lon, gridcell)</span>
+        <span class="n">lat_col</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;latitude&#39;</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">lon_col</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># Get unique stations/locations</span>
+        <span class="n">location_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;latitude&#39;</span><span class="p">,</span> <span class="s1">&#39;longitude&#39;</span><span class="p">,</span> <span class="s1">&#39;gridcell&#39;</span><span class="p">,</span> <span class="s1">&#39;station_id&#39;</span><span class="p">,</span> <span class="s1">&#39;station&#39;</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">location_cols</span><span class="p">:</span>
+            <span class="n">n_locations</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">location_cols</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">n_locations</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DWD format supports single station only, but found </span><span class="si">{</span><span class="n">n_locations</span><span class="si">}</span><span class="s2"> locations&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Pivot: time x variables</span>
+        <span class="n">dwd_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pivot_table</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">time_col</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">var_col</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">val_col</span><span class="p">,</span>
+            <span class="n">aggfunc</span><span class="o">=</span><span class="s1">&#39;first&#39;</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+        <span class="c1"># Rename Date column to match DWD standard</span>
+        <span class="n">dwd_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">time_col</span><span class="p">:</span> <span class="s1">&#39;Date&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Rename variables from CF names to DWD names</span>
+        <span class="n">rename_mapping</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dwd_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">CF_TO_DWD_NAMES</span><span class="p">:</span>
+                <span class="n">rename_mapping</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">CF_TO_DWD_NAMES</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+        <span class="n">dwd_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename_mapping</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Add gridcell identifier if available (from source data)</span>
+        <span class="k">if</span> <span class="s1">&#39;gridcell&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">gridcell</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;gridcell&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s1">&#39;station_id&#39;</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">gridcell</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;station_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gridcell</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+        <span class="c1"># Generate filename: dwd_&lt;n_lat&gt;x&lt;n_lon&gt;_&lt;variables&gt;_&lt;gridcell_id&gt;.csv</span>
+        <span class="n">n_lat</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">lat_col</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span> <span class="k">if</span> <span class="n">lat_col</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="n">n_lon</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">lon_col</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span> <span class="k">if</span> <span class="n">lon_col</span> <span class="k">else</span> <span class="mi">1</span>
+
+        <span class="c1"># Use DWD names in filename for consistency</span>
+        <span class="n">variables_list</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">var_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">variables_dwd</span> <span class="o">=</span> <span class="p">[</span><span class="n">CF_TO_DWD_NAMES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables_list</span><span class="p">]</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">variables_dwd</span><span class="p">)</span>
+
+        <span class="c1"># Clean gridcell identifier for filename (replace : with _)</span>
+        <span class="n">gridcell_safe</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">gridcell</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+
+        <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;dwd_</span><span class="si">{</span><span class="n">n_lat</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">n_lon</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">variables</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">gridcell_safe</span><span class="si">}</span><span class="s2">.csv&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Converted to DWD format: </span><span class="si">{</span><span class="n">n_lat</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">n_lon</span><span class="si">}</span><span class="s2"> grid, </span><span class="si">{</span><span class="n">dwd_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> time steps, </span><span class="si">{</span><span class="n">dwd_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2"> variables; renamed variables to DWD names: </span><span class="si">{</span><span class="n">rename_mapping</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dwd_df</span><span class="p">,</span> <span class="n">filename</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">to_nc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save an xarray Dataset to NetCDF.</span>
@@ -3818,14 +4088,14 @@ to fetch, load and extract datasets. When extraction completes, units are conver
 
 
 <h3 id="climdata.utils.wrapper_workflow.ClimData.to_csv" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+<code class="highlight language-python"><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">)</span></code>
 
 
 <a href="#climdata.utils.wrapper_workflow.ClimData.to_csv" class="headerlink" title="Permanent link">&para;</a></h3>
 
     <div class="doc doc-contents ">
 
-      <p>Save a DataFrame to CSV.</p>
+      <p>Save a DataFrame to CSV with optional format specification.</p>
 
 <p><strong>Parameters:</strong></p>
 <table>
@@ -3847,8 +4117,18 @@ to fetch, load and extract datasets. When extraction completes, units are conver
       <tr>
         <td><code>filename</code></td>
         <td><code>str</code></td>
-        <td><p>Output filename. Defaults to <code>self.filename_csv</code>.</p></td>
+        <td><p>Output filename/directory. Defaults to <code>self.filename_csv</code>.</p></td>
         <td><code>None</code></td>
+      </tr>
+      <tr>
+        <td><code>format</code></td>
+        <td><code>str</code></td>
+        <td><p>Output format. Options:
+- 'default': Long-form (single file)
+- 'simplace': SIMPLACE format (splits by location, tab-separated)
+- 'monica': MONICA format (splits by location, tab-separated)
+Defaults to 'default'.</p></td>
+        <td><code>&#39;default&#39;</code></td>
       </tr>
   </tbody>
 </table>
@@ -3863,39 +4143,68 @@ to fetch, load and extract datasets. When extraction completes, units are conver
   <tbody>
     <tr>
       <td><code>str</code></td>
-      <td><p>The path of the written CSV file.</p></td>
+      <td><p>The path of the written CSV file(s). For SIMPLACE/MONICA, returns base directory.</p></td>
     </tr>
+  </tbody>
+</table>
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ValueError</code></td>
+        <td><p>If format is not supported or required data is missing.</p></td>
+      </tr>
   </tbody>
 </table>
         <details class="quote">
           <summary>Source code in <code>climdata/utils/wrapper_workflow.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save a DataFrame to CSV.</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save a DataFrame to CSV with optional format specification.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        df (pd.DataFrame, optional): DataFrame to save. Defaults to ``self.current_df``.</span>
-<span class="sd">        filename (str, optional): Output filename. Defaults to ``self.filename_csv``.</span>
+<span class="sd">        filename (str, optional): Output filename/directory. Defaults to ``self.filename_csv``.</span>
+<span class="sd">        format (str): Output format. Options:</span>
+<span class="sd">            - &#39;default&#39;: Long-form (single file)</span>
+<span class="sd">            - &#39;simplace&#39;: SIMPLACE format (splits by location, tab-separated)</span>
+<span class="sd">            - &#39;monica&#39;: MONICA format (splits by location, tab-separated)</span>
+<span class="sd">            Defaults to &#39;default&#39;.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        str: The path of the written CSV file.</span>
+<span class="sd">        str: The path of the written CSV file(s). For SIMPLACE/MONICA, returns base directory.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If format is not supported or required data is missing.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">df</span> <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_df</span>
+    <span class="n">format_lower</span> <span class="o">=</span> <span class="nb">format</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
-    <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;filename_csv&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No filename provided and filename_csv is not set&quot;</span><span class="p">)</span>
+    <span class="c1"># Apply format conversion if requested</span>
+    <span class="k">if</span> <span class="n">format_lower</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;simplace&quot;</span><span class="p">,</span> <span class="s2">&quot;monica&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_gridded_format</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="n">format_lower</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">format_lower</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;filename_csv&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No filename provided and filename_csv is not set&quot;</span><span class="p">)</span>
 
-    <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename_csv</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="c1"># print(f&quot;DataFrame saved to CSV file: {self.current_filename}&quot;)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DataFrame saved to CSV file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DataFrame saved to CSV file (</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2"> format): </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">filename</span>
+        <span class="k">return</span> <span class="n">filename</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported format: </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">. Supported formats: &#39;default&#39;, &#39;simplace&#39;, &#39;monica&#39;&quot;</span><span class="p">)</span>
 </code></pre></div>
         </details>
     </div>
