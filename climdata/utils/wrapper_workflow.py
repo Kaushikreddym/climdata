@@ -1,6 +1,7 @@
 import os
 import json
 import pandas as pd
+import numpy as np
 import xarray as xr
 from pathlib import Path
 import warnings
@@ -605,6 +606,14 @@ class ClimateExtractor:
                 ds_vars.append(hyras.load(var, chunking={'time':"auto"})[[var]])
             ds = xr.merge(ds_vars, compat="override")
             self.dataset_class = hyras
+        elif dataset_upper == "HOSTRADA":
+            hostrada = climdata.HOSTRADA(cfg)
+            hostrada.extract(**extract_kwargs)
+            ds_vars = []
+            for var in cfg.variables:
+                ds_vars.append(hostrada.load(var, chunking={'time': 'auto'})[[var]])
+            ds = xr.merge(ds_vars, compat="override")
+            self.dataset_class = hostrada
         elif dataset_upper == "W5E5":
             w5e5 = climdata.W5E5(cfg)
             w5e5.fetch()  # Download from ISIMIP
@@ -657,7 +666,15 @@ class ClimateExtractor:
             return None
 
         if "time" in ds.coords:
-            years = pd.to_datetime(ds.time.values).year
+            # Handle both numpy datetime64 and cftime datetime objects
+            time_values = ds.time.values
+            try:
+                # Try pandas conversion first (works for datetime64)
+                years = pd.to_datetime(time_values).year
+            except (TypeError, ValueError):
+                # Fall back to cftime handling
+                years = np.array([t.year for t in time_values])
+            
             n_years = len(pd.unique(years))
             if n_years < 30:
                 warnings.warn(f"Index {cfg.index} usually requires ≥30 years, got {n_years}", UserWarning)

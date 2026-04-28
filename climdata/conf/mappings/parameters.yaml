@@ -197,32 +197,50 @@ hyras:
       name: tasmin
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_min/"
       prefix: "tasmin_hyras_1"
-      version: "v6-0"
+      version: "v6-1"
     tasmax:
       name: tasmax
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_max/"
       prefix: "tasmax_hyras_1"
-      version: "v6-0"
+      version: "v6-1"
     tas:
       name: tas
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/air_temperature_mean/"
       prefix: "tas_hyras_1"
-      version: "v6-0"
+      version: "v6-1"
     pr:
       name: pr
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/precipitation/"
       prefix: "pr_hyras_1"
-      version: "v6-0"
+      version: "v6-1"
     rsds:
       name: rsds
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/radiation_global/"
       prefix: "rsds_hyras_5"
-      version: "v3-1"
+      version: "v4-0"
     hurs:
       name: hurs
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/hyras_de/humidity/"
       prefix: "hurs_hyras_1"
-      version: "v6-0"
+      version: "v6-1"
+    evpot:
+      name: evpot
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/evapo_p/"
+      prefix: "grids_germany_daily_evapo_p"
+      version: "v01"
+      units: mm
+    soilMoist:
+      name: soilMoist
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/soil_moist/"
+      prefix: "grids_germany_daily_soil_moist"
+      version: "v01"
+      units: "%"
+    soilTemp:
+      name: soilTemp
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/soil_temperature_5cm/"
+      prefix: "grids_germany_daily_soil_temperature_5cm"
+      version: "v01"
+      units: degC
 cmip:
   # Explore module metadata
   explore:
@@ -568,3 +586,30 @@ nexgddp:
       units: W m-2
       basd_unit: W m-2
   Description: "NASA Earth Exchange Global Daily Downscaled Projections (NEX-GDDP-CMIP6). Provides statistically downscaled CMIP6 climate projections at 0.25° resolution (~25km) globally. Available for multiple CMIP6 models and scenarios (historical: 1950-2014, ssp126, ssp245, ssp370, ssp585: 2015-2100) with daily temporal resolution."
+
+hostrada:
+  # Explore module metadata
+  explore:
+    full_name: Hourly Station-based and Raster-based Terrestrial Atmospheric Dataset (HOSTRADA)
+    type: Observation (Gridded)
+    coverage: Germany
+    resolution: 1 km
+    frequency: hourly
+    time_range: 1995-01-01 to present
+    source: DWD open-data server
+    notes: >
+      Gridded hourly surface climate data over Germany on a regular lat/lon grid (EPSG:4326).
+      Files are monthly NetCDF, named {var}_1hr_HOSTRADA-v1-0_BE_gn_{YYYYMMDDHH}-{YYYYMMDDHH}.nc.
+
+  # Data access configuration
+  lat_dim: lat
+  lon_dim: lon
+  version: "v1-0"
+  variables:
+    rsds:
+      name: rsds
+      long_name: Surface Downwelling Shortwave Radiation
+      units: W m-2
+      prefix: "rsds"
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/hostrada/radiation_downwelling/"
+      version: "v1-0"

@@ -13,7 +13,7 @@ lon: null
 aoi: null
 shapefile: null
 
-variables: ["tasmin","tasmax","pr"]
+variables: ["tasmin","tasmax","pr","tas","rsds","hurs","sfcWind","rlds","huss","ps","evpot","soilMoist","soilTemp"]
 data_dir: ./data
 
 region: null

@@ -74,3 +74,15 @@ rlds:
 #   cf_name: surface_snow_amount
 #   long_name: Snow water equivalent
 #   units: mm
+evpot:
+  cf_name: water_evapotranspiration_flux
+  long_name: Potential evapotranspiration
+  units: mm
+soilMoist:
+  cf_name: soil_moisture_content
+  long_name: Soil moisture content
+  units: '%'
+soilTemp:
+  cf_name: soil_temperature
+  long_name: Soil temperature at 5cm depth
+  units: degC

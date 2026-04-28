@@ -14,6 +14,7 @@ from .datasets.W5E5 import W5E5 as W5E5
 from .datasets.CMIP_W5E5 import CMIPW5E5 as CMIPW5E5
 from .datasets.NEXGDDP import NEXGDDP as NEXGDDP
 from .datasets.HYRAS import HYRASmirror as HYRAS
+from .datasets.HOSTRADA import HOSTRADAmirror as HOSTRADA
 from .datasets.NASAPOWER import POWER as POWER
 from .extremes.indices import extreme_index as extreme_index
 from .utils.wrapper_workflow import ClimateExtractor as ClimData
