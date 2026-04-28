@@ -1697,7 +1697,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-1">
@@ -1726,7 +1726,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -1773,7 +1773,7 @@ logging.basicConfig(
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -1791,8 +1791,8 @@ logging.basicConfig(
     <span class="s2">"lat=52"</span><span class="p">,</span>
     <span class="s2">"lon=13"</span><span class="p">,</span>
     <span class="sa">f</span><span class="s2">"time_range.start_date=1989-01-01"</span><span class="p">,</span>  <span class="c1"># Start date for data extraction</span>
-    <span class="sa">f</span><span class="s2">"time_range.end_date=2014-12-31"</span><span class="p">,</span>    <span class="c1"># End date for data extraction</span>
-    <span class="s2">"variables=[tasmin,tasmax,pr]"</span><span class="p">,</span>       <span class="c1"># Variables to extract: min/max temp and precipitation</span>
+    <span class="sa">f</span><span class="s2">"time_range.end_date=1989-12-31"</span><span class="p">,</span>    <span class="c1"># End date for data extraction</span>
+    <span class="s2">"variables=[tasmin]"</span><span class="p">,</span>       <span class="c1"># Variables to extract: min/max temp and precipitation</span>
     <span class="s2">"data_dir=./data"</span><span class="p">,</span>    <span class="c1"># Local directory to store raw/intermediate files</span>
     <span class="s2">"source_id=GFDL-ESM4"</span><span class="p">,</span>
     <span class="c1"># "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",  # optional . required for MSWS data download</span>
@@ -1822,8 +1822,8 @@ logging.basicConfig(
     "lat=52",
     "lon=13",
     f"time_range.start_date=1989-01-01",  # Start date for data extraction
-    f"time_range.end_date=2014-12-31",    # End date for data extraction
-    "variables=[tasmin,tasmax,pr]",       # Variables to extract: min/max temp and precipitation
+    f"time_range.end_date=1989-12-31",    # End date for data extraction
+    "variables=[tasmin]",       # Variables to extract: min/max temp and precipitation
     "data_dir=./data",    # Local directory to store raw/intermediate files
     "source_id=GFDL-ESM4",
     # "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",  # optional . required for MSWS data download
@@ -1879,7 +1879,49 @@ result = extractor.run_workflow(
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>  Downloading tasmin:   0%|          | 0/26 [00:00&lt;?, ?it/s]</pre>
+<pre>  Downloading tasmin: 100%|██████████| 1/1 [00:00&lt;00:00,  1.62it/s]
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>
+✅ Downloaded 1 files
+📂 Loading 1 NEX-GDDP files...
+  Loading tasmin from 1 file(s)...
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>&lt;frozen importlib._bootstrap&gt;:241: RuntimeWarning: numpy.ndarray size changed, may indicate binary incompatibility. Expected 16 from C header, got 96 from PyObject
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>✅ Loaded dataset with 1 variables
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>INFO | Completed action: extract
+INFO | Starting action: impute
+INFO | <span class="ansi-yellow-intense-fg">No missing data found. Imputation not required.</span>
+INFO | Completed action: impute
+INFO | Starting action: calc_index
+/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:672: UserWarning: Index tn10p usually requires ≥30 years, got 1
+  warnings.warn(f"Index {cfg.index} usually requires ≥30 years, got {n_years}", UserWarning)
+INFO | Completed action: calc_index
+INFO | Starting action: to_nc
+INFO | Dataset saved to NetCDF file: nexgddp_tn10p_LAT52_LON13_1989-01-01_1989-12-31.nc
+INFO | Completed action: to_nc
+</pre>
 </div>
 </div>
 </div>
@@ -1891,7 +1933,7 @@ result = extractor.run_workflow(
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
@@ -1920,7 +1962,7 @@ nex = NEXGDDP(extractor.cfg)</div>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-5">
@@ -1945,7 +1987,7 @@ nex = NEXGDDP(extractor.cfg)</div>
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[8]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>('https://ds.nccs.nasa.gov/thredds/ncss/grid/AMES/NEX/GDDP-CMIP6/MRI-ESM2-0/historical/r1i1p1f1/pr/pr_day_MRI-ESM2-0_historical_r1i1p1f1_gn_2005_v2.0.nc?var=pr&amp;north=90&amp;south=-90&amp;east=180&amp;west=-180&amp;horizStride=1&amp;time_start=2005-01-01T12:00:00Z&amp;time_end=2005-12-31T12:00:00Z&amp;accept=netcdf3&amp;addLatLon=true',
  'pr_day_MRI-ESM2-0_historical_r1i1p1f1_gn_2005_v2.0.nc')</pre>
@@ -1984,7 +2026,7 @@ nex = NEXGDDP(extractor.cfg)</div>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 23, 2026 18:44:10 UTC"><span class="timeago" datetime="2026-04-23T18:44:10+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 23, 2026 18:44:10 UTC">2026-04-23</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 28, 2026 12:58:32 UTC"><span class="timeago" datetime="2026-04-28T12:58:32+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 28, 2026 12:58:32 UTC">2026-04-28</span>
   </span>
 
     
