@@ -67,7 +67,7 @@ class W5E5:
         start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
         end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
         
-        output_dir = Path(self.cfg.data_dir) / self.cfg.dataset.lower()
+        output_dir = Path(self.cfg.data_dir) / self.cfg.dataset.upper()
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Search for each variable separately

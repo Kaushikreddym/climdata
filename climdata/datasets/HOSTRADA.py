@@ -45,7 +45,7 @@ def fetch_hostrada(cfg: DictConfig, variable: str) -> None:
     Files are stored as::
         <data_dir>/hostrada/<VARIABLE>/<filename>.nc
     """
-    provider = cfg.dataset.lower()          # "hostrada"
+    provider = cfg.dataset.upper()          # "HOSTRADA"
     param_info = cfg.dsinfo[provider]["variables"][variable]
     base_url: str = param_info["base_url"]
     prefix: str = param_info["prefix"]      # e.g. "rsds"
@@ -141,8 +141,8 @@ class HOSTRADAmirror:
         """Return sorted list of existing local NetCDF files for *variable*."""
         import glob
 
-        provider = self.cfg.dataset.lower()
-        var_dir = os.path.join(self.cfg.data_dir, provider, variable.upper())
+        provider = self.cfg.dataset.upper()
+        var_dir = os.path.join(self.cfg.data_dir, provider.upper(), variable.upper())
 
         start_dt = datetime.fromisoformat(self.cfg.time_range.start_date)
         end_dt = datetime.fromisoformat(self.cfg.time_range.end_date)

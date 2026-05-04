@@ -16,6 +16,7 @@ from .datasets.NEXGDDP import NEXGDDP as NEXGDDP
 from .datasets.HYRAS import HYRASmirror as HYRAS
 from .datasets.HOSTRADA import HOSTRADAmirror as HOSTRADA
 from .datasets.NASAPOWER import POWER as POWER
+from .datasets.AGRI_ISIMIP import AGRI_ISIMIP as AGRI_ISIMIP
 from .extremes.indices import extreme_index as extreme_index
 from .utils.wrapper_workflow import ClimateExtractor as ClimData
 from ._vendor import imputegap

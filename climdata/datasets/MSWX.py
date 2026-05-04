@@ -51,7 +51,7 @@ class MSWXmirror:
         local_files, missing_files = [], []
 
         for basename in expected_files:
-            local_path = os.path.join(output_dir,self.cfg.dataset.lower(), variable, basename)
+            local_path = os.path.join(output_dir, self.cfg.dataset.upper(), variable.upper(), basename)
             if os.path.exists(local_path):
                 local_files.append(basename)
             else:
@@ -79,7 +79,7 @@ class MSWXmirror:
 
         for file in files_to_download:
             filename = file['name']
-            local_path = os.path.join(output_dir, self.cfg.dataset, variable, filename)
+            local_path = os.path.join(output_dir, self.cfg.dataset.upper(), variable.upper(), filename)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             print(f"⬇️ Downloading {filename} ...")
             download_drive_file(file['id'], local_path, service)
@@ -173,19 +173,19 @@ class MSWXmirror:
             xr.Dataset: Concatenated dataset along the 'time' dimension with fixed coordinates.
         """
         # Get folder ID and list of files
-        folder_id = self.cfg.dsinfo["mswx"]["variables"][variable]["folder_id"]
+        folder_id = self.cfg.dsinfo[self.cfg.dataset.upper()]["variables"][variable]["folder_id"]
         files = self.fetch(folder_id, variable)
         if not files:
             raise RuntimeError(f"No files found for variable '{variable}' in Drive or local directory.")
 
         # Full paths
         file_paths = [
-            os.path.join(self.cfg.data_dir, self.cfg.dataset.lower(), variable, f)
+            os.path.join(self.cfg.data_dir, self.cfg.dataset.upper(), variable.upper(), f)
             for f in files
         ]
 
         # MSWX internal variable name
-        varname = self.cfg.dsinfo[self.cfg.dataset].variables[variable].name
+        varname = self.cfg.dsinfo[self.cfg.dataset.upper()].variables[variable].name
 
         # Optional: preprocess each file (e.g., rename variable)
         def preprocess(ds):

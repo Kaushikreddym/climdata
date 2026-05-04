@@ -7,7 +7,7 @@ defaults:
   - mappings/imputation@imputeinfo
   - regions/regions.yaml@bounds
 
-dataset: mswx
+dataset: MSWX
 lat: null
 lon: null
 aoi: null

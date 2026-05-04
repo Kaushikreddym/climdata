@@ -558,7 +558,7 @@ class ClimateExtractor:
 
         if cfg.lat is not None and cfg.lon is not None:
             extract_kwargs["point"] = (cfg.lon, cfg.lat)
-            if cfg.dataset == "dwd":
+            if cfg.dataset.upper() == "DWD":
                 extract_kwargs["buffer_km"] = 30
         elif cfg.region is not None:
             extract_kwargs["box"] = cfg.bounds[cfg.region]
@@ -635,6 +635,15 @@ class ClimateExtractor:
             nexgddp.extract(**extract_kwargs)
             ds = nexgddp.ds
             self.dataset_class = nexgddp
+        elif dataset_upper == "AGRI_ISIMIP":
+            agri = climdata.AGRI_ISIMIP(cfg)
+            agri.fetch()  # Download agricultural data from ISIMIP
+            ds_vars = []
+            for var in cfg.variables:
+                ds_vars.append(agri.load(var, chunking={'time': 'auto'})[[var]])
+            ds = xr.merge(ds_vars, compat="override")
+            agri.extract(**extract_kwargs)
+            self.dataset_class = agri
         for var in ds.data_vars:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 
@@ -1325,9 +1334,9 @@ class ClimateExtractor:
 
         method = cfg.impute
         normalize = impute_cfg[method].get("normalize", True)
-        time_dim = cfg.dsinfo[cfg.dataset].get("time_dim", "time")
-        lat_dim = cfg.dsinfo[cfg.dataset].get("lat_dim", "lat")
-        lon_dim = cfg.dsinfo[cfg.dataset].get("lon_dim", "lon")
+        time_dim = cfg.dsinfo[cfg.dataset.upper()].get("time_dim", "time")
+        lat_dim = cfg.dsinfo[cfg.dataset.upper()].get("lat_dim", "lat")
+        lon_dim = cfg.dsinfo[cfg.dataset.upper()].get("lon_dim", "lon")
         # epochs = impute_cfg[method].get("epochs", 300)
 
         # run imputer (Imputer expects dims (time, lat, lon))

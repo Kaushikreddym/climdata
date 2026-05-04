@@ -451,7 +451,7 @@ class NEXGDDP:
         end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
         
         # Create directory structure: nexgddp/{MODEL}/{experiment}/{variable}/
-        base_dir = Path(self.cfg.data_dir) / "nexgddp" / self.source_id / self.experiment_id
+        base_dir = Path(self.cfg.data_dir) / "NEXGDDP" / self.source_id / self.experiment_id
         base_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate list of years to download

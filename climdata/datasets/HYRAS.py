@@ -19,7 +19,7 @@ from omegaconf import DictConfig
 def fetch_dwd(var_cfg,var):
     """Download HYRAS data for one variable and a list of years. Handles both .nc and .tgz formats."""
     param_mapping = var_cfg.dsinfo
-    provider = var_cfg.dataset.lower()
+    provider = var_cfg.dataset.upper()
     parameter_key = var
     # Validate provider and parameter
 
@@ -75,17 +75,8 @@ def fetch_dwd(var_cfg,var):
                         for chunk in response.iter_content(chunk_size=8192):
                             f.write(chunk)
                     print(f"✅ Saved: {local_path}")
-                    
-                    # Extract .tgz file
-                    extract_path = os.path.dirname(local_path)
-                    print(f"📦 Extracting: {file_name}")
-                    with tarfile.open(local_path, 'r:gz') as tar:
-                        tar.extractall(path=extract_path)
-                    print(f"✅ Extracted: {file_name}")
                 except requests.HTTPError as e:
                     print(f"⚠️  Failed download: {file_url} — {e}")
-                except tarfile.TarError as e:
-                    print(f"⚠️  Failed extraction: {file_name} — {e}")
     else:
         # Handle old format: *_{year}_{version}_de.nc
         for year in range(start_year, end_year + 1):
@@ -138,7 +129,14 @@ def read_asc_file(asc_file: str, varname: str = None, units: str = None) -> xr.D
     units : str, optional
         Units string to include in attributes
     """
-    with open(asc_file, 'r') as f:
+    import io
+    if isinstance(asc_file, (str, os.PathLike)):
+        ctx = open(asc_file, 'r')
+    else:
+        # file-like object (e.g. from tarfile.extractfile) — wrap bytes as text
+        raw = asc_file.read()
+        ctx = io.StringIO(raw.decode('latin-1') if isinstance(raw, bytes) else raw)
+    with ctx as f:
         header = {}
         for _ in range(6):
             line = f.readline().strip().split()
@@ -271,6 +269,128 @@ def read_asc_timeseries(asc_files: List[str], varname: str = 'value', units: str
     
     return ds
 
+def _iter_tgz_members(tgz_path: str):
+    """
+    Yield ``(date_str, member_name, file_like)`` for every .asc or .nc member
+    inside a .tgz archive.  The file-like object is an in-memory BytesIO so the
+    archive is never extracted to disk.
+    """
+    import io, re
+    with tarfile.open(tgz_path, 'r:gz') as tar:
+        for member in sorted(tar.getmembers(), key=lambda m: m.name):
+            name = os.path.basename(member.name)
+            if not (name.endswith('.asc') or name.endswith('.nc')):
+                continue
+            m = re.search(r'(\d{8})', name)
+            date_str = m.group(1) if m else None
+            raw = tar.extractfile(member)
+            if raw is None:
+                continue
+            yield date_str, name, io.BytesIO(raw.read())
+
+
+def _read_one_asc_member(tgz_path: str, member_name: str,
+                          varname: str, units: str) -> np.ndarray:
+    """
+    Open *one* .asc member from a .tgz archive and return a 2-D float64 array.
+    Called lazily by dask workers — no state shared with the main process.
+    """
+    import io, tarfile as _tarfile
+    with _tarfile.open(tgz_path, 'r:gz') as tar:
+        raw = tar.extractfile(member_name)
+        if raw is None:
+            raise RuntimeError(f"Cannot extract {member_name} from {tgz_path}")
+        fileobj = io.BytesIO(raw.read())
+    da = read_asc_file(fileobj, varname=varname, units=units)
+    return da.values.astype(np.float64)
+
+
+def read_asc_timeseries_from_tgz(tgz_files: List[str], varname: str = 'value',
+                                  units: str = None) -> xr.Dataset:
+    """
+    Read daily .asc members from a list of .tgz archives *without* extracting
+    them to disk.  Each daily slice is wrapped in a ``dask.delayed`` call so
+    the data is loaded lazily when computed.
+
+    Returns an xarray Dataset backed by a dask array with dims (time, y, x).
+    """
+    import dask
+    import dask.array as da
+
+    # ------------------------------------------------------------------ #
+    # 1) Scan all archives to collect (tgz_path, member_name, date) tuples
+    #    and determine the 2-D grid shape from the very first .asc member.
+    # ------------------------------------------------------------------ #
+    index: List[tuple] = []          # (tgz_path, member_name, pd.Timestamp)
+    first_y = first_x = None
+    grid_shape = None
+
+    for tgz_path in sorted(tgz_files):
+        for date_str, name, fileobj in _iter_tgz_members(tgz_path):
+            if not name.endswith('.asc'):
+                continue
+            time_stamp = pd.to_datetime(date_str, format='%Y%m%d') if date_str else None
+            if time_stamp is None:
+                continue
+            if grid_shape is None:
+                # Read the very first slice eagerly to get coords + shape
+                ref_da = read_asc_file(fileobj, varname=varname, units=units)
+                first_y = ref_da.coords['y'].values
+                first_x = ref_da.coords['x'].values
+                grid_shape = ref_da.shape          # (ny, nx)
+            # Store the *member path inside the archive* (str) for the worker
+            index.append((tgz_path, name, time_stamp))
+
+    if not index:
+        raise FileNotFoundError(f"No .asc members found in: {tgz_files}")
+
+    # ------------------------------------------------------------------ #
+    # 2) Build one dask.delayed per time step and stack into a dask array
+    # ------------------------------------------------------------------ #
+    ny, nx = grid_shape
+    delayed_slices = [
+        dask.delayed(_read_one_asc_member)(tgz, member, varname, units)
+        for tgz, member, _ in index
+    ]
+    dask_slices = [
+        da.from_delayed(s, shape=(ny, nx), dtype=np.float64)
+        for s in delayed_slices
+    ]
+    data_dask = da.stack(dask_slices, axis=0)          # (time, y, x)
+    times = [t for _, _, t in index]
+
+    # ------------------------------------------------------------------ #
+    # 3) Build lat/lon auxiliary coordinates (tiny eager computation)
+    # ------------------------------------------------------------------ #
+    try:
+        from pyproj import Transformer
+        transformer = Transformer.from_crs(31467, 4326, always_xy=True)
+        x_2d, y_2d = np.meshgrid(first_x, first_y)
+        lon_2d, lat_2d = transformer.transform(x_2d, y_2d)
+    except ImportError:
+        lon_2d, lat_2d = np.meshgrid(first_x, first_y)
+
+    # ------------------------------------------------------------------ #
+    # 4) Wrap in xarray Dataset
+    # ------------------------------------------------------------------ #
+    ds = xr.Dataset(
+        {varname: xr.Variable(['time', 'y', 'x'], data_dask)},
+        coords={
+            'time': times,
+            'y': first_y,
+            'x': first_x,
+            'lat': (['y', 'x'], lat_2d),
+            'lon': (['y', 'x'], lon_2d),
+        }
+    )
+    if units:
+        ds[varname].attrs['units'] = units
+    ds.attrs['crs_grid'] = 'EPSG:31467'
+    ds.attrs['crs_geographic'] = 'EPSG:4326'
+    ds.attrs['description'] = 'HYRAS 1km gridded climate data (Germany)'
+    return ds
+
+
 def find_nearest_xy(ds, target_lat, target_lon):
     """
     Given a dataset with curvilinear grid, find the nearest x,y index.
@@ -324,7 +444,7 @@ class HYRASmirror:
         # keep your fetch behavior (calls fetch_dwd)
         fetch_dwd(self.cfg, variable)
 
-        provider = self.cfg.dataset.lower()
+        provider = self.cfg.dataset.upper()
         param_info = self.cfg.dsinfo[provider]['variables'][variable]
         prefix = param_info["prefix"]
         version = param_info["version"]
@@ -337,37 +457,22 @@ class HYRASmirror:
         end_month = end_date.month
 
         files = []
-        var_dir = os.path.join(self.cfg.data_dir, provider, variable.upper())
+        var_dir = os.path.join(self.cfg.data_dir, provider.upper(), variable.upper())
         
         # Determine if this is a newer dataset (uses .tgz/.asc with YYYYMM naming)
         is_new_format = prefix in ["grids_germany_daily_evapo_p", "grids_germany_daily_soil_moist", "grids_germany_daily_soil_temperature_5cm"]
 
         if is_new_format:
-            # Handle new format: .asc files or extracted .nc files from .tgz archives with YYYYMM naming
-            import glob
-            
-            # First, try to find .asc files directly (daily ASCII raster format)
+            # Return .tgz paths directly — members are read in-memory at load time
             for year in range(start_year, end_year + 1):
                 start_m = start_month if year == start_year else 1
                 end_m = end_month if year == end_year else 12
                 
                 for month in range(start_m, end_m + 1):
-                    # Look for .asc files (format: prefix_YYYYMMDD.asc)
-                    pattern = f"{prefix}_{year}{month:02d}*.asc"
-                    asc_files = sorted(glob.glob(os.path.join(var_dir, pattern)))
-                    files.extend(asc_files)
-                    
-                    # Also look for extracted .nc files from .tgz archives
-                    pattern_nc = f"{prefix}_{year}{month:02d}*.nc"
-                    nc_files = sorted(glob.glob(os.path.join(var_dir, pattern_nc)))
-                    files.extend(nc_files)
-            
-            # If no direct files found, look in subdirectories (common in .tgz extractions)
-            if not files:
-                asc_files = sorted(glob.glob(os.path.join(var_dir, "**/*.asc"), recursive=True))
-                nc_files = sorted(glob.glob(os.path.join(var_dir, "**/*.nc"), recursive=True))
-                files.extend(asc_files)
-                files.extend(nc_files)
+                    tgz_name = f"{prefix}_{year}{month:02d}.tgz"
+                    tgz_path = os.path.join(var_dir, tgz_name)
+                    if os.path.exists(tgz_path):
+                        files.append(tgz_path)
         else:
             # Handle old format: *_{year}_{version}_de.nc
             import glob
@@ -510,15 +615,6 @@ class HYRASmirror:
     # Core loading logic
     # --------------------------
 
-    def compute_point_indices(self, sample_file, lon, lat):
-        ds = xr.open_dataset(sample_file)
-        x = ds['lon'].values
-        y = ds['lat'].values
-
-        ix = np.abs(x - lon).argmin()
-        iy = np.abs(y - lat).argmin()
-        ds.close()
-        return ix, iy
     def _apply_time_subset(self, ds):
         start = getattr(self.cfg.time_range, "start_date", None)
         end = getattr(self.cfg.time_range, "end_date", None)
@@ -549,62 +645,38 @@ class HYRASmirror:
             raise FileNotFoundError(f"No files found for variable {variable}")
 
         mode = self._extract_mode
-        
-        # Check if files are ASCII raster format (.asc)
-        is_asc_format = any(f.endswith('.asc') for f in files)
-        
-        # -------------------------
-        # Handle ASCII raster (.asc) files
-        # -------------------------
-        if is_asc_format:
-            # Filter to only .asc files (exclude any .nc files in the list)
-            asc_files = [f for f in files if f.endswith('.asc')]
-            
-            # Get units from config if available
-            provider = self.cfg.dataset.lower()
+
+        # Check if files are .tgz archives (read members in-memory)
+        is_tgz_format = any(f.endswith('.tgz') for f in files)
+        if is_tgz_format:
+            tgz_files = [f for f in files if f.endswith('.tgz')]
+            provider = self.cfg.dataset.upper()
             units = None
             try:
                 param_info = self.cfg.dsinfo[provider]['variables'].get(variable, {})
                 units = param_info.get('units')
             except (AttributeError, KeyError, TypeError):
                 pass
-            
-            # Load all .asc files as a time series
-            dset = read_asc_timeseries(asc_files, varname=variable, units=units)
-            
-            # Preserve dataset attributes before extraction (xarray indexing removes them)
+            dset = read_asc_timeseries_from_tgz(tgz_files, varname=variable, units=units)
+            # Apply same spatial extraction as the .asc branch below
             original_attrs = dset.attrs.copy()
-            
-            # Apply extraction mode
             if mode == "point":
-                lon, lat = self._extract_params
-                # Find nearest x, y indices
-                ix = np.abs(dset['x'].values - lon).argmin()
-                iy = np.abs(dset['y'].values - lat).argmin()
-                # Extract point
+                lon_pt, lat_pt = self._extract_params
+                ix = np.abs(dset['x'].values - lon_pt).argmin()
+                iy = np.abs(dset['y'].values - lat_pt).argmin()
                 dset = dset.isel(x=ix, y=iy)
-                
             elif mode == "box":
                 box = self._extract_params
-                lat_min, lat_max = box['lat_min'], box['lat_max']
-                lon_min, lon_max = box['lon_min'], box['lon_max']
-                # For ASCII data with curvilinear lat/lon, use 2D coordinate indexing
-                # Find y,x indices based on geographic lat/lon coordinates
                 lat_2d = dset['lat'].values
                 lon_2d = dset['lon'].values
-                mask = (lat_2d >= lat_min) & (lat_2d <= lat_max) & (lon_2d >= lon_min) & (lon_2d <= lon_max)
-                # Convert mask to DataArray with proper dimensions
-                mask_da = xr.DataArray(mask, dims=('y', 'x'), coords={'y': dset['y'], 'x': dset['x']})
+                mask = (
+                    (lat_2d >= box['lat_min']) & (lat_2d <= box['lat_max']) &
+                    (lon_2d >= box['lon_min']) & (lon_2d <= box['lon_max'])
+                )
+                mask_da = xr.DataArray(mask, dims=('y', 'x'),
+                                       coords={'y': dset['y'], 'x': dset['x']})
                 dset = dset.where(mask_da, drop=True)
-                
-            elif mode == "shapefile":
-                # For shapefile mode with .asc, would need to convert to lat/lon mask
-                pass
-            
-            # Restore dataset attributes after extraction
             dset.attrs.update(original_attrs)
-            
-            # Apply time subsetting from config
             start_date = getattr(self.cfg.time_range, "start_date", None)
             end_date = getattr(self.cfg.time_range, "end_date", None)
             if start_date or end_date:
@@ -612,7 +684,6 @@ class HYRASmirror:
                     dset = dset.sel(time=slice(start_date, end_date))
                 except Exception as e:
                     print(f"⚠️  Time subsetting failed: {e}")
-            
             self.dataset = dset
             return dset
 

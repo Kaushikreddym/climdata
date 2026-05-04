@@ -1,4 +1,4 @@
-dwd:
+DWD:
   # Explore module metadata
   explore:
     full_name: Deutscher Wetterdienst (German Weather Service)
@@ -120,7 +120,7 @@ dwd:
 #     hurs:
 #       name: hurs
 #       unit: "%"
-mswx:
+MSWX:
   # Explore module metadata
   explore:
     full_name: Multi-Source Weather – GloH2O
@@ -177,7 +177,7 @@ mswx:
       long_name: Wind Speed
       basd_unit: m s-1
       folder_id: 1ZaL1-1SitnlovSdnYdbNecC0dnlN3Qou
-hyras:
+HYRAS:
   # Explore module metadata
   explore:
     full_name: Hydrologische Rasterdaten (DWD Gridded)
@@ -241,7 +241,7 @@ hyras:
       prefix: "grids_germany_daily_soil_temperature_5cm"
       version: "v01"
       units: degC
-cmip:
+CMIP:
   # Explore module metadata
   explore:
     full_name: CMIP6 via Pangeo Cloud Catalog
@@ -293,7 +293,7 @@ cmip:
       long_name: Precipitation
       units: kg m-2 s-1
       basd_unit: kg m-2 s-1
-power:
+POWER:
   # Explore module metadata
   explore:
     full_name: NASA POWER Agroclimatology
@@ -444,7 +444,7 @@ w5e5:
       units: "1"
       basd_unit: kg kg-1
   Description: "Observed atmospheric climate. Version 2.0 of the W5E5 dataset covers the entire globe at 0.5° horizontal and daily temporal resolution from 1979 to 2019. The W5E5 dataset was compiled to support the bias adjustment of climate input data for the impact assessments carried out in phase 3b of the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."
-cmip_w5e5:
+CMIP_W5E5:
   # Explore module metadata
   explore:
     full_name: CMIP6 corrected based on W5E5 (ISIMIP3BASD)
@@ -518,7 +518,7 @@ cmip_w5e5:
       units: Pa
       basd_unit: Pa
   Description: "CMIP6 climate projections in W5E5 format from ISIMIP3b. Provides daily climate data at 0.5° resolution for various CMIP6 models and scenarios (historical, ssp126, ssp245, ssp370, ssp585). Data is bias-adjusted to W5E5 observations and used for climate impact assessments in the Inter-Sectoral Impact Model Intercomparison Project (ISIMIP3b)."
-nexgddp:
+NEXGDDP:
   # Explore module metadata
   explore:
     full_name: NASA Earth Exchange Global Daily Downscaled Projections
@@ -587,7 +587,7 @@ nexgddp:
       basd_unit: W m-2
   Description: "NASA Earth Exchange Global Daily Downscaled Projections (NEX-GDDP-CMIP6). Provides statistically downscaled CMIP6 climate projections at 0.25° resolution (~25km) globally. Available for multiple CMIP6 models and scenarios (historical: 1950-2014, ssp126, ssp245, ssp370, ssp585: 2015-2100) with daily temporal resolution."
 
-hostrada:
+HOSTRADA:
   # Explore module metadata
   explore:
     full_name: Hourly Station-based and Raster-based Terrestrial Atmospheric Dataset (HOSTRADA)
@@ -613,3 +613,66 @@ hostrada:
       prefix: "rsds"
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/hostrada/radiation_downwelling/"
       version: "v1-0"
+
+AGRI_ISIMIP:
+  # Explore module metadata
+  explore:
+    full_name: Agricultural Impact Model Outputs from ISIMIP
+    type: Simulated (Impact Model)
+    coverage: Global
+    resolution: 0.5°
+    frequency: daily
+    time_range: varies by experiment (1986-2100)
+    source: ISIMIP repository
+    notes: >
+      Agricultural model outputs driven by CMIP6 climate projections.
+      Available for multiple crop models, ESMs, experiments, and irrigation conditions.
+      Includes yields, biomass, plant year, and other agricultural metrics.
+
+  # Data access configuration
+  type: gridded
+  subsetting: None
+  params:
+    simulation_round: ISIMIP3b
+    product: OutputData
+    sector: agriculture
+  
+  # Query configurations (combinations to fetch)
+  query_configs:
+    - impact_model: SIMPLACE-LINTUL5
+      climate_forcing: mpi-esm1-2-hr
+      period: historical
+      variable: yield
+  variables:
+    yield:
+      name: yield
+      long_name: Crop yield
+      units: t/ha
+      description: Crop yield in tonnes per hectare
+    biom:
+      name: biom
+      long_name: Biomass
+      units: t/ha
+      description: Total biomass in tonnes per hectare
+    plantyear:
+      name: plantyear
+      long_name: Plant year indicator
+      units: '1'
+      description: Plant year indicator for perennial crops
+    lai:
+      name: lai
+      long_name: Leaf Area Index
+      units: m2/m2
+      description: Leaf Area Index
+    evap:
+      name: evap
+      long_name: Evapotranspiration
+      units: mm
+      description: Total evapotranspiration
+    aet:
+      name: aet
+      long_name: Actual Evapotranspiration
+      units: mm
+      description: Actual evapotranspiration
+  
+  Description: "ISIMIP3b agricultural model outputs. Provides crop model outputs (yields, biomass, etc.) driven by CMIP6 climate projections for multiple scenarios, irrigation conditions, and crop types."
