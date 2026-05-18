@@ -16,7 +16,7 @@ from climdata.utils.config import _ensure_local_conf
 from climdata.extremes.indices import extreme_index
 from climdata.impute.impute_xarray import Imputer
     
-from hydra import initialize, compose
+from hydra import initialize_config_dir, compose
 from hydra.core.global_hydra import GlobalHydra
 from omegaconf import DictConfig
 from shapely.geometry import shape, Polygon, Point
@@ -400,18 +400,10 @@ class ClimateExtractor:
             DictConfig: Composed Hydra configuration object stored on ``self.cfg``.
         """
         overrides = overrides or []
-        conf_dir = _ensure_local_conf()
-        rel_conf_dir = os.path.relpath(conf_dir, os.path.dirname(__file__))
+        conf_dir_abs = os.path.abspath(_ensure_local_conf())
 
-        if not GlobalHydra.instance().is_initialized():
-            hydra_ctx = initialize(config_path=rel_conf_dir, version_base=None)
-        else:
-            hydra_ctx = None
-
-        if hydra_ctx:
-            with hydra_ctx:
-                self.cfg = compose(config_name=self.cfg_name, overrides=overrides)
-        else:
+        GlobalHydra.instance().clear()
+        with initialize_config_dir(config_dir=conf_dir_abs, version_base=None):
             self.cfg = compose(config_name=self.cfg_name, overrides=overrides)
         return self.cfg
 

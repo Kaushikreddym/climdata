@@ -32,6 +32,9 @@ wheels/
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# Track our packaging spec and script
+!climdata_gui.spec
+!build_mac.sh
 
 # Installer logs
 pip-log.txt
@@ -113,3 +116,4 @@ outputs
 
 usecase/*
 # climdata_gui
+climdata_gui/conf/

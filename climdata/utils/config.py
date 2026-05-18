@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 from pathlib import Path
 from hydra import initialize_config_dir, compose
@@ -14,6 +15,18 @@ def _ensure_local_conf(package="climdata", local_dir="conf"):
     Raises:
         FileNotFoundError: If conf directory cannot be found in package.
     """
+    # PyInstaller bundle: conf is already extracted under _MEIPASS/climdata/conf.
+    # os.getcwd() inside a Finder-launched .app is '/' (read-only), so never
+    # attempt a copy there.
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        bundled = Path(sys._MEIPASS) / package / "conf"
+        if bundled.exists():
+            return str(bundled)
+        raise FileNotFoundError(
+            f"Bundled conf not found at {bundled}. "
+            "Ensure collect_all('climdata') is in the .spec file."
+        )
+
     local_dir_path = Path(os.getcwd()) / local_dir
     if not local_dir_path.exists():
         conf_src = resources.files(package).joinpath("conf")

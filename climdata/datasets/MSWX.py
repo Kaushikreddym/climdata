@@ -7,8 +7,12 @@ from datetime import datetime, timedelta
 import xarray as xr
 from omegaconf import DictConfig
 
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
+try:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    _GOOGLE_AVAILABLE = True
+except ImportError:
+    _GOOGLE_AVAILABLE = False
 
 from climdata.utils.utils_download import list_drive_files, download_drive_file
 from shapely.geometry import mapping
@@ -18,6 +22,11 @@ warnings.filterwarnings("ignore", category=Warning)
 
 class MSWXmirror:
     def __init__(self, cfg: DictConfig):
+        if not _GOOGLE_AVAILABLE:
+            raise ImportError(
+                "MSWX requires google-api-python-client and google-auth. "
+                "Install with: pip install google-api-python-client google-auth"
+            )
         self.cfg = cfg
         self.dataset = None
         self.variables = cfg.variables

@@ -38,11 +38,11 @@ class _YamlHighlighter(QSyntaxHighlighter):
                 fmt.setFontWeight(700)
             self._rules.append((QRegularExpression(pattern), fmt))
 
-        rule(r"#[^\n]*", "#6a737d")                          # comments
-        rule(r"(?m)^\s*[\w\.\-]+(?=\s*:)", "#005cc5", True)  # keys
-        rule(r"(?<=:\s)['\"]?[^#\n]+", "#22863a")             # values
-        rule(r"(?m)^\s*-\s", "#e36209")                       # list markers
-        rule(r"(?m)^---", "#6f42c1", True)                    # doc separator
+        rule(r"#[^\n]*", "#6272a4")                          # comments  (slate-blue)
+        rule(r"(?m)^\s*[\w\.\-]+(?=\s*:)", "#79b8ff", True)  # keys       (bright blue)
+        rule(r"(?<=:\s)['\"]?[^#\n]+", "#9ecbff")             # values     (sky blue)
+        rule(r"(?m)^\s*-\s", "#f97583")                       # list marks (rose)
+        rule(r"(?m)^---", "#b392f0", True)                    # separator  (purple)
 
     def highlightBlock(self, text: str) -> None:
         for pattern, fmt in self._rules:

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <title>climdata dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="leaflet.js"></script>
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+</head>
+<body>
+  <!-- Full-screen map -->
+  <div id="map"></div>
+
+  <!-- ── Top navigation bar ─────────────────────────────────────────── -->
+  <div id="toolbar" class="toolbar">
+    <span class="tb-brand">⬡ climdata</span>
+    <div class="tb-sep"></div>
+    <nav class="tab-bar" id="tab-bar">
+      <button class="tab-btn active" data-tab="home">🏠 Home</button>
+      <button class="tab-btn" data-tab="download">⬇ Download</button>
+      <button class="tab-btn" data-tab="basd">🔧 BASD</button>
+      <button class="tab-btn" data-tab="comparison">⚖ Comparison</button>
+    </nav>
+    <div class="tb-flex-gap"></div>
+    <button id="themeToggle" class="tb-icon-btn" title="Toggle theme">🌓</button>
+  </div>
+
+  <!-- ── Left Sidebar ──────────────────────────────────────────────── -->
+  <aside id="sidebar" class="sidebar">
+
+    <div class="sidebar-header">
+      <span class="sidebar-section-label">Layers</span>
+    </div>
+
+    <!-- Overlay card -->
+    <div class="card">
+      <div class="card-header" data-card="overlay">
+        <span class="card-icon">🗺</span>
+        <span class="card-title">Overlay</span>
+        <span class="card-chevron">▾</span>
+      </div>
+      <div class="card-body" id="body-overlay">
+
+        <div id="no-data-msg" class="empty-state">
+          Run a pipeline to<br>load raster data
+        </div>
+
+        <div id="overlay-controls" style="display:none">
+
+          <div class="field-group">
+            <label class="field-label">Variable</label>
+            <select id="oc-var" class="field-select"></select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Colormap</label>
+            <select id="oc-cmap" class="field-select">
+              <option value="RdYlBu_r">RdYlBu_r</option>
+              <option value="viridis">viridis</option>
+              <option value="plasma">plasma</option>
+              <option value="RdBu_r">RdBu_r</option>
+              <option value="YlOrRd">YlOrRd</option>
+              <option value="Blues">Blues</option>
+              <option value="BrBG">BrBG</option>
+              <option value="coolwarm">coolwarm</option>
+              <option value="Spectral_r">Spectral_r</option>
+              <option value="hot">hot</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">
+              Opacity
+              <span id="opacity-badge" class="field-badge">0.75</span>
+            </label>
+            <input type="range" id="oc-opacity" class="slider"
+                   min="0" max="1" step="0.05" value="0.75">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Color scale</label>
+            <div class="minmax-row">
+              <input type="number" id="oc-vmin" class="field-input" step="any" placeholder="auto">
+              <span class="minmax-sep">–</span>
+              <input type="number" id="oc-vmax" class="field-input" step="any" placeholder="auto">
+            </div>
+          </div>
+
+          <div id="colorbar-container" class="colorbar-container">
+            <img id="oc-colorbar-img" src="" alt="" style="display:none">
+          </div>
+
+        </div><!-- /overlay-controls -->
+      </div><!-- /card-body overlay -->
+    </div><!-- /card -->
+
+    <!-- Time card (placeholder) -->
+    <div class="card">
+      <div class="card-header" data-card="time">
+        <span class="card-icon">⏱</span>
+        <span class="card-title">Time</span>
+        <span class="card-chevron">▾</span>
+      </div>
+      <div class="card-body" id="body-time">
+        <div class="empty-state">Time animation<br>coming soon</div>
+        <input type="range" id="time-slider" class="slider"
+               min="0" max="100" value="0" disabled style="margin-top:8px">
+        <div class="time-label-row">
+          <span id="time-display" class="time-label">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Basemap card -->
+    <div class="card">
+      <div class="card-header" data-card="basemap">
+        <span class="card-icon">🌍</span>
+        <span class="card-title">Basemap</span>
+        <span class="card-chevron">▾</span>
+      </div>
+      <div class="card-body" id="body-basemap">
+        <div class="basemap-grid">
+          <button class="basemap-btn active" data-basemap="osm">OSM Light</button>
+          <button class="basemap-btn" data-basemap="carto-dark">Dark Matter</button>
+          <button class="basemap-btn" data-basemap="carto-light">Carto Light</button>
+          <button class="basemap-btn" data-basemap="esri">ESRI Topo</button>
+        </div>
+      </div>
+    </div>
+
+  </aside><!-- /sidebar -->
+
+  <!-- Sidebar collapse toggle -->
+  <button id="sidebarToggle" class="sidebar-toggle" title="Toggle sidebar">◀</button>
+
+  <!-- Floating top-right controls (AOI mode) -->
+  <div id="map-controls" class="map-controls">
+    <button id="modeBtn" class="ctrl-pill" data-active="false">⬜ Box</button>
+    <button id="clearBtn" class="ctrl-pill danger">✕ Clear</button>
+  </div>
+
+  <!-- Floating coordinate display (bottom-left, above attribution) -->
+  <div id="coord-display" class="coord-pill">Click map to select a point</div>
+
+  <!-- ── Home / README panel ──────────────────────────────────────── -->
+  <div id="panel-home" class="tab-panel">
+    <div class="home-content">
+
+      <header class="home-hero">
+        <div class="home-logo">⬡</div>
+        <h1 class="home-title">climdata</h1>
+        <p class="home-tagline">A unified interface for climate data extraction, bias adjustment &amp; downscaling, extreme-index computation, and visualisation.</p>
+        <div class="home-badges">
+          <span class="home-badge">Python 3.11+</span>
+          <span class="home-badge">xarray</span>
+          <span class="home-badge">xclim</span>
+          <span class="home-badge">conda-forge</span>
+          <span class="home-badge">MIT License</span>
+        </div>
+      </header>
+
+      <div class="home-body">
+
+        <section class="home-section">
+          <h2 class="home-section-title">✨ Key Features</h2>
+          <ul class="home-feature-list">
+            <li>Provider-agnostic extraction — MSWX, CMIP, POWER, DWD, HYRAS, ERA5, W5E5 and more</li>
+            <li>Point, region, and shapefile extraction modes with curvilinear grid support</li>
+            <li>Unit normalisation via <code>xclim</code></li>
+            <li>Extreme climate indices — Tx10p, Tn90p, CDD, WSDI, …</li>
+            <li><code>xarray.Dataset</code> → long-form <code>pandas.DataFrame</code> with one call</li>
+            <li>Bias Adjustment &amp; Statistical Downscaling (BCSD, QDM, DQM, QM)</li>
+            <li>Fully reproducible runs via Hydra configuration</li>
+          </ul>
+        </section>
+
+        <section class="home-section">
+          <h2 class="home-section-title">⚡ Quick Install</h2>
+          <pre class="home-code">conda create -n climdata python=3.11 -y
+conda activate climdata
+pip install climdata</pre>
+          <p class="home-code-note">Or from source: <code>git clone &lt;repo&gt; &amp;&amp; pip install -e .</code></p>
+        </section>
+
+        <section class="home-section">
+          <h2 class="home-section-title">🚀 Quick Example</h2>
+          <pre class="home-code">from climdata import ClimData
+
+extractor = ClimData(overrides=[
+    "dataset=mswx",
+    "lat=52.5",
+    "lon=13.4",
+    "time_range.start_date=2014-01-01",
+    "time_range.end_date=2014-12-31",
+    "variables=[tasmin,tasmax,pr]",
+    "data_dir=/path/to/data",
+])
+
+ds  = extractor.extract()           # returns xarray.Dataset
+df  = extractor.to_dataframe(ds)    # long-form DataFrame
+extractor.to_csv(df)</pre>
+        </section>
+
+        <section class="home-section">
+          <h2 class="home-section-title">🔁 Workflow Runner</h2>
+          <pre class="home-code">result = extractor.run_workflow(
+    actions=["extract", "calc_index", "to_dataframe", "to_csv"])</pre>
+          <p class="home-code-note"><code>WorkflowResult</code> contains produced datasets, dataframes, and output filenames.</p>
+        </section>
+
+        <section class="home-section">
+          <h2 class="home-section-title">🗂 Getting Started in this App</h2>
+          <div class="home-steps">
+            <div class="home-step">
+              <span class="home-step-num">1</span>
+              <div class="home-step-body"><strong>Download</strong> — Select a point or bounding box on the map, configure a dataset and date range, then click Run. The raster overlay is rendered automatically after a successful pipeline run.</div>
+            </div>
+            <div class="home-step">
+              <span class="home-step-num">2</span>
+              <div class="home-step-body"><strong>BASD</strong> — Apply bias adjustment to model output using an observational reference. Choose a method (BCSD, QDM, DQM, or QM) and a target variable, then run.</div>
+            </div>
+            <div class="home-step">
+              <span class="home-step-num">3</span>
+              <div class="home-step-body"><strong>Comparison</strong> — Compare two climate datasets side-by-side across variables, time periods, or sources to visualise differences.</div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /home-body -->
+
+      <footer class="home-footer">
+        <span>climdata &copy; 2024 Kaushik Muduchuru</span>
+        <span class="home-footer-sep">&middot;</span>
+        <span>DOI: 10.5281/zenodo.19554926</span>
+        <span class="home-footer-sep">&middot;</span>
+        <span>MSWX data: CC BY-NC 4.0</span>
+      </footer>
+
+    </div><!-- /home-content -->
+  </div><!-- /panel-home -->
+
+  <!-- ── Download panel ─────────────────────────────────────────────── -->
+  <div id="panel-download" class="tab-panel">
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2 class="panel-title">⬇ Download</h2>
+        <p class="panel-subtitle">Configure and download climate datasets for your area of interest.</p>
+      </div>
+      <div class="panel-body">
+
+        <div class="panel-form">
+
+          <div class="form-section">
+            <div class="form-section-title">Dataset &amp; Format</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Dataset</label>
+                <select id="tb-dataset" class="field-select"></select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Output format</label>
+                <select id="tb-format" class="field-select">
+                  <option value="CSV">CSV</option>
+                  <option value="NetCDF">NetCDF</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Date Range</div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Start date</label>
+                <input type="date" id="tb-start" class="field-input" value="1989-01-01">
+              </div>
+              <div class="form-field">
+                <label class="form-label">End date</label>
+                <input type="date" id="tb-end" class="field-input" value="2020-12-31">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Output Directory</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Directory</label>
+                <div class="form-dir-row">
+                  <span id="tb-data-dir-display" class="form-dir-text" title="Current data directory">default</span>
+                  <button id="tb-dir-btn" class="tb-icon-btn" title="Browse data directory">📂</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="tb-adv-btn" class="tb-icon-btn form-adv-btn" title="Advanced config">⚙ Advanced</button>
+            <div class="form-actions-right">
+              <button id="tb-run-btn" class="tb-action-btn tb-run">▶ Run</button>
+              <button id="tb-plot-btn" class="tb-action-btn tb-plot" disabled>📊 Plot</button>
+            </div>
+          </div>
+
+        </div><!-- /panel-form -->
+
+        <div class="panel-info-box">
+          <div class="info-box-icon">📍</div>
+          <div class="info-box-title">Area of Interest</div>
+          <div class="info-box-body">Use the map on this tab to select a <strong>point</strong> or <strong>bounding box</strong> as your area of interest, then configure and run your download.</div>
+          <div id="dl-aoi-status" class="aoi-status">No AOI selected</div>
+        </div>
+
+      </div><!-- /panel-body -->
+    </div><!-- /panel-content -->
+  </div><!-- /panel-download -->
+
+  <!-- ── BASD panel ─────────────────────────────────────────────────── -->
+  <div id="panel-basd" class="tab-panel">
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2 class="panel-title">🔧 Bias Adjustment &amp; Statistical Downscaling</h2>
+        <p class="panel-subtitle">Correct systematic biases in climate model output using observational reference data.</p>
+      </div>
+      <div class="panel-body">
+
+        <div class="panel-form">
+
+          <div class="form-section">
+            <div class="form-section-title">Reference (Observations)</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Dataset</label>
+                <select id="basd-ref-dataset" class="field-select"></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Start</label>
+                <input type="date" id="basd-ref-start" class="field-input" value="1989-01-01">
+              </div>
+              <div class="form-field">
+                <label class="form-label">End</label>
+                <input type="date" id="basd-ref-end" class="field-input" value="2020-12-31">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Target (Model Output)</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Dataset</label>
+                <select id="basd-target-dataset" class="field-select"></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Start</label>
+                <input type="date" id="basd-target-start" class="field-input" value="2015-01-01">
+              </div>
+              <div class="form-field">
+                <label class="form-label">End</label>
+                <input type="date" id="basd-target-end" class="field-input" value="2100-12-31">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Method &amp; Variable</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Bias correction method</label>
+                <select id="basd-method" class="field-select">
+                  <option value="bcsd">BCSD — Bias Correction &amp; Spatial Disaggregation</option>
+                  <option value="qdm">QDM — Quantile Delta Mapping</option>
+                  <option value="dqm">DQM — Detrended Quantile Mapping</option>
+                  <option value="qm">QM — Quantile Mapping</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Variable</label>
+                <select id="basd-variable" class="field-select">
+                  <option value="tasmax">tasmax</option>
+                  <option value="tasmin">tasmin</option>
+                  <option value="pr">pr</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Output</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Output directory</label>
+                <div class="form-dir-row">
+                  <span id="basd-out-dir-display" class="form-dir-text">default</span>
+                  <button id="basd-out-dir-btn" class="tb-icon-btn" title="Browse">📂</button>
+                </div>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Format</label>
+                <select id="basd-format" class="field-select">
+                  <option value="NetCDF">NetCDF</option>
+                  <option value="CSV">CSV</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <div class="form-actions-right">
+              <button id="basd-run-btn" class="tb-action-btn tb-run">▶ Run BASD</button>
+            </div>
+          </div>
+
+        </div><!-- /panel-form -->
+
+        <div class="panel-info-box">
+          <div class="info-box-icon">ℹ️</div>
+          <div class="info-box-title">About BASD</div>
+          <div class="info-box-body">
+            Bias Adjustment &amp; Statistical Downscaling corrects systematic errors in climate model projections by comparing them to a historical observational reference.
+            <br><br>
+            Output is bias-corrected data at the spatial resolution of the reference dataset.
+          </div>
+        </div>
+
+      </div><!-- /panel-body -->
+    </div><!-- /panel-content -->
+  </div><!-- /panel-basd -->
+
+  <!-- ── Comparison panel ───────────────────────────────────────────── -->
+  <div id="panel-comparison" class="tab-panel">
+    <div class="panel-content">
+      <div class="panel-header">
+        <h2 class="panel-title">⚖ Comparison</h2>
+        <p class="panel-subtitle">Compare two climate datasets side-by-side across variables, periods, or sources.</p>
+      </div>
+      <div class="panel-body">
+
+        <div class="panel-form">
+
+          <div class="form-section">
+            <div class="form-section-title">Dataset A</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Source</label>
+                <select id="cmp-a-dataset" class="field-select"></select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Variable</label>
+                <select id="cmp-a-var" class="field-select">
+                  <option>tasmax</option><option>tasmin</option><option>pr</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Start</label>
+                <input type="date" id="cmp-a-start" class="field-input" value="1989-01-01">
+              </div>
+              <div class="form-field">
+                <label class="form-label">End</label>
+                <input type="date" id="cmp-a-end" class="field-input" value="2000-12-31">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Dataset B</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Source</label>
+                <select id="cmp-b-dataset" class="field-select"></select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Variable</label>
+                <select id="cmp-b-var" class="field-select">
+                  <option>tasmax</option><option>tasmin</option><option>pr</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label">Start</label>
+                <input type="date" id="cmp-b-start" class="field-input" value="2001-01-01">
+              </div>
+              <div class="form-field">
+                <label class="form-label">End</label>
+                <input type="date" id="cmp-b-end" class="field-input" value="2020-12-31">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <div class="form-actions-right">
+              <button id="cmp-run-btn" class="tb-action-btn tb-run">📊 Compare</button>
+            </div>
+          </div>
+
+        </div><!-- /panel-form -->
+
+        <div class="panel-preview panel-preview-placeholder">
+          <div class="preview-placeholder">
+            <div class="preview-icon">⚖️</div>
+            <div class="preview-label">Configure both datasets and click Compare to view results.</div>
+          </div>
+        </div>
+
+      </div><!-- /panel-body -->
+    </div><!-- /panel-content -->
+  </div><!-- /panel-comparison -->
+
+  <!-- ── Log panel ───────────────────────────────────────────────── -->
+  <div id="log-panel" class="log-panel">
+    <div id="log-header" class="log-header">
+      <span id="log-indicator" class="log-indicator">●</span>
+      <span class="log-title">Log</span>
+      <button id="log-clear-btn" class="tb-icon-btn log-btn" title="Clear">⊗</button>
+      <div class="log-flex-gap"></div>
+      <button id="log-toggle-btn" class="tb-icon-btn log-btn" title="Expand / collapse">▾</button>
+    </div>
+    <div id="log-body" class="log-body">
+      <div id="log-output" class="log-output"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,8 +1,10 @@
-"""Leaflet-backed map widget that emits ``(lat, lon)`` on click."""
+"""Leaflet-backed map widget — thin QWebEngineView container for the web dashboard."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, QUrl, Qt, Signal, Slot
+import json
+
+from PySide6.QtCore import QObject, QTimer, QUrl, Qt, Signal, Slot
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -12,7 +14,7 @@ from utils.paths import resource_path
 
 
 class _DebugPage(QWebEnginePage):
-    """QWebEnginePage that forwards JS console messages to Python stdout."""
+    """Forwards JS console messages to Python stdout."""
 
     def javaScriptConsoleMessage(self, level, message, line_number, source_id):
         level_str = {
@@ -24,31 +26,91 @@ class _DebugPage(QWebEnginePage):
 
 
 class _Bridge(QObject):
-    """Object exposed to JavaScript via QWebChannel."""
+    """QObject registered with QWebChannel — all signals/slots are exposed to JS."""
 
-    point_selected   = Signal(float, float)
-    box_selected     = Signal(float, float, float, float)  # lat_min, lat_max, lon_min, lon_max
-    render_requested = Signal(str, str, str, str)          # var_name, colormap, vmin_str, vmax_str
+    # ── Python → JS signals (QWebChannel transmits these to JS) ──────
+    log_message       = Signal(str)
+    run_state_changed = Signal(bool)   # True = running
+    plot_enabled      = Signal(bool)   # True = result ready
+    data_dir_chosen   = Signal(str)    # path from QFileDialog
 
+    # ── Relay signals (bubble up through MapWidget to MainWindow) ─────
+    point_selected            = Signal(float, float)
+    box_selected              = Signal(float, float, float, float)
+    render_requested          = Signal(str, str, str, str)
+    dataset_changed           = Signal(str)
+    dates_changed             = Signal(str, str)   # ISO-date strings
+    format_changed            = Signal(str)
+    run_clicked               = Signal()
+    plot_clicked              = Signal()
+    advanced_clicked          = Signal()
+    data_dir_browse_requested = Signal()
+    page_ready                = Signal()
+
+    # ── Slots: called by JS via QWebChannel ───────────────────────────
     @Slot(float, float)
     def on_point_selected(self, lat: float, lon: float) -> None:
         self.point_selected.emit(lat, lon)
 
     @Slot(float, float, float, float)
-    def on_box_selected(self, lat_min: float, lat_max: float, lon_min: float, lon_max: float) -> None:
+    def on_box_selected(self, lat_min: float, lat_max: float,
+                        lon_min: float, lon_max: float) -> None:
         self.box_selected.emit(lat_min, lat_max, lon_min, lon_max)
 
     @Slot(str, str, str, str)
-    def on_render_request(self, var_name: str, colormap: str, vmin_str: str, vmax_str: str) -> None:
+    def on_render_request(self, var_name: str, colormap: str,
+                          vmin_str: str, vmax_str: str) -> None:
         self.render_requested.emit(var_name, colormap, vmin_str, vmax_str)
+
+    @Slot(str)
+    def on_dataset_changed(self, dataset: str) -> None:
+        self.dataset_changed.emit(dataset)
+
+    @Slot(str, str)
+    def on_dates_changed(self, start: str, end: str) -> None:
+        self.dates_changed.emit(start, end)
+
+    @Slot(str)
+    def on_format_changed(self, fmt: str) -> None:
+        self.format_changed.emit(fmt)
+
+    @Slot()
+    def on_run_clicked(self) -> None:
+        self.run_clicked.emit()
+
+    @Slot()
+    def on_plot_clicked(self) -> None:
+        self.plot_clicked.emit()
+
+    @Slot()
+    def on_advanced_clicked(self) -> None:
+        self.advanced_clicked.emit()
+
+    @Slot()
+    def on_data_dir_browse(self) -> None:
+        self.data_dir_browse_requested.emit()
+
+    @Slot()
+    def on_page_ready(self) -> None:
+        # Defer out of the QWebChannel callback to avoid re-entrancy
+        QTimer.singleShot(0, self.page_ready.emit)
 
 
 class MapWidget(QWidget):
-    """Embedded Leaflet map with Qt <-> JS bridge."""
+    """Full-screen web dashboard container with bidirectional Qt ↔ JS bridge."""
 
-    point_selected   = Signal(float, float)
-    box_selected     = Signal(float, float, float, float)  # lat_min, lat_max, lon_min, lon_max
-    render_requested = Signal(str, str, str, str)          # var_name, colormap, vmin_str, vmax_str
+    # Surface all bridge signals for MainWindow wiring
+    point_selected            = Signal(float, float)
+    box_selected              = Signal(float, float, float, float)
+    render_requested          = Signal(str, str, str, str)
+    dataset_changed           = Signal(str)
+    dates_changed             = Signal(str, str)
+    format_changed            = Signal(str)
+    run_clicked               = Signal()
+    plot_clicked              = Signal()
+    advanced_clicked          = Signal()
+    data_dir_browse_requested = Signal()
+    page_ready                = Signal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -56,16 +118,24 @@ class MapWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._view = QWebEngineView(self)
-        # Use a custom page that mirrors JS console output to Python stdout.
         self._page = _DebugPage(self._view)
         self._view.setPage(self._page)
         layout.addWidget(self._view)
 
         self._channel = QWebChannel(self._page)
         self._bridge = _Bridge()
-        self._bridge.point_selected.connect(self.point_selected.emit)
-        self._bridge.box_selected.connect(self.box_selected.emit)
-        self._bridge.render_requested.connect(self.render_requested.emit)
+
+        # Relay every bridge signal up to MapWidget
+        for sig_name in (
+            "point_selected", "box_selected", "render_requested",
+            "dataset_changed", "dates_changed", "format_changed",
+            "run_clicked", "plot_clicked", "advanced_clicked",
+            "data_dir_browse_requested", "page_ready",
+        ):
+            getattr(self._bridge, sig_name).connect(
+                getattr(self, sig_name).emit
+            )
+
         self._channel.registerObject("bridge", self._bridge)
         self._page.setWebChannel(self._channel)
 
@@ -73,23 +143,48 @@ class MapWidget(QWidget):
         settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
         settings.setAttribute(QWebEngineSettings.WebAttribute.TouchEventsApiEnabled, True)
-
         self._view.setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
 
-        html_path = resource_path("resources/html/map.html")
+        html_path = resource_path("resources/html/index.html")
         self._view.load(QUrl.fromLocalFile(html_path))
 
+    # ── Python → JS helpers ───────────────────────────────────────────
+
     def init_overlay_ui(self, config: dict) -> None:
-        import json
-        js = f"initOverlayUI({json.dumps(config)});"
-        print(f"[PY] init_overlay_ui: vars={config.get('vars')} bounds=({config.get('lat_min')},{config.get('lon_min')})->({config.get('lat_max')},{config.get('lon_max')})", flush=True)
-        self._page.runJavaScript(js)
+        self._page.runJavaScript(f"initOverlayUI({json.dumps(config)});")
 
     def update_overlay(self, payload: dict) -> None:
-        import json
-        b64_len = len(payload.get("b64", ""))
-        print(f"[PY] update_overlay: b64_len={b64_len}", flush=True)
         self._page.runJavaScript(f"updateOverlay({json.dumps(payload)});")
 
     def clear_overlay(self) -> None:
         self._page.runJavaScript("clearOverlays();")
+
+    def send_log(self, msg: str) -> None:
+        self._bridge.log_message.emit(msg)
+
+    def send_run_state(self, running: bool) -> None:
+        self._bridge.run_state_changed.emit(running)
+
+    def send_plot_enabled(self, enabled: bool) -> None:
+        self._bridge.plot_enabled.emit(enabled)
+
+    def send_data_dir(self, path: str) -> None:
+        self._bridge.data_dir_chosen.emit(path)
+
+    def dashboard_ready(self, datasets: list, dataset: str,
+                        start: str, end: str, data_dir: str) -> None:
+        """Push initial toolbar state to the web frontend after page_ready."""
+        payload = {
+            "datasets": datasets,
+            "dataset":  dataset,
+            "start":    start,
+            "end":      end,
+            "data_dir": data_dir,
+        }
+        self._page.runJavaScript(f"onDashboardReady({json.dumps(payload)});")
+
+    def sync_toolbar(self, dataset: str, start: str, end: str, data_dir: str) -> None:
+        """Sync toolbar controls to current Python state (e.g. after advanced dialog)."""
+        payload = {"dataset": dataset, "start": start, "end": end, "data_dir": data_dir}
+        self._page.runJavaScript(f"syncToolbar({json.dumps(payload)});")
+
