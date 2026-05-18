@@ -16,7 +16,11 @@
 
 import os
 import tempfile
-import cdsapi
+try:
+    import cdsapi
+    _CDSAPI_AVAILABLE = True
+except ImportError:
+    _CDSAPI_AVAILABLE = False
 import xarray as xr
 import datetime
 import json
@@ -45,6 +49,11 @@ class ERA5Mirror:
     """
 
     def __init__(self, base_path: str, fs: fsspec.AbstractFileSystem = None):
+        if not _CDSAPI_AVAILABLE:
+            raise ImportError(
+                "ERA5 requires cdsapi. "
+                "Install with: pip install cdsapi"
+            )
         # Get parameters
         self.base_path = base_path
         if fs is None:

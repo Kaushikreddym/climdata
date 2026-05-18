@@ -7,9 +7,12 @@ import pandas as pd
 import numpy as np
 from omegaconf import DictConfig
 
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload
+try:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaIoBaseDownload
+except ImportError:
+    pass
 
 warnings.filterwarnings("ignore", category=Warning)
 

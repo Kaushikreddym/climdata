@@ -1,4 +1,10 @@
-import intake
+try:
+    import intake
+    import intake_esm  # noqa: F401 — registers the esm driver with intake
+    _INTAKE_AVAILABLE = True
+except ImportError:
+    _INTAKE_AVAILABLE = False
+
 import xarray as xr
 import pandas as pd
 from omegaconf import DictConfig
@@ -95,6 +101,11 @@ class CMIPCloud:
 
 
     def __init__(self, cfg: DictConfig):
+        if not _INTAKE_AVAILABLE:
+            raise ImportError(
+                "CMIPCloud requires intake and intake-esm. "
+                "Install with: pip install intake intake-esm"
+            )
         # Directly read from flat config
         self.experiment_id = cfg.experiment_id
         self.source_id = cfg.source_id

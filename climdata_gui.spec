@@ -21,6 +21,22 @@ pyproj_datas,    pyproj_bins,    pyproj_hidden     = collect_all('pyproj')
 xclim_datas,     xclim_bins,     xclim_hidden      = collect_all('xclim')
 climdata_datas,  climdata_bins,  climdata_hidden   = collect_all('climdata')
 
+# ── Dataset-specific packages (namespace / plugin / data-file heavy) ───────
+# google-api-python-client + google-auth are namespace packages; PyInstaller's
+# static tracer cannot follow them without explicit collect_all.
+google_datas,       google_bins,       google_hidden       = collect_all('googleapiclient')
+# google.auth / google.oauth2 live in the same namespace; collect via submodules
+googleauth_datas,   googleauth_bins,   googleauth_hidden   = [], [], collect_submodules('google.auth')
+googleoauth_datas,  googleoauth_bins,  googleoauth_hidden  = [], [], collect_submodules('google.oauth2')
+
+intake_datas,       intake_bins,       intake_hidden       = collect_all('intake')
+intakeesm_datas,    intakeesm_bins,    intakeesm_hidden    = collect_all('intake_esm')
+wetterdienst_datas, wetterdienst_bins, wetterdienst_hidden = collect_all('wetterdienst')
+cdsapi_datas,       cdsapi_bins,       cdsapi_hidden       = collect_all('cdsapi')
+rasterio_datas,     rasterio_bins,     rasterio_hidden     = collect_all('rasterio')
+cfxarray_datas,     cfxarray_bins,     cfxarray_hidden     = collect_all('cf_xarray')
+yamale_datas,       yamale_bins,       yamale_hidden       = collect_all('yamale')
+
 a = Analysis(
     # Entry point — climdata_gui/main.py
     ['climdata_gui/main.py'],
@@ -32,7 +48,12 @@ a = Analysis(
 
     binaries=(
         hydra_bins + omegaconf_bins + mpl_bins +
-        cartopy_bins + pyproj_bins + xclim_bins + climdata_bins
+        cartopy_bins + pyproj_bins + xclim_bins + climdata_bins +
+        google_bins + googleauth_bins + googleoauth_bins +
+        intake_bins + intakeesm_bins +
+        wetterdienst_bins + cdsapi_bins +
+        rasterio_bins + cfxarray_bins +
+        yamale_bins
     ),
 
     datas=[
@@ -46,7 +67,12 @@ a = Analysis(
         # QSS theme loaded by app.py via resource_path("gui/styles/theme.qss")
         ('climdata_gui/gui/styles',  'gui/styles'),
     ] + hydra_datas + omegaconf_datas + mpl_datas
-      + cartopy_datas + pyproj_datas + xclim_datas + climdata_datas,
+      + cartopy_datas + pyproj_datas + xclim_datas + climdata_datas
+      + google_datas + googleauth_datas + googleoauth_datas
+      + intake_datas + intakeesm_datas
+      + wetterdienst_datas + cdsapi_datas
+      + rasterio_datas + cfxarray_datas
+      + yamale_datas,
 
     hiddenimports=[
         # ── PySide6 / QtWebEngine ──────────────────────────────────────────
@@ -94,9 +120,22 @@ a = Analysis(
         *collect_submodules('pint'),
         *collect_submodules('cdsapi'),
         *collect_submodules('aiohttp'),
+        *collect_submodules('rasterio'),
+        *collect_submodules('cf_xarray'),
+        *collect_submodules('intake'),
+        *collect_submodules('intake_esm'),
+        *collect_submodules('seaborn'),
+        *collect_submodules('sklearn'),
+        *collect_submodules('statsmodels'),
+        *collect_submodules('pyarrow'),
 
     ] + hydra_hidden + omegaconf_hidden + mpl_hidden
-      + cartopy_hidden + pyproj_hidden + xclim_hidden + climdata_hidden,
+      + cartopy_hidden + pyproj_hidden + xclim_hidden + climdata_hidden
+      + google_hidden + googleauth_hidden + googleoauth_hidden
+      + intake_hidden + intakeesm_hidden
+      + wetterdienst_hidden + cdsapi_hidden
+      + rasterio_hidden + cfxarray_hidden
+      + yamale_hidden,
 
     hookspath=[],
     hooksconfig={},

@@ -2,11 +2,20 @@ import os
 import pandas as pd
 import geopandas as gpd
 import hydra
-from wetterdienst import Settings
-from wetterdienst.provider.dwd.observation import DwdObservationRequest
+try:
+    from wetterdienst import Settings
+    from wetterdienst.provider.dwd.observation import DwdObservationRequest
+    _WETTERDIENST_AVAILABLE = True
+except ImportError:
+    _WETTERDIENST_AVAILABLE = False
 
 class DWDmirror:
     def __init__(self, cfg):
+        if not _WETTERDIENST_AVAILABLE:
+            raise ImportError(
+                "DWD requires wetterdienst. "
+                "Install with: pip install wetterdienst"
+            )
         self.cfg = cfg
         self.param_mapping = cfg.dsinfo
         self.start_date = cfg.time_range.start_date

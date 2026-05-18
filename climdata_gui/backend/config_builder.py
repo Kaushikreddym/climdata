@@ -58,6 +58,7 @@ def build_overrides(
 
     if data_dir:
         overrides.append(f"data_dir={data_dir}")
+        overrides.append(f"output.out_dir={data_dir}")
 
     if extra_overrides:
         overrides.extend(extra_overrides)
