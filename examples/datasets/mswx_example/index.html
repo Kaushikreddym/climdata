@@ -1994,7 +1994,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -2046,13 +2046,13 @@ logging.basicConfig(
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=26dfff37">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=26dfff37">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-3">
@@ -2067,29 +2067,109 @@ logging.basicConfig(
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">overrides</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"dataset=mswx"</span><span class="p">,</span>                             <span class="c1"># Select the MSWX dataset</span>
-    <span class="s2">"lat=52"</span><span class="p">,</span>                                   <span class="c1"># Target latitude</span>
-    <span class="s2">"lon=13"</span><span class="p">,</span>                                   <span class="c1"># Target longitude (Berlin, Germany)</span>
+    <span class="s2">"region=germany"</span><span class="p">,</span>
     <span class="s2">"time_range.start_date=1989-01-01"</span><span class="p">,</span>         <span class="c1"># Start date for data extraction</span>
     <span class="s2">"time_range.end_date=2024-12-31"</span><span class="p">,</span>           <span class="c1"># End date for data extraction</span>
-    <span class="s2">"variables=[tasmin,tasmax,pr]"</span><span class="p">,</span>             <span class="c1"># Variables to extract</span>
-    <span class="s2">"data_dir=./data"</span><span class="p">,</span>                          <span class="c1"># Local directory to store downloaded files</span>
-    <span class="s2">"dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json"</span><span class="p">,</span>  <span class="c1"># Path to service account key</span>
+    <span class="s2">"variables=[tasmin, tasmax, tas, pr]"</span><span class="p">,</span>             <span class="c1"># Variables to extract</span>
+    <span class="s2">"data_dir=/data01/FDS/muduchuru/Atmos/"</span><span class="p">,</span>                          <span class="c1"># Local directory to store downloaded files</span>
+    <span class="s2">"+dsinfo.mswx.params.google_service_account=/home/muduchuru/.climdata_conf/service.json"</span><span class="p">,</span>  <span class="c1"># Path to service account key</span>
 <span class="p">]</span>
 
 <span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">extract</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">overrides = [
     "dataset=mswx",                             # Select the MSWX dataset
-    "lat=52",                                   # Target latitude
-    "lon=13",                                   # Target longitude (Berlin, Germany)
+    "region=germany",
     "time_range.start_date=1989-01-01",         # Start date for data extraction
     "time_range.end_date=2024-12-31",           # End date for data extraction
-    "variables=[tasmin,tasmax,pr]",             # Variables to extract
-    "data_dir=./data",                          # Local directory to store downloaded files
-    "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",  # Path to service account key
+    "variables=[tasmin, tasmax, tas, pr]",             # Variables to extract
+    "data_dir=/data01/FDS/muduchuru/Atmos/",                          # Local directory to store downloaded files
+    "+dsinfo.mswx.params.google_service_account=/home/muduchuru/.climdata_conf/service.json",  # Path to service account key
 ]
 
-extractor = ClimData(overrides=overrides)</div>
+extractor = ClimData(overrides=overrides)
+ds = extractor.extract()</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>✅ All 13149 tasmin files already exist locally.
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>&lt;frozen importlib._bootstrap&gt;:241: RuntimeWarning: numpy.ndarray size changed, may indicate binary incompatibility. Expected 16 from C header, got 96 from PyObject
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyboardInterrupt</span>                         Traceback (most recent call last)
+Cell <span class="ansi-green-fg">In[2], line 12</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> overrides <span style="color: rgb(98,98,98)">=</span> [
+<span class="ansi-green-intense-fg ansi-bold">      2</span>     <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">dataset=mswx</span><span style="color: rgb(175,0,0)">"</span>,                             <span style="color: rgb(95,135,135)"># Select the MSWX dataset</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span>     <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">region=germany</span><span style="color: rgb(175,0,0)">"</span>,
+<span class="ansi-green-fg">   (...)</span>
+<span class="ansi-green-intense-fg ansi-bold">      8</span>     <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">+dsinfo.mswx.params.google_service_account=/home/muduchuru/.climdata_conf/service.json</span><span style="color: rgb(175,0,0)">"</span>,  <span style="color: rgb(95,135,135)"># Path to service account key</span>
+<span class="ansi-green-intense-fg ansi-bold">      9</span> ]
+<span class="ansi-green-intense-fg ansi-bold">     11</span> extractor <span style="color: rgb(98,98,98)">=</span> ClimData(overrides<span style="color: rgb(98,98,98)">=</span>overrides)
+<span class="ansi-green-fg">---&gt; 12</span> ds <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">extractor</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">extract</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:74</span>, in <span class="ansi-cyan-fg">update_ds.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">     72</span> <span style="color: rgb(175,0,255)">@wraps</span>(func)
+<span class="ansi-green-intense-fg ansi-bold">     73</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">wrapper</span>(<span style="color: rgb(0,135,0)">self</span>, <span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs):
+<span class="ansi-green-fg">---&gt; 74</span>     ds <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">func</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     75</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> ds <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-intense-fg ansi-bold">     76</span>         <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>current_ds <span style="color: rgb(98,98,98)">=</span> ds
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:576</span>, in <span class="ansi-cyan-fg">ClimateExtractor.extract</span><span class="ansi-blue-fg">(self)</span>
+<span class="ansi-green-intense-fg ansi-bold">    574</span>     mswx <span style="color: rgb(98,98,98)">=</span> climdata<span style="color: rgb(98,98,98)">.</span>MSWX(cfg)
+<span class="ansi-green-intense-fg ansi-bold">    575</span>     mswx<span style="color: rgb(98,98,98)">.</span>extract(<span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>extract_kwargs)
+<span class="ansi-green-fg">--&gt; 576</span>     <span class="ansi-yellow-bg">mswx</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">load</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">var</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    577</span>     ds_vars<span style="color: rgb(98,98,98)">.</span>append(mswx<span style="color: rgb(98,98,98)">.</span>dataset)
+<span class="ansi-green-intense-fg ansi-bold">    578</span> ds <span style="color: rgb(98,98,98)">=</span> xr<span style="color: rgb(98,98,98)">.</span>merge(ds_vars)
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/datasets/MSWX.py:207</span>, in <span class="ansi-cyan-fg">MSWXmirror.load</span><span class="ansi-blue-fg">(self, variable)</span>
+<span class="ansi-green-intense-fg ansi-bold">    205</span>     batch_files <span style="color: rgb(98,98,98)">=</span> file_paths[i:i<span style="color: rgb(98,98,98)">+</span>batch_size]
+<span class="ansi-green-intense-fg ansi-bold">    206</span>     delayed_batch <span style="color: rgb(98,98,98)">=</span> [dask<span style="color: rgb(98,98,98)">.</span>delayed(open_point)(f) <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> f <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> batch_files]
+<span class="ansi-green-fg">--&gt; 207</span>     batch_ds <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">list</span>(<span class="ansi-yellow-bg">dask</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">compute</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">delayed_batch</span><span class="ansi-yellow-bg">)</span>)
+<span class="ansi-green-intense-fg ansi-bold">    208</span>     dsets<span style="color: rgb(98,98,98)">.</span>extend(batch_ds)
+<span class="ansi-green-intense-fg ansi-bold">    210</span> dset <span style="color: rgb(98,98,98)">=</span> xr<span style="color: rgb(98,98,98)">.</span>concat(dsets, dim<span style="color: rgb(98,98,98)">=</span><span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">time</span><span style="color: rgb(175,0,0)">"</span>)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/base.py:664</span>, in <span class="ansi-cyan-fg">compute</span><span class="ansi-blue-fg">(traverse, optimize_graph, scheduler, get, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    661</span>     postcomputes<span style="color: rgb(98,98,98)">.</span>append(x<span style="color: rgb(98,98,98)">.</span>__dask_postcompute__())
+<span class="ansi-green-intense-fg ansi-bold">    663</span> <span class="ansi-bold" style="color: rgb(0,135,0)">with</span> shorten_traceback():
+<span class="ansi-green-fg">--&gt; 664</span>     results <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">schedule</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">dsk</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">keys</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    666</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> repack([f(r, <span style="color: rgb(98,98,98)">*</span>a) <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> r, (f, a) <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">zip</span>(results, postcomputes)])
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/queue.py:171</span>, in <span class="ansi-cyan-fg">Queue.get</span><span class="ansi-blue-fg">(self, block, timeout)</span>
+<span class="ansi-green-intense-fg ansi-bold">    169</span> <span class="ansi-bold" style="color: rgb(0,135,0)">elif</span> timeout <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-intense-fg ansi-bold">    170</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">while</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_qsize():
+<span class="ansi-green-fg">--&gt; 171</span>         <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">not_empty</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">wait</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    172</span> <span class="ansi-bold" style="color: rgb(0,135,0)">elif</span> timeout <span style="color: rgb(98,98,98)">&lt;</span> <span style="color: rgb(98,98,98)">0</span>:
+<span class="ansi-green-intense-fg ansi-bold">    173</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">ValueError</span>(<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)">timeout</span><span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)"> must be a non-negative number</span><span style="color: rgb(175,0,0)">"</span>)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/threading.py:320</span>, in <span class="ansi-cyan-fg">Condition.wait</span><span class="ansi-blue-fg">(self, timeout)</span>
+<span class="ansi-green-intense-fg ansi-bold">    318</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:    <span style="color: rgb(95,135,135)"># restore state no matter what (e.g., KeyboardInterrupt)</span>
+<span class="ansi-green-intense-fg ansi-bold">    319</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> timeout <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-fg">--&gt; 320</span>         <span class="ansi-yellow-bg">waiter</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">acquire</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    321</span>         gotit <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>
+<span class="ansi-green-intense-fg ansi-bold">    322</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
+
+<span class="ansi-red-fg">KeyboardInterrupt</span>: </pre>
 </div>
 </div>
 </div>
@@ -2125,29 +2205,11 @@ extractor = ClimData(overrides=overrides)</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">mswx</span> <span class="o">=</span> <span class="n">MSWXmirror</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="p">)</span>
-
-<span class="c1"># Extract a single point (nearest grid cell)</span>
-<span class="n">mswx</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">point</span><span class="o">=</span><span class="p">(</span><span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">extractor</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>
-
-<span class="c1"># Load each variable</span>
-<span class="c1">#ds_tasmin = mswx.load(variable="tasmin")</span>
-<span class="c1">#ds_tasmax = mswx.load(variable="tasmax")</span>
-<span class="n">ds_hurs</span>     <span class="o">=</span> <span class="n">mswx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s2">"hurs"</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">ds_tasmin</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-4">mswx = MSWXmirror(extractor.cfg)
+<div class="clipboard-copy-txt" id="cell-4">
 
-# Extract a single point (nearest grid cell)
-mswx.extract(point=(extractor.cfg.lon, extractor.cfg.lat))
-
-# Load each variable
-#ds_tasmin = mswx.load(variable="tasmin")
-#ds_tasmax = mswx.load(variable="tasmax")
-ds_hurs     = mswx.load(variable="hurs")
-
-print(ds_tasmin)</div>
+print(ds)</div>
 </div>
 </div>
 </div>
@@ -2166,273 +2228,182 @@ print(ds_tasmin)</div>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>📂 10327 exist, 2822 missing — fetching hurs from Drive...
-⬇️ Downloading 1996266.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996265.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996264.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996263.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996262.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996261.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996260.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996259.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996258.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996257.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996256.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996255.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996254.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996253.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996252.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996251.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996250.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996249.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996248.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996247.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996246.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996245.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996244.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996243.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996242.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996241.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996240.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996239.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996238.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996237.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996236.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996235.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996234.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996233.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996232.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996231.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996230.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996229.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996228.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996227.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996226.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996225.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996224.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996223.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996222.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996221.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996220.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996219.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996218.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996217.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996216.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996215.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996214.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996213.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996212.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996211.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996210.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996209.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996208.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996207.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996206.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996205.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996204.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996203.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996202.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996201.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996200.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996199.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996198.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996197.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996196.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996195.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996194.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996193.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996192.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996191.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996190.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996189.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996188.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996187.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996186.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996185.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996184.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996183.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996182.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996181.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996180.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996179.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996178.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996177.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996176.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996175.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996174.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996173.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996172.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996171.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996170.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996169.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996168.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996167.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996166.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996165.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996164.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996163.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996162.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996161.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996160.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996159.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996158.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996157.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996156.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996155.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996154.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996153.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996152.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996151.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996150.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996149.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996148.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996147.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996146.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996145.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996144.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996143.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996142.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996141.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996140.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996139.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996138.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996137.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996136.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996135.nc ...
-   → Download 100% complete
-⬇️ Downloading 1996134.nc ...
+<pre>📂 0 exist, 13149 missing — fetching tasmin from Drive...
 </pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">KeyboardInterrupt</span>                         Traceback (most recent call last)
+Cell <span class="ansi-green-fg">In[3], line 1</span>
+<span class="ansi-green-fg">----&gt; 1</span> ds <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">extractor</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">extract</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> <span style="color: rgb(0,135,0)">print</span>(ds)
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:74</span>, in <span class="ansi-cyan-fg">update_ds.&lt;locals&gt;.decorator.&lt;locals&gt;.wrapper</span><span class="ansi-blue-fg">(self, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">     72</span> <span style="color: rgb(175,0,255)">@wraps</span>(func)
+<span class="ansi-green-intense-fg ansi-bold">     73</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">wrapper</span>(<span style="color: rgb(0,135,0)">self</span>, <span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs):
+<span class="ansi-green-fg">---&gt; 74</span>     ds <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">func</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     75</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> ds <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-intense-fg ansi-bold">     76</span>         <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>current_ds <span style="color: rgb(98,98,98)">=</span> ds
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/wrapper_workflow.py:576</span>, in <span class="ansi-cyan-fg">ClimateExtractor.extract</span><span class="ansi-blue-fg">(self)</span>
+<span class="ansi-green-intense-fg ansi-bold">    574</span>     mswx <span style="color: rgb(98,98,98)">=</span> climdata<span style="color: rgb(98,98,98)">.</span>MSWX(cfg)
+<span class="ansi-green-intense-fg ansi-bold">    575</span>     mswx<span style="color: rgb(98,98,98)">.</span>extract(<span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>extract_kwargs)
+<span class="ansi-green-fg">--&gt; 576</span>     <span class="ansi-yellow-bg">mswx</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">load</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">var</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    577</span>     ds_vars<span style="color: rgb(98,98,98)">.</span>append(mswx<span style="color: rgb(98,98,98)">.</span>dataset)
+<span class="ansi-green-intense-fg ansi-bold">    578</span> ds <span style="color: rgb(98,98,98)">=</span> xr<span style="color: rgb(98,98,98)">.</span>merge(ds_vars)
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/datasets/MSWX.py:177</span>, in <span class="ansi-cyan-fg">MSWXmirror.load</span><span class="ansi-blue-fg">(self, variable)</span>
+<span class="ansi-green-intense-fg ansi-bold">    175</span> <span style="color: rgb(95,135,135)"># Get folder ID and list of files</span>
+<span class="ansi-green-intense-fg ansi-bold">    176</span> folder_id <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>cfg<span style="color: rgb(98,98,98)">.</span>dsinfo[<span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>cfg<span style="color: rgb(98,98,98)">.</span>dataset<span style="color: rgb(98,98,98)">.</span>upper()][<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">variables</span><span style="color: rgb(175,0,0)">"</span>][variable][<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">folder_id</span><span style="color: rgb(175,0,0)">"</span>]
+<span class="ansi-green-fg">--&gt; 177</span> files <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">fetch</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">folder_id</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">variable</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    178</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> files:
+<span class="ansi-green-intense-fg ansi-bold">    179</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">RuntimeError</span>(<span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">No files found for variable </span><span style="color: rgb(175,0,0)">'</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>variable<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)"> in Drive or local directory.</span><span style="color: rgb(175,0,0)">"</span>)
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/datasets/MSWX.py:72</span>, in <span class="ansi-cyan-fg">MSWXmirror.fetch</span><span class="ansi-blue-fg">(self, folder_id, variable)</span>
+<span class="ansi-green-intense-fg ansi-bold">     67</span> creds <span style="color: rgb(98,98,98)">=</span> service_account<span style="color: rgb(98,98,98)">.</span>Credentials<span style="color: rgb(98,98,98)">.</span>from_service_account_file(
+<span class="ansi-green-intense-fg ansi-bold">     68</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>cfg<span style="color: rgb(98,98,98)">.</span>dsinfo<span style="color: rgb(98,98,98)">.</span>mswx<span style="color: rgb(98,98,98)">.</span>params<span style="color: rgb(98,98,98)">.</span>google_service_account, scopes<span style="color: rgb(98,98,98)">=</span>SCOPES
+<span class="ansi-green-intense-fg ansi-bold">     69</span> )
+<span class="ansi-green-intense-fg ansi-bold">     70</span> service <span style="color: rgb(98,98,98)">=</span> build(<span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)">drive</span><span style="color: rgb(175,0,0)">'</span>, <span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)">v3</span><span style="color: rgb(175,0,0)">'</span>, credentials<span style="color: rgb(98,98,98)">=</span>creds)
+<span class="ansi-green-fg">---&gt; 72</span> drive_files <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">list_drive_files</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">folder_id</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">service</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     73</span> valid_filenames <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">set</span>(missing_files)
+<span class="ansi-green-intense-fg ansi-bold">     74</span> files_to_download <span style="color: rgb(98,98,98)">=</span> [f <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> f <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> drive_files <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> f[<span style="color: rgb(175,0,0)">'</span><span style="color: rgb(175,0,0)">name</span><span style="color: rgb(175,0,0)">'</span>] <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> valid_filenames]
+
+File <span class="ansi-green-fg">/beegfs/muduchuru/pkgs_fnl/climdata/climdata/utils/utils_download.py:28</span>, in <span class="ansi-cyan-fg">list_drive_files</span><span class="ansi-blue-fg">(folder_id, service)</span>
+<span class="ansi-green-intense-fg ansi-bold">     21</span> page_token <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
+<span class="ansi-green-intense-fg ansi-bold">     23</span> <span class="ansi-bold" style="color: rgb(0,135,0)">while</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>:
+<span class="ansi-green-intense-fg ansi-bold">     24</span>     results <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">service</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">files</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">list</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-intense-fg ansi-bold">     25</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">q</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">f</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">'</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(175,95,135)">{</span><span class="ansi-yellow-bg">folder_id</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(175,95,135)">}</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">'</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)"> in parents and trashed = false</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">     26</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">fields</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">files(id, name), nextPageToken</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">     27</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">pageToken</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">page_token</span>
+<span class="ansi-green-fg">---&gt; 28</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">execute</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">     30</span>     files<span style="color: rgb(98,98,98)">.</span>extend(results<span style="color: rgb(98,98,98)">.</span>get(<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">files</span><span style="color: rgb(175,0,0)">"</span>, []))
+<span class="ansi-green-intense-fg ansi-bold">     31</span>     page_token <span style="color: rgb(98,98,98)">=</span> results<span style="color: rgb(98,98,98)">.</span>get(<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">nextPageToken</span><span style="color: rgb(175,0,0)">"</span>, <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/googleapiclient/_helpers.py:130</span>, in <span class="ansi-cyan-fg">positional.&lt;locals&gt;.positional_decorator.&lt;locals&gt;.positional_wrapper</span><span class="ansi-blue-fg">(*args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    128</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">elif</span> positional_parameters_enforcement <span style="color: rgb(98,98,98)">==</span> POSITIONAL_WARNING:
+<span class="ansi-green-intense-fg ansi-bold">    129</span>         logger<span style="color: rgb(98,98,98)">.</span>warning(message)
+<span class="ansi-green-fg">--&gt; 130</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">wrapped</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/googleapiclient/http.py:923</span>, in <span class="ansi-cyan-fg">HttpRequest.execute</span><span class="ansi-blue-fg">(self, http, num_retries)</span>
+<span class="ansi-green-intense-fg ansi-bold">    920</span>     <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>headers[<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">content-length</span><span style="color: rgb(175,0,0)">"</span>] <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">str</span>(<span style="color: rgb(0,135,0)">len</span>(<span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>body))
+<span class="ansi-green-intense-fg ansi-bold">    922</span> <span style="color: rgb(95,135,135)"># Handle retries for server-side errors.</span>
+<span class="ansi-green-fg">--&gt; 923</span> resp, content <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">_retry_request</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-intense-fg ansi-bold">    924</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">http</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    925</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">num_retries</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    926</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">request</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">"</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    927</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_sleep</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    928</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_rand</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    929</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">str</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">uri</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    930</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">method</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">str</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">method</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    931</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">body</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">body</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    932</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">headers</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">headers</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    933</span> <span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    935</span> <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> callback <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>response_callbacks:
+<span class="ansi-green-intense-fg ansi-bold">    936</span>     callback(resp)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/googleapiclient/http.py:191</span>, in <span class="ansi-cyan-fg">_retry_request</span><span class="ansi-blue-fg">(http, num_retries, req_type, sleep, rand, uri, method, *args, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    189</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">    190</span>     exception <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
+<span class="ansi-green-fg">--&gt; 191</span>     resp, content <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">http</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">request</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">uri</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">method</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    192</span> <span style="color: rgb(95,135,135)"># Retry on SSL errors and socket timeout errors.</span>
+<span class="ansi-green-intense-fg ansi-bold">    193</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> _ssl_SSLError <span class="ansi-bold" style="color: rgb(0,135,0)">as</span> ssl_error:
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/google_auth_httplib2.py:218</span>, in <span class="ansi-cyan-fg">AuthorizedHttp.request</span><span class="ansi-blue-fg">(self, uri, method, body, headers, redirections, connection_type, **kwargs)</span>
+<span class="ansi-green-intense-fg ansi-bold">    215</span>     body_stream_position <span style="color: rgb(98,98,98)">=</span> body<span style="color: rgb(98,98,98)">.</span>tell()
+<span class="ansi-green-intense-fg ansi-bold">    217</span> <span style="color: rgb(95,135,135)"># Make the request.</span>
+<span class="ansi-green-fg">--&gt; 218</span> response, content <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">http</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">request</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-intense-fg ansi-bold">    219</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">uri</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    220</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">method</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    221</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">body</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">body</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    222</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">headers</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">request_headers</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    223</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">redirections</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">redirections</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    224</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">connection_type</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">connection_type</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">    225</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span>
+<span class="ansi-green-intense-fg ansi-bold">    226</span> <span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    228</span> <span style="color: rgb(95,135,135)"># If the response indicated that the credentials needed to be</span>
+<span class="ansi-green-intense-fg ansi-bold">    229</span> <span style="color: rgb(95,135,135)"># refreshed, then refresh the credentials and re-attempt the</span>
+<span class="ansi-green-intense-fg ansi-bold">    230</span> <span style="color: rgb(95,135,135)"># request.</span>
+<span class="ansi-green-intense-fg ansi-bold">    231</span> <span style="color: rgb(95,135,135)"># A stored token may expire between the time it is retrieved and</span>
+<span class="ansi-green-intense-fg ansi-bold">    232</span> <span style="color: rgb(95,135,135)"># the time the request is made, so we may need to try twice.</span>
+<span class="ansi-green-intense-fg ansi-bold">    233</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> (
+<span class="ansi-green-intense-fg ansi-bold">    234</span>     response<span style="color: rgb(98,98,98)">.</span>status <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_refresh_status_codes
+<span class="ansi-green-intense-fg ansi-bold">    235</span>     <span class="ansi-bold" style="color: rgb(175,0,255)">and</span> _credential_refresh_attempt <span style="color: rgb(98,98,98)">&lt;</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_max_refresh_attempts
+<span class="ansi-green-intense-fg ansi-bold">    236</span> ):
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/httplib2/__init__.py:1724</span>, in <span class="ansi-cyan-fg">Http.request</span><span class="ansi-blue-fg">(self, uri, method, body, headers, redirections, connection_type)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1722</span>             content <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">b</span><span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">"</span>
+<span class="ansi-green-intense-fg ansi-bold">   1723</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
+<span class="ansi-green-fg">-&gt; 1724</span>             (response, content) <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_request</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-intense-fg ansi-bold">   1725</span> <span class="ansi-yellow-bg">                </span><span class="ansi-yellow-bg">conn</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">authority</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">uri</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">request_uri</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">method</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">body</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">headers</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">redirections</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">cachekey</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">   1726</span> <span class="ansi-yellow-bg">            </span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1727</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">Exception</span> <span class="ansi-bold" style="color: rgb(0,135,0)">as</span> e:
+<span class="ansi-green-intense-fg ansi-bold">   1728</span>     is_timeout <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">isinstance</span>(e, socket<span style="color: rgb(98,98,98)">.</span>timeout)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/httplib2/__init__.py:1444</span>, in <span class="ansi-cyan-fg">Http._request</span><span class="ansi-blue-fg">(self, conn, host, absolute_uri, request_uri, method, body, headers, redirections, cachekey)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1441</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> auth:
+<span class="ansi-green-intense-fg ansi-bold">   1442</span>     auth<span style="color: rgb(98,98,98)">.</span>request(method, request_uri, headers, body)
+<span class="ansi-green-fg">-&gt; 1444</span> (response, content) <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_conn_request</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">conn</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">request_uri</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">method</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">body</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">headers</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1446</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> auth:
+<span class="ansi-green-intense-fg ansi-bold">   1447</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> auth<span style="color: rgb(98,98,98)">.</span>response(response, body):
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/site-packages/httplib2/__init__.py:1396</span>, in <span class="ansi-cyan-fg">Http._conn_request</span><span class="ansi-blue-fg">(self, conn, request_uri, method, body, headers)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1394</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">pass</span>
+<span class="ansi-green-intense-fg ansi-bold">   1395</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-fg">-&gt; 1396</span>     response <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">conn</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">getresponse</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1397</span> <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> (http<span style="color: rgb(98,98,98)">.</span>client<span style="color: rgb(98,98,98)">.</span>BadStatusLine, http<span style="color: rgb(98,98,98)">.</span>client<span style="color: rgb(98,98,98)">.</span>ResponseNotReady):
+<span class="ansi-green-intense-fg ansi-bold">   1398</span>     <span style="color: rgb(95,135,135)"># If we get a BadStatusLine on the first try then that means</span>
+<span class="ansi-green-intense-fg ansi-bold">   1399</span>     <span style="color: rgb(95,135,135)"># the connection just went stale, so retry regardless of the</span>
+<span class="ansi-green-intense-fg ansi-bold">   1400</span>     <span style="color: rgb(95,135,135)"># number of RETRIES set.</span>
+<span class="ansi-green-intense-fg ansi-bold">   1401</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> seen_bad_status_line <span class="ansi-bold" style="color: rgb(175,0,255)">and</span> i <span style="color: rgb(98,98,98)">==</span> <span style="color: rgb(98,98,98)">1</span>:
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/http/client.py:1375</span>, in <span class="ansi-cyan-fg">HTTPConnection.getresponse</span><span class="ansi-blue-fg">(self)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1373</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">   1374</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-fg">-&gt; 1375</span>         <span class="ansi-yellow-bg">response</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">begin</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1376</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> <span class="ansi-bold" style="color: rgb(215,95,95)">ConnectionError</span>:
+<span class="ansi-green-intense-fg ansi-bold">   1377</span>         <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>close()
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/http/client.py:318</span>, in <span class="ansi-cyan-fg">HTTPResponse.begin</span><span class="ansi-blue-fg">(self)</span>
+<span class="ansi-green-intense-fg ansi-bold">    316</span> <span style="color: rgb(95,135,135)"># read until we get a non-100 response</span>
+<span class="ansi-green-intense-fg ansi-bold">    317</span> <span class="ansi-bold" style="color: rgb(0,135,0)">while</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>:
+<span class="ansi-green-fg">--&gt; 318</span>     version, status, reason <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_read_status</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    319</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> status <span style="color: rgb(98,98,98)">!=</span> CONTINUE:
+<span class="ansi-green-intense-fg ansi-bold">    320</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">break</span>
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/http/client.py:279</span>, in <span class="ansi-cyan-fg">HTTPResponse._read_status</span><span class="ansi-blue-fg">(self)</span>
+<span class="ansi-green-intense-fg ansi-bold">    278</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span><span style="color: rgb(188,188,188)"> </span><span style="color: rgb(0,0,255)">_read_status</span>(<span style="color: rgb(0,135,0)">self</span>):
+<span class="ansi-green-fg">--&gt; 279</span>     line <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">str</span>(<span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">fp</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">readline</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">_MAXLINE</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">+</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">1</span><span class="ansi-yellow-bg">)</span>, <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">iso-8859-1</span><span style="color: rgb(175,0,0)">"</span>)
+<span class="ansi-green-intense-fg ansi-bold">    280</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span style="color: rgb(0,135,0)">len</span>(line) <span style="color: rgb(98,98,98)">&gt;</span> _MAXLINE:
+<span class="ansi-green-intense-fg ansi-bold">    281</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> LineTooLong(<span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">status line</span><span style="color: rgb(175,0,0)">"</span>)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/socket.py:717</span>, in <span class="ansi-cyan-fg">SocketIO.readinto</span><span class="ansi-blue-fg">(self, b)</span>
+<span class="ansi-green-intense-fg ansi-bold">    715</span> <span class="ansi-bold" style="color: rgb(0,135,0)">while</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>:
+<span class="ansi-green-intense-fg ansi-bold">    716</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-fg">--&gt; 717</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_sock</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">recv_into</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">b</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">    718</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">except</span> timeout:
+<span class="ansi-green-intense-fg ansi-bold">    719</span>         <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_timeout_occurred <span style="color: rgb(98,98,98)">=</span> <span class="ansi-bold" style="color: rgb(0,135,0)">True</span>
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/ssl.py:1307</span>, in <span class="ansi-cyan-fg">SSLSocket.recv_into</span><span class="ansi-blue-fg">(self, buffer, nbytes, flags)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1303</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> flags <span style="color: rgb(98,98,98)">!=</span> <span style="color: rgb(98,98,98)">0</span>:
+<span class="ansi-green-intense-fg ansi-bold">   1304</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">ValueError</span>(
+<span class="ansi-green-intense-fg ansi-bold">   1305</span>           <span style="color: rgb(175,0,0)">"</span><span style="color: rgb(175,0,0)">non-zero flags not allowed in calls to recv_into() on </span><span class="ansi-bold" style="color: rgb(175,95,135)">%s</span><span style="color: rgb(175,0,0)">"</span> <span style="color: rgb(98,98,98)">%</span>
+<span class="ansi-green-intense-fg ansi-bold">   1306</span>           <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span><span style="color: rgb(0,0,135)">__class__</span>)
+<span class="ansi-green-fg">-&gt; 1307</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">read</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">nbytes</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">buffer</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1308</span> <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
+<span class="ansi-green-intense-fg ansi-bold">   1309</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span style="color: rgb(0,135,0)">super</span>()<span style="color: rgb(98,98,98)">.</span>recv_into(buffer, nbytes, flags)
+
+File <span class="ansi-green-fg">~/miniforge3/envs/sdba/lib/python3.10/ssl.py:1163</span>, in <span class="ansi-cyan-fg">SSLSocket.read</span><span class="ansi-blue-fg">(self, len, buffer)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1161</span> <span class="ansi-bold" style="color: rgb(0,135,0)">try</span>:
+<span class="ansi-green-intense-fg ansi-bold">   1162</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> buffer <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-fg">-&gt; 1163</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_sslobj</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">read</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">len</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">buffer</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">   1164</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
+<span class="ansi-green-intense-fg ansi-bold">   1165</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_sslobj<span style="color: rgb(98,98,98)">.</span>read(<span style="color: rgb(0,135,0)">len</span>)
+
+<span class="ansi-red-fg">KeyboardInterrupt</span>: </pre>
 </div>
 </div>
 </div>
@@ -2731,7 +2702,7 @@ print("Saved to mswx_point_2010.csv")</div>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="April 21, 2026 08:40:58 UTC"><span class="timeago" datetime="2026-04-21T08:40:58+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="April 21, 2026 08:40:58 UTC">2026-04-21</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="May 18, 2026 07:54:47 UTC"><span class="timeago" datetime="2026-05-18T07:54:47+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="May 18, 2026 07:54:47 UTC">2026-05-18</span>
   </span>
 
     
