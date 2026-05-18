@@ -65,7 +65,7 @@ class MSWXmirror:
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
         creds = service_account.Credentials.from_service_account_file(
-            self.cfg.dsinfo.mswx.params.google_service_account, scopes=SCOPES
+            self.cfg.dsinfo.MSWX.params.google_service_account, scopes=SCOPES
         )
         service = build('drive', 'v3', credentials=creds)
 

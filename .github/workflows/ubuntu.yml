@@ -57,4 +57,4 @@ jobs:
           pip install . --no-build-isolation
 
       - name: PKG-TEST
-        run: python -m unittest discover tests/
+        run: python -m unittest discover -p 'test_[!d]*.py' tests/

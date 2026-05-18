@@ -17,23 +17,27 @@ class DWDmirror:
         Load DWD station metadata for the chosen parameter using the updated wetterdienst API.
         """
         # Lookup info from your mapping
-        param_info = self.param_mapping.dwd.variables[variable]
+        param_info = self.param_mapping.DWD.variables[variable]
         resolution = param_info["resolution"]  # e.g., "daily"
-        dataset = param_info["dataset"]        # e.g., "temperature_air_200"
-        
+        dataset = param_info["dataset"]        # e.g., "climate_summary"
+
         # Create request with updated API
         request = DwdObservationRequest(
-            parameters=(resolution, dataset)   # <-- new API
+            parameters=[(resolution, dataset)]
         )
-        
+
         # Get station metadata as pandas DataFrame
         stations_df = request.all().df.to_pandas()
-        
-        # Store stations in the object
+
+        # Cache per dataset so different variables with different datasets
+        # (e.g. climate_summary vs solar) don't share the same station list
+        if not hasattr(self, "_stations_cache"):
+            self._stations_cache = {}
+        self._stations_cache[dataset] = stations_df
         self.stations = stations_df
         return stations_df
     def load(self, variable, lat_loc, lon_loc, buffer_km = 50):
-        param_info = self.param_mapping.dwd.variables[variable]
+        param_info = self.param_mapping.DWD.variables[variable]
         resolution = param_info["resolution"]
         dataset = param_info["dataset"]
         variable_name = param_info["name"]
@@ -54,14 +58,16 @@ class DWDmirror:
         self.df = df
         return self.df
     def extract(self, *,variable, point=None, box=None, shapefile=None, buffer_km=25.0):
-        param_info = self.param_mapping.dwd.variables[variable]
+        param_info = self.param_mapping.DWD.variables[variable]
         resolution = param_info["resolution"]
         dataset = param_info["dataset"]
         variable_name = param_info["name"]
-        if not hasattr(self, "stations"):
-            self.get_stations()
 
-        stations_df = self.stations
+        # Fetch station list for this variable's dataset (cached per dataset)
+        cache = getattr(self, "_stations_cache", {})
+        if dataset not in cache:
+            self.get_stations(variable=variable)
+        stations_df = self._stations_cache[dataset]
 
         # ---- Point extraction ----
         if point is not None:
@@ -121,9 +127,26 @@ class DWDmirror:
         print(point)
         data = request.values.all().df.to_pandas()  # pandas DataFrame
 
+        # Normalise column names across wetterdienst versions
+        col_map = {}
+        for old, new in [("datetime", "date"), ("stationid", "station_id"), ("station", "station_id")]:
+            if old in data.columns and new not in data.columns:
+                col_map[old] = new
+        if col_map:
+            data = data.rename(columns=col_map)
+
+        # If station_id is the index (some versions), promote it to a column
+        if data.index.name == "station_id":
+            data = data.reset_index()
+
+        # Strip timezone and cast to nanosecond precision so xarray won't warn
+        import pandas as pd
+        if isinstance(data["date"].dtype, pd.DatetimeTZDtype):
+            data["date"] = data["date"].dt.tz_localize(None)
+        data["date"] = data["date"].astype("datetime64[ns]")
+
         # Convert to xarray
-        ds = data.reset_index().set_index(["station_id", "date"]).to_xarray()
-        ds = ds.assign_coords(date=ds["date"].to_pandas().tz_localize(None))
+        ds = data.set_index(["station_id", "date"]).to_xarray()
         ds = ds.rename(
             {
                 "date": "time",
@@ -136,7 +159,11 @@ class DWDmirror:
             attrs[n] = ds[attr].values[0, 0]
 
         ds = ds.assign_attrs(attrs)
-        ds = ds.drop_vars(["index", "resolution", "dataset", "parameter"])
+        vars_to_drop = [v for v in ["index", "resolution", "dataset", "parameter"] if v in ds]
+        ds = ds.drop_vars(vars_to_drop)
+        # Assign 'units' attribute so xclim can read/convert units
+        unit = self.param_mapping.DWD.variables[variable].unit
+        ds[variable].attrs["units"] = unit
         self.dataset = ds
         return ds
     def format(self, variable, lat_loc, lon_loc):
@@ -159,7 +186,7 @@ class DWDmirror:
         self.df["lat"] = lat_loc
         self.df["lon"] = lon_loc
         self.df['source'] = 'DWD'
-        self.df['units'] = self.param_mapping.dwd.variables[variable].unit
+        self.df['units'] = self.param_mapping.DWD.variables[variable].unit
         self.df = self.df[["lat", "lon", "time", "source", "variable", "value", "units"]]
         # self.df = df
         return self.df

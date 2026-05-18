@@ -18,7 +18,7 @@ class POWER:
 
         params = self.cfg.variables
         api_vars =  ",".join([
-            self.cfg.dsinfo.power.variables[v].api_id
+            self.cfg.dsinfo.POWER.variables[v].api_id
             for v in params
         ])
         start = self.cfg.time_range.start_date.replace("-", "")
@@ -49,7 +49,7 @@ class POWER:
         df.index = pd.to_datetime(df.index, format="%Y%m%d")
         var_map = {
             v.api_id: cmip_id
-            for cmip_id, v in self.cfg.dsinfo.power.variables.items()
+            for cmip_id, v in self.cfg.dsinfo.POWER.variables.items()
         }
         df = df.rename(columns=var_map)
         self.ds = xr.Dataset.from_dataframe(df)
@@ -64,8 +64,8 @@ class POWER:
         self.ds.longitude.attrs["units"] = "degrees_east"
 
         for cmip_id in self.ds.data_vars:
-            if cmip_id in self.cfg.dsinfo.power.variables:
-                vinfo = self.cfg.dsinfo.power.variables[cmip_id]
+            if cmip_id in self.cfg.dsinfo.POWER.variables:
+                vinfo = self.cfg.dsinfo.POWER.variables[cmip_id]
 
                 self.ds[cmip_id].attrs.update({
                     "long_name": vinfo.long_name,
