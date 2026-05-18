@@ -52,3 +52,7 @@ class DateRangePicker(QWidget):
     def end_date(self) -> date:
         d = self._end.date()
         return date(d.year(), d.month(), d.day())
+
+    def set_dates(self, start: date, end: date) -> None:
+        self._start.setDate(QDate(start.year, start.month, start.day))
+        self._end.setDate(QDate(end.year, end.month, end.day))

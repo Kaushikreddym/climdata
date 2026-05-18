@@ -3,8 +3,8 @@
 QMainWindow, QWidget {
     background-color: #f5f6f8;
     color: #1f2328;
-    font-family: "Helvetica Neue", Arial, sans-serif;
-    font-size: 10pt;
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    font-size: 12pt;
 }
 
 QLabel {
@@ -45,7 +45,7 @@ QPlainTextEdit {
     border: 1px solid #1f2937;
     border-radius: 4px;
     font-family: "Menlo", "Courier New", monospace;
-    font-size: 9pt;
+    font-size: 10pt;
 }
 
 QStatusBar {

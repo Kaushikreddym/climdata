@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QWidget
 
 DEFAULT_DATASETS: List[str] = ["mswx", "dwd", "hyras", "cmip", "power", "nexgddp"]
@@ -28,3 +28,10 @@ class DatasetSelector(QWidget):
 
     def current_dataset(self) -> str:
         return self._combo.currentText()
+
+    def set_dataset(self, name: str) -> None:
+        idx = self._combo.findText(name, Qt.MatchFlag.MatchFixedString | Qt.MatchFlag.MatchCaseSensitive)
+        if idx == -1:
+            idx = self._combo.findText(name, Qt.MatchFlag.MatchFixedString)
+        if idx >= 0:
+            self._combo.setCurrentIndex(idx)

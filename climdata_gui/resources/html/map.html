@@ -9,43 +9,323 @@
 <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
 <style>
   html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
-  .coord-box {
-      position: absolute; z-index: 1000; top: 8px; right: 8px;
-      background: rgba(255,255,255,0.92); padding: 6px 10px;
-      font: 12px/1.3 sans-serif; border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  .ctrl-bar {
+      position: absolute; z-index: 1000; top: 8px; left: 50px;
+      display: flex; gap: 6px; align-items: center;
   }
+  .ctrl-btn {
+      background: rgba(255,255,255,0.95); padding: 5px 11px;
+      font: 12px/1.4 sans-serif; border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      border: 1px solid #ccc; cursor: pointer; white-space: nowrap;
+  }
+  .ctrl-btn:hover { background: #f0f0f0; }
+  .ctrl-btn.active { background: #0078A8; color: #fff; border-color: #005a80; }
+  .info-box {
+      position: absolute; z-index: 1000; bottom: 28px; left: 8px;
+      background: rgba(255,255,255,0.93); padding: 5px 10px;
+      font: 12px/1.4 sans-serif; border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2); max-width: 280px;
+  }
+  /* ---- Overlay control panel ---- */
+  .oc-panel {
+      background: rgba(255,255,255,0.96);
+      border-radius: 6px;
+      padding: 10px 13px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.28);
+      min-width: 180px;
+      font: 12px/1.5 sans-serif;
+      display: none;
+  }
+  .oc-panel .oc-title {
+      font-weight: 700; font-size: 12px; color: #333;
+      margin-bottom: 6px; border-bottom: 1px solid #e0e0e0; padding-bottom: 4px;
+  }
+  .oc-panel label {
+      display: block; font-weight: 600; margin: 6px 0 2px;
+      color: #444; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .oc-panel label:first-of-type { margin-top: 0; }
+  .oc-panel select {
+      width: 100%; padding: 3px 5px; border: 1px solid #ccc;
+      border-radius: 3px; font-size: 12px; box-sizing: border-box;
+  }
+  .oc-opacity-row { display: flex; align-items: center; gap: 6px; }
+  .oc-opacity-row input[type=range] { flex: 1; }
+  .oc-opacity-row span { min-width: 30px; text-align: right; font-size: 11px; color: #555; }
+  .oc-minmax-row { display: flex; align-items: center; gap: 4px; }
+  .oc-minmax-row input[type=number] {
+      flex: 1; min-width: 0; padding: 3px 4px; border: 1px solid #ccc;
+      border-radius: 3px; font-size: 11px; box-sizing: border-box;
+  }
+  .oc-minmax-row span { font-size: 11px; color: #666; }
+  #oc-colorbar { margin-top: 9px; }
+  #oc-colorbar img { width: 100%; border-radius: 3px; display: block; }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="coords" class="coord-box">Click the map to select a point</div>
+<div class="ctrl-bar">
+  <button id="modeBtn" class="ctrl-btn" title="Switch between point and box selection">⬜ Box Mode</button>
+  <button id="clearBtn" class="ctrl-btn" title="Clear selection and overlay">✕ Clear</button>
+</div>
+<div id="coords" class="info-box">Click the map to select a point</div>
 
 <script>
-  var map = L.map('map').setView([51.0, 10.0], 4);
+  /* ================================================================
+   *  Map initialisation
+   * ================================================================ */
+  var map = L.map('map', {
+      touchZoom: true, scrollWheelZoom: true, dragging: true,
+      tap: false, bounceAtZoomLimits: false,
+      wheelDebounceTime: 40, wheelPxPerZoomLevel: 60,
+  }).setView([51.0, 10.0], 4);
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
 
-  var marker = null;
-  var bridge = null;
+  var defaultIcon = L.icon({
+      iconUrl: 'marker-icon.png', iconRetinaUrl: 'marker-icon-2x.png',
+      shadowUrl: 'marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41],
+      popupAnchor: [1, -34], shadowSize: [41, 41]
+  });
+  L.Marker.prototype.options.icon = defaultIcon;
 
+  /* ================================================================
+   *  State
+   * ================================================================ */
+  var selectionMode = 'point';
+  var marker        = null;
+  var boxRect       = null;
+  var rasterOverlay = null;   // single L.imageOverlay, updated via setUrl()
+  var drawing       = false;
+  var startLL       = null;
+  var bridge        = null;
+
+  /* ================================================================
+   *  Overlay control panel  (Leaflet L.control, bottom-right)
+   * ================================================================ */
+  var overlayCtrl = L.control({position: 'bottomright'});
+  overlayCtrl.onAdd = function () {
+      var d = L.DomUtil.create('div', '');
+      d.innerHTML = [
+          '<div id="oc-panel" class="oc-panel">',
+          '  <div class="oc-title">&#x1F5BC; Overlay</div>',
+          '  <label for="oc-var">Variable</label>',
+          '  <select id="oc-var"></select>',
+          '  <label for="oc-cmap">Colormap</label>',
+          '  <select id="oc-cmap">',
+          '    <option value="RdYlBu_r">RdYlBu_r</option>',
+          '    <option value="viridis">viridis</option>',
+          '    <option value="plasma">plasma</option>',
+          '    <option value="RdBu_r">RdBu_r</option>',
+          '    <option value="YlOrRd">YlOrRd</option>',
+          '    <option value="Blues">Blues</option>',
+          '    <option value="BrBG">BrBG</option>',
+          '    <option value="coolwarm">coolwarm</option>',
+          '  </select>',
+          '  <label>Opacity</label>',
+          '  <div class="oc-opacity-row">',
+          '    <input type="range" id="oc-opacity" min="0" max="1" step="0.05" value="0.75">',
+          '    <span id="oc-opacity-val">0.75</span>',
+          '  </div>',
+          '  <label>Min / Max</label>',
+          '  <div class="oc-minmax-row">',
+          '    <input type="number" id="oc-vmin" step="any" placeholder="auto">',
+          '    <span>&#x2013;</span>',
+          '    <input type="number" id="oc-vmax" step="any" placeholder="auto">',
+          '  </div>',
+          '  <div id="oc-colorbar"></div>',
+          '</div>',
+      ].join('');
+      L.DomEvent.disableClickPropagation(d);
+      L.DomEvent.disableScrollPropagation(d);
+      return d;
+  };
+  overlayCtrl.addTo(map);
+
+  /* Live listeners */
+  document.getElementById('oc-var').addEventListener('change', function () {
+      // Reset min/max to auto whenever the variable changes
+      document.getElementById('oc-vmin').value = '';
+      document.getElementById('oc-vmax').value = '';
+      requestRender();
+  });
+  document.getElementById('oc-cmap').addEventListener('change', requestRender);
+  document.getElementById('oc-vmin').addEventListener('change', requestRender);
+  document.getElementById('oc-vmax').addEventListener('change', requestRender);
+  document.getElementById('oc-opacity').addEventListener('input', function () {
+      var v = parseFloat(this.value);
+      document.getElementById('oc-opacity-val').textContent = v.toFixed(2);
+      if (rasterOverlay) { rasterOverlay.setOpacity(v); }
+  });
+
+  /* ================================================================
+   *  Mode toggle
+   * ================================================================ */
+  var modeBtn = document.getElementById('modeBtn');
+  modeBtn.addEventListener('click', function () {
+      if (selectionMode === 'point') {
+          selectionMode = 'box';
+          modeBtn.textContent = '&#x1F4CD; Point Mode';
+          modeBtn.classList.add('active');
+          map.getContainer().style.cursor = 'crosshair';
+      } else {
+          selectionMode = 'point';
+          modeBtn.textContent = '&#x2B1C; Box Mode';
+          modeBtn.classList.remove('active');
+          map.getContainer().style.cursor = '';
+      }
+  });
+
+  /* ================================================================
+   *  Clear button
+   * ================================================================ */
+  document.getElementById('clearBtn').addEventListener('click', function () {
+      clearOverlays();
+      if (boxRect) { map.removeLayer(boxRect); boxRect = null; }
+      if (marker)  { map.removeLayer(marker);  marker  = null; }
+      document.getElementById('coords').textContent = 'Click the map to select a point';
+  });
+
+  /* ================================================================
+   *  Point selection
+   * ================================================================ */
   function setPoint(lat, lon) {
       if (marker) { map.removeLayer(marker); }
       marker = L.marker([lat, lon]).addTo(map);
       document.getElementById('coords').textContent =
-          'lat: ' + lat.toFixed(4) + ',  lon: ' + lon.toFixed(4);
-      if (bridge && bridge.on_point_selected) {
-          bridge.on_point_selected(lat, lon);
-      }
+          'Point  lat=' + lat.toFixed(4) + '  lon=' + lon.toFixed(4);
+      if (bridge && bridge.on_point_selected) { bridge.on_point_selected(lat, lon); }
   }
 
+  /* ================================================================
+   *  Box rubber-band
+   * ================================================================ */
+  map.on('mousedown', function (e) {
+      if (selectionMode !== 'box' || e.originalEvent.button !== 0) return;
+      drawing = true; startLL = e.latlng;
+      if (boxRect) { map.removeLayer(boxRect); }
+      boxRect = L.rectangle([startLL, startLL],
+          {color: '#0078A8', weight: 2, fillColor: '#0078A8', fillOpacity: 0.12}
+      ).addTo(map);
+      map.dragging.disable();
+      L.DomEvent.preventDefault(e.originalEvent);
+  });
+  map.on('mousemove', function (e) { if (drawing) boxRect.setBounds([startLL, e.latlng]); });
+  map.on('mouseup', function (e) {
+      if (!drawing) return;
+      drawing = false; map.dragging.enable();
+      var b = boxRect.getBounds(), sw = b.getSouthWest(), ne = b.getNorthEast();
+      document.getElementById('coords').textContent =
+          'Box  (' + sw.lat.toFixed(3) + ', ' + sw.lng.toFixed(3) + ')' +
+          '  \u2192  (' + ne.lat.toFixed(3) + ', ' + ne.lng.toFixed(3) + ')';
+      if (bridge && bridge.on_box_selected) {
+          bridge.on_box_selected(sw.lat, ne.lat, sw.lng, ne.lng);
+      }
+  });
   map.on('click', function (e) {
+      if (selectionMode !== 'point') return;
       setPoint(e.latlng.lat, e.latlng.lng);
   });
 
-  // Connect the WebChannel bridge exposed by Python.
+  /* ================================================================
+   *  Overlay helpers  (called from Python via runJavaScript)
+   * ================================================================ */
+
+  /** Remove raster overlay and hide the control panel. */
+  function clearOverlays() {
+      if (rasterOverlay) { map.removeLayer(rasterOverlay); rasterOverlay = null; }
+      document.getElementById('oc-panel').style.display = 'none';
+      document.getElementById('oc-colorbar').innerHTML = '';
+  }
+
+  /**
+   * Initialise the overlay panel with variable list and zoom to data bounds.
+   * config = {vars:[...], lat_min, lon_min, lat_max, lon_max}
+   */
+  function initOverlayUI(config) {
+      console.log('[climdata] initOverlayUI', JSON.stringify(config));
+      var sel = document.getElementById('oc-var');
+      sel.innerHTML = '';
+      config.vars.forEach(function (v) {
+          var opt = document.createElement('option');
+          opt.value = v; opt.textContent = v;
+          sel.appendChild(opt);
+      });
+      document.getElementById('oc-panel').style.display = 'block';
+
+      /* zoom to extent; pad single-point datasets */
+      var latSpan = config.lat_max - config.lat_min;
+      var lonSpan = config.lon_max - config.lon_min;
+      var pad = (latSpan < 0.1 || lonSpan < 0.1) ? 1.0 : 0;
+      map.fitBounds([
+          [config.lat_min - pad, config.lon_min - pad],
+          [config.lat_max + pad, config.lon_max + pad]
+      ], {padding: [30, 30]});
+
+      requestRender();
+  }
+
+  /**
+   * Update the raster overlay with a freshly rendered PNG (no map pan/zoom).
+   * payload = {b64, colorbar_b64, lat_min, lon_min, lat_max, lon_max}
+   */
+  function updateOverlay(payload) {
+      console.log('[climdata] updateOverlay b64_len=' + (payload.b64 ? payload.b64.length : 'null'),
+          'bounds=['+payload.lat_min+','+payload.lon_min+']->['+payload.lat_max+','+payload.lon_max+']');
+      var dataUrl = 'data:image/png;base64,' + payload.b64;
+      var bounds  = [[payload.lat_min, payload.lon_min],
+                     [payload.lat_max, payload.lon_max]];
+      var opacity = parseFloat(document.getElementById('oc-opacity').value);
+      if (rasterOverlay) {
+          rasterOverlay.setUrl(dataUrl);
+          rasterOverlay.setBounds(bounds);
+      } else {
+          rasterOverlay = L.imageOverlay(dataUrl, bounds,
+              {opacity: opacity, interactive: false, zIndex: 200}).addTo(map);
+      }
+      // Populate min/max fields only when they are in auto mode (empty)
+      if (payload.vmin !== undefined) {
+          var vminEl = document.getElementById('oc-vmin');
+          var vmaxEl = document.getElementById('oc-vmax');
+          if (vminEl.value === '') vminEl.value = parseFloat(payload.vmin.toFixed(4));
+          if (vmaxEl.value === '') vmaxEl.value = parseFloat(payload.vmax.toFixed(4));
+      }
+      if (payload.colorbar_b64) {
+          document.getElementById('oc-colorbar').innerHTML =
+              '<img src="data:image/png;base64,' + payload.colorbar_b64 + '">';
+      }
+  }
+
+  /**
+   * Ask Python to render the selected variable + colormap.
+   * Python will respond by calling updateOverlay().
+   */
+  function requestRender() {
+      if (!bridge || !bridge.on_render_request) {
+          console.warn('[climdata] requestRender: bridge not ready');
+          return;
+      }
+      var varName  = document.getElementById('oc-var').value;
+      var colormap = document.getElementById('oc-cmap').value;
+      var vminStr  = document.getElementById('oc-vmin').value;
+      var vmaxStr  = document.getElementById('oc-vmax').value;
+      console.log('[climdata] requestRender var=' + varName + ' cmap=' + colormap +
+                  ' vmin=' + (vminStr || 'auto') + ' vmax=' + (vmaxStr || 'auto'));
+      if (varName) {
+          bridge.on_render_request(varName, colormap,
+              vminStr !== '' ? vminStr : 'auto',
+              vmaxStr !== '' ? vmaxStr : 'auto');
+      }
+  }
+
+  /* ================================================================
+   *  WebChannel bridge
+   * ================================================================ */
   if (typeof QWebChannel !== 'undefined') {
       new QWebChannel(qt.webChannelTransport, function (channel) {
           bridge = channel.objects.bridge;
