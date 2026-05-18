@@ -150,7 +150,7 @@ class NEXGDDP:
     def _validate_inputs(self):
         """Validate model, experiment, and variable selections."""
         # Normalize model name to uppercase with hyphens
-        self.source_id = self.source_id.upper().replace('_', '-')
+        # self.source_id = self.source_id.upper().replace('_', '-')
         
         if self.source_id not in self.AVAILABLE_MODELS:
             print(f"⚠️  Warning: Model '{self.source_id}' may not be available.")

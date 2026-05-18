@@ -241,6 +241,12 @@ HYRAS:
       prefix: "grids_germany_daily_soil_temperature_5cm"
       version: "v01"
       units: degC
+    et0:
+      name: et0
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/daily/evaporation_fao/"
+      prefix: "grids_germany_daily_evaporation_fao"
+      version: "v1.1"
+      units: mm
 CMIP:
   # Explore module metadata
   explore:
@@ -613,6 +619,14 @@ HOSTRADA:
       prefix: "rsds"
       base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/hostrada/radiation_downwelling/"
       version: "v1-0"
+    wspd:
+      name: wspd
+      long_name: Surface Wind Speed
+      units: m s-1
+      prefix: "sfcWind"
+      base_url: "https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/hostrada/wind_speed/"
+      version: "v1-0"
+
 
 AGRI_ISIMIP:
   # Explore module metadata

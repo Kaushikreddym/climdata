@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>climdata AOI picker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+<style>
+  html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
+  .coord-box {
+      position: absolute; z-index: 1000; top: 8px; right: 8px;
+      background: rgba(255,255,255,0.92); padding: 6px 10px;
+      font: 12px/1.3 sans-serif; border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="coords" class="coord-box">Click the map to select a point</div>
+
+<script>
+  var map = L.map('map').setView([51.0, 10.0], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  var marker = null;
+  var bridge = null;
+
+  function setPoint(lat, lon) {
+      if (marker) { map.removeLayer(marker); }
+      marker = L.marker([lat, lon]).addTo(map);
+      document.getElementById('coords').textContent =
+          'lat: ' + lat.toFixed(4) + ',  lon: ' + lon.toFixed(4);
+      if (bridge && bridge.on_point_selected) {
+          bridge.on_point_selected(lat, lon);
+      }
+  }
+
+  map.on('click', function (e) {
+      setPoint(e.latlng.lat, e.latlng.lng);
+  });
+
+  // Connect the WebChannel bridge exposed by Python.
+  if (typeof QWebChannel !== 'undefined') {
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+          bridge = channel.objects.bridge;
+      });
+  }
+</script>
+</body>
+</html>

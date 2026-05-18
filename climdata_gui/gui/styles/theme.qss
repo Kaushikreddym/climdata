@@ -1,0 +1,54 @@
+/* climdata_gui light theme */
+
+QMainWindow, QWidget {
+    background-color: #f5f6f8;
+    color: #1f2328;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10pt;
+}
+
+QLabel {
+    color: #1f2328;
+}
+
+QComboBox, QDateEdit, QLineEdit {
+    background: #ffffff;
+    border: 1px solid #c8ccd1;
+    border-radius: 4px;
+    padding: 4px 6px;
+    min-height: 22px;
+}
+
+QComboBox:hover, QDateEdit:hover {
+    border-color: #4a90e2;
+}
+
+QPushButton {
+    background: #2d7ff9;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 16px;
+    min-width: 80px;
+}
+
+QPushButton:hover   { background: #1f6fe0; }
+QPushButton:pressed { background: #1a5fc4; }
+QPushButton:disabled {
+    background: #b9c4d1;
+    color: #ecf0f4;
+}
+
+QPlainTextEdit {
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #1f2937;
+    border-radius: 4px;
+    font-family: "Consolas", "Menlo", monospace;
+    font-size: 9pt;
+}
+
+QStatusBar {
+    background: #e9ecef;
+    color: #475569;
+}

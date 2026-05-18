@@ -78,9 +78,17 @@ def fetch_dwd(var_cfg,var):
                 except requests.HTTPError as e:
                     print(f"⚠️  Failed download: {file_url} — {e}")
     else:
-        # Handle old format: *_{year}_{version}_de.nc
+        # Handle old format: *_{year}_{version}_de.nc or *_{year}_{version}.nc (for ET0/evaporation_fao)
+        # ET0 files don't have '_de' suffix
+        has_de_suffix = prefix != "grids_germany_daily_evaporation_fao"
+        
         for year in range(start_year, end_year + 1):
-            file_name = f"{prefix}_{year}_{version}_de.nc"
+            # Construct filename based on whether it has _de suffix
+            if has_de_suffix:
+                file_name = f"{prefix}_{year}_{version}_de.nc"
+            else:
+                file_name = f"{prefix}_{year}_{version}.nc"
+            
             file_url = f"{base_url}{file_name}"
             local_path = os.path.join(var_cfg.data_dir,provider,parameter_key.upper(), file_name)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)

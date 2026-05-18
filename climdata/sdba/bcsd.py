@@ -319,12 +319,16 @@ class BiasCorrection:
         halfwin_upper_bound_climatology: int = 0,
         n_processes: int = 1,
         n_quantiles: int = 50,
+        n_iterations: int = 0,
+        randomization_seed: Optional[int] = None,
         **kwargs
     ):
         self.variable = variable
         self.method = method
         self.n_processes = n_processes
         self.n_quantiles = n_quantiles
+        self.n_iterations = n_iterations
+        self.randomization_seed = randomization_seed
         
         # Get default config for this variable
         default_config = self.DEFAULT_CONFIGS.get(variable, {})
@@ -347,6 +351,9 @@ class BiasCorrection:
         print(f"   Distribution: {self.distribution}")
         print(f"   Trend preservation: {self.trend_preservation}")
         print(f"   Detrend: {self.detrend}")
+        print(f"   n_processes: {self.n_processes}")
+        print(f"   n_iterations (MBCn): {self.n_iterations}  {'(MBCn enabled)' if self.n_iterations > 0 else '(univariate only)'}")
+        print(f"   randomization_seed: {self.randomization_seed}")
     
     def correct(
         self,
@@ -428,6 +435,7 @@ class BiasCorrection:
             print(f"   (This may take a while for large datasets)")
             
             # Run bias adjustment with iris cubes (ISIMIP3BASD expects lists)
+            # n_iterations > 0 enables MBCn copula adjustment (multivariate)
             ba.adjust_bias(
                 obs_hist=[obs_hist_cube],
                 sim_hist=[sim_hist_cube],
@@ -435,6 +443,8 @@ class BiasCorrection:
                 sim_fut_ba_path=[str(sim_fut_ba_path)],
                 n_processes=self.n_processes,
                 n_quantiles=self.n_quantiles,
+                n_iterations=self.n_iterations,
+                randomization_seed=self.randomization_seed,
                 distribution=[self.distribution] if self.distribution else [None],
                 trend_preservation=[self.trend_preservation],
                 detrend=[self.detrend],
@@ -543,6 +553,7 @@ class StatisticalDownscaling:
         downscaling_factor: Optional[tuple] = None,
         n_processes: int = 1,
         n_iterations: int = 20,
+        randomization_seed: Optional[int] = None,
         lower_bound: Optional[float] = None,
         lower_threshold: Optional[float] = None,
         upper_bound: Optional[float] = None,
@@ -553,6 +564,7 @@ class StatisticalDownscaling:
         self.downscaling_factor = downscaling_factor
         self.n_processes = n_processes
         self.n_iterations = n_iterations
+        self.randomization_seed = randomization_seed
         
         # Get default config
         default_config = self.DEFAULT_CONFIGS.get(variable, {})
@@ -564,7 +576,9 @@ class StatisticalDownscaling:
         self.kwargs = kwargs
         
         print(f"🔧 StatisticalDownscaling initialized for {variable}")
-        print(f"   Iterations: {n_iterations}")
+        print(f"   n_iterations: {n_iterations}")
+        print(f"   n_processes : {n_processes}")
+        print(f"   randomization_seed: {self.randomization_seed}")
     
     def downscale(
         self,
@@ -659,6 +673,7 @@ class StatisticalDownscaling:
                 sim_fine_path=str(sim_fine_path),
                 n_processes=self.n_processes,
                 n_iterations=self.n_iterations,
+                randomization_seed=self.randomization_seed,
                 lower_bound=self.lower_bound,
                 lower_threshold=self.lower_threshold,
                 upper_bound=self.upper_bound,
