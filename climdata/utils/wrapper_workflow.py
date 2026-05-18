@@ -644,7 +644,7 @@ class ClimateExtractor:
             ds = xr.merge(ds_vars, compat="override")
             agri.extract(**extract_kwargs)
             self.dataset_class = agri
-        for var in ds.data_vars:
+        for var in cfg.variables:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 
         # ds = ds.compute()

@@ -1,7 +1,7 @@
 extract:
   type: primary
   output: dataset
-  description: "Download climate data and and convert to xarray Dataset"
+  description: "Downloads climate data to DATA_DIR if required, fetches the files and converts to xarray Dataset"
   
 calc_index:
   type: primary

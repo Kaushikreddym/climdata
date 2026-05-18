@@ -3,7 +3,7 @@
 QMainWindow, QWidget {
     background-color: #f5f6f8;
     color: #1f2328;
-    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-family: "Helvetica Neue", Arial, sans-serif;
     font-size: 10pt;
 }
 
@@ -44,7 +44,7 @@ QPlainTextEdit {
     color: #e2e8f0;
     border: 1px solid #1f2937;
     border-radius: 4px;
-    font-family: "Consolas", "Menlo", monospace;
+    font-family: "Menlo", "Courier New", monospace;
     font-size: 9pt;
 }
 

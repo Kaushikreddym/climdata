@@ -1,1 +1,3 @@
-PySide6>=6.5
+PySide6>=6.5            # meta-package: pulls in Essentials + Addons
+PySide6-Essentials>=6.5  # QtWidgets, QtCore, QtGui, ...
+PySide6-Addons>=6.5      # QtWebEngineWidgets, QtWebChannel (map_widget.py)

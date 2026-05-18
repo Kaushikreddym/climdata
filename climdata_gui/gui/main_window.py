@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from backend.config_builder import build_overrides
+from backend.runner import get_datasets
 from backend.worker import PipelineWorker
 from models.app_state import AppState
 
@@ -45,7 +46,8 @@ class MainWindow(QMainWindow):
 
         # Top controls row
         controls_row = QHBoxLayout()
-        self._dataset = DatasetSelector()
+        datasets = get_datasets() or None  # None → DatasetSelector uses DEFAULT_DATASETS
+        self._dataset = DatasetSelector(datasets=datasets)
         self._dates = DateRangePicker()
         self._run_btn = QPushButton("Run")
         controls_row.addWidget(self._dataset, 1)

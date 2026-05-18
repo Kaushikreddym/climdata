@@ -5,6 +5,18 @@ from __future__ import annotations
 from typing import Any, List, Optional, Sequence
 
 
+def get_datasets() -> List[str]:
+    """Return available dataset names from ClimData configuration.
+
+    Falls back to an empty list if the climdata stack is not installed.
+    """
+    try:
+        from climdata import ClimData
+        return ClimData().get_datasets()
+    except Exception:
+        return []
+
+
 def run_pipeline(overrides: Sequence[str], seq: Optional[Sequence[str]] = None) -> Any:
     """Run a climdata workflow with the given Hydra overrides.
 
