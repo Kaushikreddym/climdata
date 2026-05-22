@@ -31,13 +31,9 @@ jobs:
               run: |
                   python -c "from osgeo import gdal"
                   gdalinfo --version
-            - name: Install PyTorch CPU-only (before requirements.txt to avoid CUDA)
-              run: |
-                  pip install --no-cache-dir Cython numpy
-                  pip install torch==2.3.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-                  pip install torch-cluster --no-build-isolation -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
             - name: Install dependencies
               run: |
+                  pip install --no-cache-dir Cython numpy
                   pip install -r requirements.txt -r requirements_dev.txt
                   pip install . --no-build-isolation
             - name: Discover typos with codespell

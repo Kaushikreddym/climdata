@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import xarray as xr
 import logging
@@ -16,12 +17,12 @@ try:
     _PYCATCH22_AVAILABLE = True
 except ImportError:
     _PYCATCH22_AVAILABLE = False
-    print(
-        "[climdata.impute] ⚠️  pycatch22 is not installed. "
-        "Some imputation feature-extraction methods will be unavailable.\n"
-        "  pycatch22 cannot be reliably installed via pip on all platforms.\n"
-        "  Install it with conda:\n"
-        "    conda install -c conda-forge pycatch22"
+    warnings.warn(
+        "[climdata.impute] pycatch22 is not installed. "
+        "Some imputation feature-extraction methods will be unavailable. "
+        "Install it with: conda install -c conda-forge pycatch22",
+        ImportWarning,
+        stacklevel=2,
     )
 
 try:
@@ -29,9 +30,11 @@ try:
     _SKLEARN_AVAILABLE = True
 except ImportError:
     _SKLEARN_AVAILABLE = False
-    print(
+    warnings.warn(
         "[climdata.impute] scikit-learn is not installed. "
-        "Install it with: pip install scikit-learn"
+        "Install it with: pip install scikit-learn",
+        ImportWarning,
+        stacklevel=2,
     )
 
 logger = logging.getLogger(__name__)
