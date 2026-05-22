@@ -2,7 +2,7 @@
 
 __author__ = """Kaushik Muduchuru"""
 __email__ = "kaushik.reddy.m@gmail.com"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 from .utils.config import load_config
 from .datasets.DWD import DWDmirror as DWD
