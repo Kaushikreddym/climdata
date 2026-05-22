@@ -1,9 +1,38 @@
 import numpy as np
 import xarray as xr
-from .._vendor.imputegap.recovery.imputation import Imputation
-from .._vendor.imputegap.recovery.manager import TimeSeries
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 import logging
+
+try:
+    from .._vendor.imputegap.recovery.imputation import Imputation
+    from .._vendor.imputegap.recovery.manager import TimeSeries
+    _IMPUTEGAP_AVAILABLE = True
+except ImportError:
+    _IMPUTEGAP_AVAILABLE = False
+    Imputation = None
+    TimeSeries = None
+
+try:
+    import pycatch22  # noqa: F401
+    _PYCATCH22_AVAILABLE = True
+except ImportError:
+    _PYCATCH22_AVAILABLE = False
+    print(
+        "[climdata.impute] ⚠️  pycatch22 is not installed. "
+        "Some imputation feature-extraction methods will be unavailable.\n"
+        "  pycatch22 cannot be reliably installed via pip on all platforms.\n"
+        "  Install it with conda:\n"
+        "    conda install -c conda-forge pycatch22"
+    )
+
+try:
+    from sklearn.metrics import mean_squared_error, mean_absolute_error
+    _SKLEARN_AVAILABLE = True
+except ImportError:
+    _SKLEARN_AVAILABLE = False
+    print(
+        "[climdata.impute] scikit-learn is not installed. "
+        "Install it with: pip install scikit-learn"
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +48,9 @@ class Imputer:
     Each (variable, lat, lon) grid cell is treated as an independent time series.
     """
 
+    # Methods that require PyTorch (BRITS, GRIN, BayOTIDE, DeepMVI)
+    _TORCH_METHODS = {"BRITS", "GRIN", "BayOTIDE", "DeepMVI"}
+
     def __init__(
         self,
         ds: xr.Dataset,
@@ -28,6 +60,22 @@ class Imputer:
         method: str = "BRITS",
         normalize: bool = True,
     ):
+        if not _IMPUTEGAP_AVAILABLE:
+            raise ImportError(
+                "[climdata.impute] imputegap is not available. "
+                "It is bundled with climdata — please reinstall the package."
+            )
+        if method in self._TORCH_METHODS:
+            try:
+                import torch  # noqa: F401
+            except ImportError:
+                raise ImportError(
+                    f"[climdata.impute] Method '{method}' requires PyTorch, which is not installed. "
+                    f"Install it with:\n"
+                    f"  pip install torch torchvision torchaudio "
+                    f"--index-url https://download.pytorch.org/whl/cpu\n"
+                    f"See docs/installation.md for GPU and full dependency instructions."
+                )
         self.ds = ds
         self.time_dim = time_dim
         self.lat_dim = lat_dim

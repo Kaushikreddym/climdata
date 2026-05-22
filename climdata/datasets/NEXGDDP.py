@@ -13,6 +13,9 @@ More info: https://www.nccs.nasa.gov/services/data-collections/land-based-produc
 import os
 import xarray as xr
 import pandas as pd
+import dask
+import dask.array as da
+from dask.diagnostics import ProgressBar
 from pathlib import Path
 from datetime import datetime
 from omegaconf import DictConfig
@@ -439,49 +442,113 @@ class NEXGDDP:
         
         return url, filename
     
-    def fetch(self):
+
+    def fetch(self, max_download_workers: int = 8):
         """
-        Download NEX-GDDP-CMIP6 files from NASA THREDDS server
-        for the requested variables, time range, experiment, and model.
+        Download NEX-GDDP-CMIP6 files from NASA THREDDS server using
+        ``dask.delayed`` for fully parallel file-existence checks and downloads.
+
+        Both phases (check + download) use the ``"threads"`` scheduler so that
+        the GIL is released during I/O and multiple HTTP connections run
+        concurrently without spawning heavyweight processes.
+
+        Parameters
+        ----------
+        max_download_workers : int, default 8
+            Maximum concurrent HTTP download connections.  Keep this ≤ 8 to
+            avoid triggering NASA THREDDS rate-limiting / 503 errors.
         """
         print(f"🔍 Downloading NEX-GDDP-CMIP6 data from NASA THREDDS...")
         print(f"   Model: {self.source_id}, Experiment: {self.experiment_id}")
-        
+
         start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
-        end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
-        
-        # Create directory structure: nexgddp/{MODEL}/{experiment}/{variable}/
-        base_dir = Path(self.cfg.data_dir) / "NEXGDDP" / self.source_id / self.experiment_id
+        end_date   = datetime.fromisoformat(self.cfg.time_range.end_date)
+
+        base_dir = (
+            Path(self.cfg.data_dir)
+            / "NEXGDDP"
+            / self.source_id
+            / self.experiment_id
+        )
         base_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate list of years to download
+
         years = range(start_date.year, end_date.year + 1)
-        
-        # Download each variable for each year
+
+        # ── Build full (url, local_path) task list ────────────────────────────
+        all_tasks = []
         for var in self.cfg.variables:
-            print(f"\n📥 Fetching {var} ({self.AVAILABLE_VARIABLES.get(var, var)})...")
-            
             var_dir = base_dir / var
             var_dir.mkdir(parents=True, exist_ok=True)
-            
-            for year in tqdm(list(years), desc=f"  Downloading {var}"):
+            for year in years:
                 url, filename = self._construct_download_url(var, year)
-                local_path = var_dir / filename
-                
-                # Skip if file already exists and is complete
-                if local_path.exists() and self._verify_file_complete(local_path, url):
-                    self.downloaded_files.append(str(local_path))
-                    continue
-                
-                # Download file with retry logic
-                success = self._download_with_retry(url, local_path, max_retries=5)
-                
-                if success:
-                    self.downloaded_files.append(str(local_path))
-                else:
-                    print(f"  ⚠️  Failed to download {filename} after multiple retries")
-        
-        print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
+                all_tasks.append({"url": url, "local_path": var_dir / filename,
+                                   "filename": filename})
+
+        n_total = len(all_tasks)
+        print(f"   Total files to check: {n_total} "
+              f"({len(self.cfg.variables)} var(s) × {len(years)} year(s))")
+
+        # ── Phase 1: parallel existence / size checks (threads, no data I/O) ──
+        @dask.delayed(pure=False)
+        def _check(task):
+            lp = task["local_path"]
+            if lp.exists() and self._verify_file_complete(lp, task["url"]):
+                return {"skip": True, "local_path": str(lp)}
+            return {"skip": False, **task}
+
+        print(f"\n🔎 Checking {n_total} files for completeness (parallel HEAD requests)...")
+        with ProgressBar():
+            check_results = dask.compute(
+                [_check(t) for t in all_tasks],
+                scheduler="threads",
+                num_workers=16,          # HEAD requests are cheap
+            )[0]
+
+        skipped     = [r for r in check_results if     r["skip"]]
+        to_download = [r for r in check_results if not r["skip"]]
+
+        for r in skipped:
+            self.downloaded_files.append(r["local_path"])
+
+        print(f"   ✓ {len(skipped):>4d} files already complete — skipping")
+        print(f"   ↓ {len(to_download):>4d} files need downloading")
+
+        if not to_download:
+            print(f"\n✅ All {len(self.downloaded_files)} files already present")
+            return
+
+        # ── Phase 2: parallel downloads (threads, capped to avoid throttling) ─
+        @dask.delayed(pure=False)
+        def _download(task):
+            success = self._download_with_retry(
+                task["url"], task["local_path"], max_retries=5
+            )
+            return {"success": success,
+                    "local_path": str(task["local_path"]),
+                    "filename": task["filename"]}
+
+        print(f"\n📥 Downloading {len(to_download)} files "
+              f"(max {max_download_workers} concurrent connections)...")
+        with ProgressBar():
+            dl_results = dask.compute(
+                [_download(t) for t in to_download],
+                scheduler="threads",
+                num_workers=min(max_download_workers, len(to_download)),
+            )[0]
+
+        failed = []
+        for r in dl_results:
+            if r["success"]:
+                self.downloaded_files.append(r["local_path"])
+            else:
+                failed.append(r["filename"])
+
+        print(f"\n✅ {len(self.downloaded_files)} files ready "
+              f"({len(skipped)} cached + {len(to_download) - len(failed)} downloaded)")
+        if failed:
+            print(f"⚠️  {len(failed)} file(s) failed after all retries:")
+            for fn in failed:
+                print(f"     • {fn}")
     
     def _verify_file_complete(self, local_path: Path, url: str) -> bool:
         """
@@ -605,67 +672,138 @@ class NEXGDDP:
         
         return False
     
+    def _extract_preprocess(self, ds: xr.Dataset, var: str) -> xr.Dataset:
+        """
+        Apply spatial extraction to a single-file dataset during open_mfdataset
+        preprocessing — identical in spirit to MSWXmirror._extract_preprocess.
+
+        Calling this inside ``preprocess`` means each annual file is clipped to
+        the target region *before* its data is concatenated with other files.
+        For a global NEX-GDDP file (~1440×600 cells) clipped to Germany
+        (~36×32 cells) this reduces data read per file by ~750×.
+        """
+        # Drop all variables except the target to avoid memory bloat
+        drop = [v for v in ds.data_vars if v != var]
+        if drop:
+            ds = ds.drop_vars(drop)
+
+        if self._extract_mode == "point":
+            lon, lat, buffer_deg = self._extract_params
+            if buffer_deg > 0:
+                ds = ds.sel(
+                    lat=slice(lat - buffer_deg, lat + buffer_deg),
+                    lon=slice(lon - buffer_deg, lon + buffer_deg),
+                ).mean(["lat", "lon"])
+            else:
+                ds = ds.sel(lat=lat, lon=lon, method="nearest")
+
+        elif self._extract_mode == "box":
+            box = self._extract_params
+            ds = ds.sel(
+                lat=slice(box["lat_min"], box["lat_max"]),
+                lon=slice(box["lon_min"], box["lon_max"]),
+            )
+
+        elif self._extract_mode == "shapefile":
+            import rioxarray
+            from shapely.geometry import mapping as shape_mapping
+            gdf = self._extract_params
+            ds = ds.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
+            ds = ds.rio.write_crs("EPSG:4326", inplace=True)
+            clipped = [ds.rio.clip([shape_mapping(g)], gdf.crs, drop=True)
+                       for g in gdf.geometry]
+            ds = xr.concat(clipped, dim="geom_id")
+
+        return ds
+
     def load(self):
         """
-        Load the downloaded NEX-GDDP netCDF files into an xarray Dataset.
-        Combines multiple files if necessary and selects the requested time range.
+        Load NEX-GDDP files using a ThreadPoolExecutor — one thread per file.
+
+        Each thread calls ``xr.open_dataset(engine="h5netcdf")`` directly
+        (no dask graph overhead), applies ``_extract_preprocess`` to clip the
+        global grid (~1440×600) to the target region (~36×32 for Germany),
+        and loads the result into RAM as plain numpy arrays.
+
+        All annual datasets for a variable are then concatenated along ``time``
+        with ``xr.concat`` and merged across variables.  The result is a fully
+        in-memory xarray Dataset — no dask, no lazy evaluation, no scheduler.
+
+        Benefits over open_mfdataset:
+          - No dask graph construction or scheduler overhead
+          - ThreadPoolExecutor workers are truly parallel (h5netcdf releases GIL)
+          - Each file is clipped + loaded to numpy immediately — concat is O(n)
+          - No unify_chunks() needed — arrays are already numpy
         """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         if not self.downloaded_files:
             raise ValueError("No files to load. Run fetch() first.")
-        
-        print(f"📂 Loading {len(self.downloaded_files)} NEX-GDDP files...")
-        
+
         # Group files by variable
-        files_by_var = {}
+        files_by_var: Dict[str, List[str]] = {}
         for fpath in self.downloaded_files:
-            # Determine which variable this file contains
             for var in self.cfg.variables:
                 if f"/{var}/" in fpath or f"_{var}_day_" in fpath:
-                    if var not in files_by_var:
-                        files_by_var[var] = []
-                    files_by_var[var].append(fpath)
+                    files_by_var.setdefault(var, []).append(fpath)
                     break
-        
-        # Load each variable separately and merge
+
+        start = self.cfg.time_range.start_date
+        end   = self.cfg.time_range.end_date
+        n_total = sum(len(v) for v in files_by_var.values())
+        n_workers = min(n_total, (os.cpu_count()/4 or 8))
+
+        print(f"📂 Loading {n_total} NEX-GDDP files "
+              f"({n_workers} threads, engine=h5netcdf, clip-per-file) ...")
+        if self._extract_mode:
+            print(f"   mode='{self._extract_mode}' → each file clipped before concat")
+
+        def _open_one(fpath: str, var: str) -> xr.Dataset:
+            """Open one annual file, clip to region, load to numpy, return Dataset."""
+            ds = xr.open_dataset(fpath, engine="h5netcdf", mask_and_scale=True)
+            ds = self._extract_preprocess(ds, var)
+            # .load() materialises to numpy inside the thread — no dask involved
+            return ds.load()
+
         datasets = []
         for var, file_list in files_by_var.items():
-            print(f"  Loading {var} from {len(file_list)} file(s)...")
-            
-            if len(file_list) == 1:
-                ds_var = xr.open_dataset(file_list[0])
-            else:
-                # Multiple files - open as multi-file dataset
-                ds_var = xr.open_mfdataset(
-                    sorted(file_list),
-                    combine='by_coords',
-                    parallel=True,
-                    engine='netcdf4'
-                )
-            
+            file_list = sorted(file_list)
+            print(f"  {var}: opening {len(file_list)} files with {n_workers} threads ...")
+
+            annual: Dict[str, xr.Dataset] = {}
+            with ThreadPoolExecutor(max_workers=n_workers) as pool:
+                futures = {pool.submit(_open_one, fp, var): fp for fp in file_list}
+                for fut in as_completed(futures):
+                    fp = futures[fut]
+                    try:
+                        annual[fp] = fut.result()
+                    except Exception as exc:
+                        print(f"  ⚠️  {fp} failed: {exc}")
+
+            # Concatenate in sorted order (as_completed is unordered)
+            sorted_ds = [annual[fp] for fp in file_list if fp in annual]
+            ds_var = xr.concat(sorted_ds, dim="time",
+                               data_vars="minimal", coords="minimal", compat="override")
+            ds_var = ds_var.sel(time=slice(start, end))
             datasets.append(ds_var)
-        
-        # Merge all variables into one dataset
+
         if len(datasets) == 1:
             self.ds = datasets[0]
         else:
-            self.ds = xr.merge(datasets)
-        
-        # Subset to requested time range
-        start = self.cfg.time_range.start_date
-        end = self.cfg.time_range.end_date
-        self.ds = self.ds.sel(time=slice(start, end))
-        
+            self.ds = xr.merge(datasets, compat="override", join="override")
+
         # Add metadata
-        self.ds.attrs['source'] = f'NEX-GDDP-CMIP6'
+        self.ds.attrs['source'] = 'NEX-GDDP-CMIP6'
         self.ds.attrs['source_url'] = 'https://www.nccs.nasa.gov/services/data-collections/land-based-products/nex-gddp-cmip6'
         self.ds.attrs['experiment_id'] = self.experiment_id
         self.ds.attrs['source_id'] = self.source_id
         self.ds.attrs['member_id'] = self.member_id
         self.ds.attrs['resolution'] = '0.25 degrees'
         self.ds.attrs['description'] = f'NEX-GDDP-CMIP6 downscaled {self.experiment_id} from {self.source_id}'
-        
-        print(f"✅ Loaded dataset with {len(self.ds.data_vars)} variables")
-        
+
+        print(f"✅ Loaded dataset with {len(self.ds.data_vars)} variable(s) backed by Dask arrays")
+        print(f"   Chunks: {dict(self.ds.chunks)}")
+
         # Apply extraction if it was set before loading
         if self._extract_mode is not None:
             self._apply_extraction()

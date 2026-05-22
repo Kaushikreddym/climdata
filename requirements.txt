@@ -43,11 +43,8 @@ xclim
 pyarrow
 fastparquet
 
-# ML stack (basic, non-torch)
-mlflow
-scikit-learn
-xgboost  # GPU support may not work in Colab, CPU version installs fine
-optuna
+# ML stack — all optional, install manually if needed
+# pip install scikit-learn mlflow xgboost optuna
 
 # Dev tools
 gitpython
@@ -57,11 +54,15 @@ google-api-python-client
 # ipdb
 
 # Basic dependencies for vendorized imputegap (non-ML parts)
+# NOTE: pycatch22 is NOT listed here — it cannot be reliably installed via pip
+# on all platforms.  Install it with conda before using imputation:
+#   conda install -c conda-forge pycatch22
+# All other imputation extras are available via:
+#   pip install climdata[impute]        # base imputation stack
+#   pip install climdata[torch]         # PyTorch-based methods (BRITS, GRIN, etc.)
+#   pip install climdata[ml]            # scikit-learn / mlflow / xgboost / optuna
+#   pip install climdata[impute,torch,ml]  # everything
 toml
-shap
-pycatch22
-scikit-optimize
-pyswarms
 pytest
 xlsxwriter
 types-toml
@@ -72,12 +73,7 @@ plotly
 ujson
 ipdb
 tables
-MissForest
-lightgbm
-einops
-ray
-fire
-fastdtw
+# Optional imputation backends — install via: pip install climdata[impute,torch,ml]
 pyqt5
 
 # Note: PyTorch packages (torch, torchvision, torchaudio, torch-geometric, etc.) 

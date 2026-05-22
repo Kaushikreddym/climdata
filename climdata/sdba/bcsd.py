@@ -41,6 +41,25 @@ except ImportError:
 warnings.filterwarnings("ignore", category=Warning)
 
 
+def _to_proleptic_gregorian(cube):
+    """
+    Reinterpret an iris cube's time coordinate as proleptic_gregorian calendar.
+
+    ISIMIP3BASD asserts this calendar on every input cube. Most climate datasets
+    use 'gregorian' or 'standard', which are functionally equivalent for dates
+    after 1582, so a simple unit-string replacement is safe.
+    """
+    import cf_units
+    t = cube.coord('time')
+    if t.units.calendar != 'proleptic_gregorian':
+        new_units = cf_units.Unit(
+            t.units.origin,          # keep the epoch string (e.g. 'days since ...')
+            calendar='proleptic_gregorian'
+        )
+        t.units = new_units
+    return cube
+
+
 def regrid_to_coarse(
     fine_data: xr.Dataset,
     coarse_template: xr.Dataset,
@@ -107,19 +126,33 @@ def regrid_to_coarse(
             coarse_template,
             method=method,
             periodic=False,
+            ignore_degenerate=True,
             filename=weight_file,
             reuse_weights=weight_file and os.path.exists(weight_file)
         )
-        
-        # Regrid each variable
+
+        # Build a time-independent valid-source mask:
+        # For each coarse cell, record the fraction of source weight that came
+        # from actually valid (non-NaN) fine-grid cells.  Any coarse cell that
+        # had *no* valid source (fraction == 0) is masked to NaN in the output,
+        # preventing xESMF's default behaviour of filling those cells with zero.
+        first_var = next(iter(fine_data.data_vars))
+        fine_valid = xr.where(fine_data[first_var].isel(time=0).notnull(), 1.0, 0.0)
+        coarse_valid_frac = regridder(fine_valid)   # fraction of weight from valid cells
+        # cells where coarse_valid_frac == 0 had only NaN sources → mask them
+        valid_mask = coarse_valid_frac > 0
+
+        # Regrid each variable and apply the mask
         result_vars = {}
         for var in fine_data.data_vars:
             print(f"   Regridding variable: {var}")
-            regridded = regridder(fine_data[var])
-            # Preserve attributes
+            regridded = regridder(fine_data[var].where(fine_data[var].notnull(), other=0.0))
+            # Re-normalise by valid fraction to undo the zero-fill effect on
+            # partially-covered border cells, then mask fully-uncovered cells
+            regridded = (regridded / coarse_valid_frac).where(valid_mask)
             regridded.attrs = fine_data[var].attrs
             result_vars[var] = regridded
-        
+
         result = xr.Dataset(result_vars)
         result.attrs = fine_data.attrs
         
@@ -306,7 +339,7 @@ class BiasCorrection:
     
     def __init__(
         self,
-        variable: str,
+        variable: Union[str, List[str]],
         method: str = 'parametric',
         distribution: Optional[str] = None,
         trend_preservation: Optional[str] = None,
@@ -319,41 +352,66 @@ class BiasCorrection:
         halfwin_upper_bound_climatology: int = 0,
         n_processes: int = 1,
         n_quantiles: int = 50,
-        n_iterations: int = 0,
+        n_iterations: int = 20,
         randomization_seed: Optional[int] = None,
         **kwargs
     ):
-        self.variable = variable
+        # Accept a single variable name or a list for multivariate MBCn
+        self.variables = [variable] if isinstance(variable, str) else list(variable)
+        # Keep .variable for backward-compat (single-var case)
+        self.variable = self.variables[0] if len(self.variables) == 1 else None
         self.method = method
         self.n_processes = n_processes
         self.n_quantiles = n_quantiles
         self.n_iterations = n_iterations
         self.randomization_seed = randomization_seed
-        
-        # Get default config for this variable
-        default_config = self.DEFAULT_CONFIGS.get(variable, {})
-        
-        # Use provided values or fall back to defaults
-        self.distribution = distribution if distribution is not None else default_config.get('distribution')
-        self.trend_preservation = trend_preservation if trend_preservation is not None else default_config.get('trend_preservation', 'additive')
-        self.detrend = detrend if detrend is not False else default_config.get('detrend', False)
-        self.adjust_p_values = adjust_p_values if adjust_p_values is not False else default_config.get('adjust_p_values', False)
-        self.lower_bound = lower_bound if lower_bound is not None else default_config.get('lower_bound')
-        self.lower_threshold = lower_threshold if lower_threshold is not None else default_config.get('lower_threshold')
-        self.upper_bound = upper_bound if upper_bound is not None else default_config.get('upper_bound')
-        self.upper_threshold = upper_threshold if upper_threshold is not None else default_config.get('upper_threshold')
-        self.halfwin_upper_bound_climatology = halfwin_upper_bound_climatology if halfwin_upper_bound_climatology != 0 else default_config.get('halfwin_upper_bound_climatology', 0)
-        
+
+        # Build per-variable config lists from DEFAULT_CONFIGS
+        # (override only if an explicit scalar value was supplied)
+        def _pick(key, explicit_val, default_val=None):
+            """Return explicit_val when it differs from the sentinel, else default_val."""
+            return explicit_val if explicit_val is not None else default_val
+
+        self._var_configs = []
+        for v in self.variables:
+            cfg = self.DEFAULT_CONFIGS.get(v, {})
+            self._var_configs.append({
+                'distribution':                  distribution         if distribution         is not None  else cfg.get('distribution'),
+                'trend_preservation':            trend_preservation   if trend_preservation   is not None  else cfg.get('trend_preservation', 'additive'),
+                'detrend':                       detrend              if detrend              is not False else cfg.get('detrend', False),
+                'adjust_p_values':               adjust_p_values      if adjust_p_values      is not False else cfg.get('adjust_p_values', False),
+                'lower_bound':                   lower_bound          if lower_bound          is not None  else cfg.get('lower_bound'),
+                'lower_threshold':               lower_threshold      if lower_threshold      is not None  else cfg.get('lower_threshold'),
+                'upper_bound':                   upper_bound          if upper_bound          is not None  else cfg.get('upper_bound'),
+                'upper_threshold':               upper_threshold      if upper_threshold      is not None  else cfg.get('upper_threshold'),
+                'halfwin_upper_bound_climatology': halfwin_upper_bound_climatology if halfwin_upper_bound_climatology != 0 else cfg.get('halfwin_upper_bound_climatology', 0),
+            })
+
+        # Expose scalar attrs for single-variable backward compatibility
+        if len(self.variables) == 1:
+            c = self._var_configs[0]
+            self.distribution                   = c['distribution']
+            self.trend_preservation             = c['trend_preservation']
+            self.detrend                        = c['detrend']
+            self.adjust_p_values                = c['adjust_p_values']
+            self.lower_bound                    = c['lower_bound']
+            self.lower_threshold                = c['lower_threshold']
+            self.upper_bound                    = c['upper_bound']
+            self.upper_threshold                = c['upper_threshold']
+            self.halfwin_upper_bound_climatology = c['halfwin_upper_bound_climatology']
+
         # Store additional kwargs
         self.kwargs = kwargs
-        
-        print(f"🔧 BiasCorrection initialized for {variable}")
-        print(f"   Distribution: {self.distribution}")
-        print(f"   Trend preservation: {self.trend_preservation}")
-        print(f"   Detrend: {self.detrend}")
-        print(f"   n_processes: {self.n_processes}")
-        print(f"   n_iterations (MBCn): {self.n_iterations}  {'(MBCn enabled)' if self.n_iterations > 0 else '(univariate only)'}")
+
+        mv_label = '(MBCn multivariate)' if (self.n_iterations > 0 and len(self.variables) > 1) else \
+                   '(MBCn univariate)'   if self.n_iterations > 0 else '(univariate, no MBCn)'
+        print(f"🔧 BiasCorrection initialized for {self.variables}")
+        print(f"   n_iterations : {self.n_iterations}  {mv_label}")
+        print(f"   n_processes  : {self.n_processes}")
         print(f"   randomization_seed: {self.randomization_seed}")
+        for v, c in zip(self.variables, self._var_configs):
+            print(f"   [{v}] dist={c['distribution']}  trend={c['trend_preservation']}  "
+                  f"detrend={c['detrend']}  adjust_p={c['adjust_p_values']}")
     
     def correct(
         self,
@@ -399,110 +457,146 @@ class BiasCorrection:
                 "iris is required for bias correction. Install it with: pip install scitools-iris"
             )
         
-        print(f"\n🔄 Starting bias correction for {self.variable}...")
-        print(f"   Obs hist period: {obs_hist.time.values[0]} to {obs_hist.time.values[-1]}")
-        print(f"   Sim hist period: {sim_hist.time.values[0]} to {sim_hist.time.values[-1]}")
-        print(f"   Sim fut period: {sim_fut.time.values[0]} to {sim_fut.time.values[-1]}")
-        
+        mv_tag = f"{len(self.variables)} variables (MBCn multivariate)" if len(self.variables) > 1 else self.variables[0]
+        print(f"\n🔄 Starting bias correction for {mv_tag} ...")
+        print(f"   Obs hist period: {obs_hist.time.values[0]} → {obs_hist.time.values[-1]}")
+        print(f"   Sim hist period: {sim_hist.time.values[0]} → {sim_hist.time.values[-1]}")
+        print(f"   Sim fut  period: {sim_fut.time.values[0]} → {sim_fut.time.values[-1]}")
+
         # Create temporary directory in current working directory
         tmpdir = Path.cwd() / "tmp_bcsd"
         tmpdir.mkdir(parents=True, exist_ok=True)
-        
+
         try:
-            # Convert xarray to NetCDF, then load as iris cubes
-            print("   Converting xarray datasets to iris cubes...")
-            obs_hist_path = tmpdir / "obs_hist.nc"
-            sim_hist_path = tmpdir / "sim_hist.nc"
-            sim_fut_path = tmpdir / "sim_fut.nc"
-            
-            # Save as NetCDF
-            obs_hist[self.variable].to_netcdf(obs_hist_path)
-            sim_hist[self.variable].to_netcdf(sim_hist_path)
-            sim_fut[self.variable].to_netcdf(sim_fut_path)
-            
-            # Load as iris cubes
-            obs_hist_cube = iris.load_cube(str(obs_hist_path))
-            sim_hist_cube = iris.load_cube(str(sim_hist_path))
-            sim_fut_cube = iris.load_cube(str(sim_fut_path))
-            
-            # Prepare output path for iris cube (always use absolute path)
-            if output_path is None:
-                sim_fut_ba_path = (tmpdir / "sim_fut_ba.nc").resolve()
-            else:
-                sim_fut_ba_path = Path(output_path).resolve()
-            
-            print("   Running ISIMIP3BASD bias adjustment...")
+            import dask.array as da
+            from climdata._vendor.isimip3basd import utility_functions as uf
+
+            # ── Build per-variable cube lists ────────────────────────────────
+            # Convert xarray → iris DIRECTLY in memory (no disk round-trip).
+            # .to_iris() avoids writing/reading intermediate NetCDF files which
+            # was the cause of the "stuck at converting" bottleneck for large
+            # datasets like sim_fut (2015–2100, ~31k daily time steps).
+            print("   Converting xarray datasets to iris cubes (in-memory)...")
+            obs_hist_cubes, sim_hist_cubes, sim_fut_cubes = [], [], []
+            sim_fut_ba_paths = []
+
+            for i, (var, cfg) in enumerate(zip(self.variables, self._var_configs)):
+                # Convert to iris and normalise calendar as required by ISIMIP3BASD.
+                # Force-compute dask arrays NOW (in the main process) so that worker
+                # processes receive plain numpy arrays via the initializer.
+                # Without this each of the n_processes workers independently triggers
+                # NetCDF reads for every file in the dataset (n_processes × n_files
+                # concurrent disk reads), causing heavy I/O contention.
+                _obs_cube = _to_proleptic_gregorian(obs_hist[var].to_iris())
+                _obs_arr = _obs_cube.core_data()
+                _obs_cube.data = np.ma.masked_invalid(
+                    _obs_arr.compute() if hasattr(_obs_arr, "compute") else _obs_arr
+                )
+                obs_hist_cubes.append(_obs_cube)
+
+                _sh_cube = _to_proleptic_gregorian(sim_hist[var].to_iris())
+                _sh_arr = _sh_cube.core_data()
+                _sh_cube.data = np.ma.masked_invalid(
+                    _sh_arr.compute() if hasattr(_sh_arr, "compute") else _sh_arr
+                )
+                sim_hist_cubes.append(_sh_cube)
+
+                _sf_cube = _to_proleptic_gregorian(sim_fut[var].to_iris())
+                _sf_arr = _sf_cube.core_data()
+                _sf_cube.data = np.ma.masked_invalid(
+                    _sf_arr.compute() if hasattr(_sf_arr, "compute") else _sf_arr
+                )
+                sim_fut_cubes.append(_sf_cube)
+                print(f"   [{var}] cubes materialised (numpy, proleptic_gregorian) — "
+                      f"obs_hist {obs_hist[var].shape}, "
+                      f"sim_hist {sim_hist[var].shape}, "
+                      f"sim_fut  {sim_fut[var].shape}")
+
+                # Output path: per-variable when multiple vars, single path when one var
+                if output_path is None:
+                    ba_path = (tmpdir / f"sim_fut_ba_{var}.nc").resolve()
+                elif len(self.variables) == 1:
+                    ba_path = Path(output_path).resolve()
+                else:
+                    p = Path(output_path)
+                    ba_path = (p.parent / f"{p.stem}_{var}{p.suffix}").resolve()
+
+                sim_fut_ba_paths.append(ba_path)
+
+            # ── Run ISIMIP3BASD once for ALL variables jointly ────────────────
+            # Passing multiple cubes + n_iterations > 0 activates MBCn copula
+            # adjustment, preserving inter-variable dependence structure.
+            print(f"   Running ISIMIP3BASD bias adjustment (n_iterations={self.n_iterations}) ...")
             print(f"   (This may take a while for large datasets)")
-            
-            # Run bias adjustment with iris cubes (ISIMIP3BASD expects lists)
-            # n_iterations > 0 enables MBCn copula adjustment (multivariate)
+
             ba.adjust_bias(
-                obs_hist=[obs_hist_cube],
-                sim_hist=[sim_hist_cube],
-                sim_fut=[sim_fut_cube],
-                sim_fut_ba_path=[str(sim_fut_ba_path)],
+                obs_hist=obs_hist_cubes,
+                sim_hist=sim_hist_cubes,
+                sim_fut=sim_fut_cubes,
+                sim_fut_ba_path=[str(p) for p in sim_fut_ba_paths],
                 n_processes=self.n_processes,
                 n_quantiles=self.n_quantiles,
                 n_iterations=self.n_iterations,
                 randomization_seed=self.randomization_seed,
-                distribution=[self.distribution] if self.distribution else [None],
-                trend_preservation=[self.trend_preservation],
-                detrend=[self.detrend],
-                adjust_p_values=[self.adjust_p_values],
-                halfwin_upper_bound_climatology=[self.halfwin_upper_bound_climatology],
-                lower_bound=[self.lower_bound] if self.lower_bound is not None else [None],
-                lower_threshold=[self.lower_threshold] if self.lower_threshold is not None else [None],
-                upper_bound=[self.upper_bound] if self.upper_bound is not None else [None],
-                upper_threshold=[self.upper_threshold] if self.upper_threshold is not None else [None],
+                distribution=          [c['distribution']                   for c in self._var_configs],
+                trend_preservation=    [c['trend_preservation']              for c in self._var_configs],
+                detrend=               [c['detrend']                         for c in self._var_configs],
+                adjust_p_values=       [c['adjust_p_values']                 for c in self._var_configs],
+                halfwin_upper_bound_climatology=[c['halfwin_upper_bound_climatology'] for c in self._var_configs],
+                lower_bound=           [c['lower_bound']      for c in self._var_configs],
+                lower_threshold=       [c['lower_threshold']  for c in self._var_configs],
+                upper_bound=           [c['upper_bound']       for c in self._var_configs],
+                upper_threshold=       [c['upper_threshold']   for c in self._var_configs],
+                if_all_invalid_use=           [np.nan  for _ in self._var_configs],
+                unconditional_ccs_transfer=   [False   for _ in self._var_configs],
+                trendless_bound_frequency=    [False   for _ in self._var_configs],
                 **kwargs,
                 **self.kwargs
             )
-            
+
             print("   ✅ Bias correction complete!")
             print("   📦 Collecting results from npy_stack...")
-            
-            # Collect output from npy_stack (similar to ISIMIP3BASD's main())
-            import dask.array as da
-            from climdata._vendor.isimip3basd import utility_functions as uf
-            
-            # Load npy_stack and reshape to match sim_fut shape
-            npy_stack_path = uf.npy_stack_dir(str(sim_fut_ba_path))
-            d = da.from_npy_stack(npy_stack_path, mmap_mode=None).reshape(sim_fut_cube.shape)
-            
-            # Create result cube with collected data
-            sim_fut_ba_cube = sim_fut_cube.copy()
-            sim_fut_ba_cube.data = np.ma.masked_array(d.compute())
-            
-            # Save the result cube to file
-            print(f"   💾 Saving result to: {sim_fut_ba_path}")
-            iris.save(sim_fut_ba_cube, str(sim_fut_ba_path),
-                     saver=iris.fileformats.netcdf.save,
-                     unlimited_dimensions=['time'],
-                     zlib=True, complevel=1)
-            
-            print(f"   📂 File saved: {sim_fut_ba_path.exists()}")
-            
-            # Load result and convert to xarray
-            result_cube = iris.load_cube(str(sim_fut_ba_path))
-            # Force load data into memory to avoid lazy loading issues after cleanup
-            result_cube.data  # This triggers the lazy data to be loaded
-            result = xr.DataArray.from_iris(result_cube).to_dataset(name=self.variable)
-            # Ensure data is loaded (not lazy)
-            result.load()
-            result.attrs['bias_correction_method'] = 'ISIMIP3BASD'
-            result.attrs['distribution'] = str(self.distribution)
-            result.attrs['trend_preservation'] = self.trend_preservation
-            
-            if output_path is not None:
+
+            # ── Collect per-variable results and merge ────────────────────────
+            result_datasets = []
+            for var, ba_path, sim_fut_cube in zip(self.variables, sim_fut_ba_paths, sim_fut_cubes):
+                npy_stack_path = uf.npy_stack_dir(str(ba_path))
+                d = da.from_npy_stack(npy_stack_path, mmap_mode=None).reshape(sim_fut_cube.shape)
+
+                sim_fut_ba_cube = sim_fut_cube.copy()
+                sim_fut_ba_cube.data = np.ma.masked_array(d.compute())
+
+                print(f"   💾 Saving {var} → {ba_path}")
+                iris.save(sim_fut_ba_cube, str(ba_path),
+                          saver=iris.fileformats.netcdf.save,
+                          unlimited_dimensions=['time'],
+                          zlib=True, complevel=1)
+
+                result_cube = iris.load_cube(str(ba_path))
+                result_cube.data  # force load
+                ds_var = xr.DataArray.from_iris(result_cube).to_dataset(name=var)
+                ds_var.load()
+                result_datasets.append(ds_var)
+
+            # Merge all variables into one Dataset
+            result = xr.merge(result_datasets)
+            result.attrs['bias_correction_method'] = 'ISIMIP3BASD-MBCn' if self.n_iterations > 0 else 'ISIMIP3BASD'
+            result.attrs['n_iterations'] = self.n_iterations
+            result.attrs['variables'] = str(self.variables)
+
+            if output_path is not None and len(self.variables) == 1:
                 result.to_netcdf(output_path)
                 print(f"   💾 Saved to: {output_path}")
-            
+            elif output_path is not None:
+                # Multi-var: save combined file too
+                result.to_netcdf(output_path)
+                print(f"   💾 Combined output saved to: {output_path}")
+
         finally:
-            # Clean up temporary files
             import shutil
             if tmpdir.exists():
                 shutil.rmtree(tmpdir, ignore_errors=True)
-        
+
         return result
 
 
@@ -624,28 +718,31 @@ class StatisticalDownscaling:
         tmpdir.mkdir(parents=True, exist_ok=True)
         
         try:
-            # Convert xarray to NetCDF, then load as iris cubes
-            print("   Converting xarray datasets to iris cubes...")
-            obs_fine_path = tmpdir / "obs_fine.nc"
-            sim_coarse_path = tmpdir / "sim_coarse.nc"
-            
-            obs_fine[self.variable].to_netcdf(obs_fine_path)
-            sim_coarse[self.variable].to_netcdf(sim_coarse_path)
-            
-            # Load as iris cubes
-            obs_fine_cube = iris.load_cube(str(obs_fine_path))
-            sim_coarse_cube = iris.load_cube(str(sim_coarse_path))
-            
-            # Create remapped coarse data (bilinear interpolation)
+            # Convert xarray → iris DIRECTLY in memory (no disk round-trip).
+            print("   Converting xarray datasets to iris cubes (in-memory)...")
+
+            # .to_iris() preserves dask lazy arrays — no materialisation until needed.
+            # Normalise calendar to proleptic_gregorian as required by ISIMIP3BASD.
+            _of_cube = _to_proleptic_gregorian(obs_fine[self.variable].to_iris())
+            _of_cube.data = da.ma.masked_invalid(_of_cube.core_data())
+            obs_fine_cube = _of_cube
+
+            _sc_cube = _to_proleptic_gregorian(sim_coarse[self.variable].to_iris())
+            _sc_cube.data = da.ma.masked_invalid(_sc_cube.core_data())
+            sim_coarse_cube = _sc_cube
+            print(f"   obs_fine  {obs_fine_cube.shape}, sim_coarse {sim_coarse_cube.shape}")
+
+            # Bilinear interpolation of coarse → fine grid (lazy xarray, then to iris)
             print("   Creating bilinearly interpolated intermediate data...")
-            sim_coarse_remapbil = sim_coarse[self.variable].interp(
-                lat=obs_fine.lat,
-                lon=obs_fine.lon,
-                method='linear'
+            _remap_cube = _to_proleptic_gregorian(
+                sim_coarse[self.variable].interp(
+                    lat=obs_fine.lat,
+                    lon=obs_fine.lon,
+                    method='linear'
+                ).to_iris()
             )
-            sim_coarse_remapbil_path = tmpdir / "sim_coarse_remapbil.nc"
-            sim_coarse_remapbil.to_netcdf(sim_coarse_remapbil_path)
-            sim_coarse_remapbil_cube = iris.load_cube(str(sim_coarse_remapbil_path))
+            _remap_cube.data = da.ma.masked_invalid(_remap_cube.core_data())
+            sim_coarse_remapbil_cube = _remap_cube
             
             # Prepare output path (always use absolute path)
             if output_path is None:

@@ -29,12 +29,63 @@ classifiers = [
 climdata = "climdata.main:run"
 
 [project.optional-dependencies]
-all = [
-    "pandas",
+# pip install climdata[impute]
+impute = [
+    "scikit-learn",
+    "shap",
+    "scikit-optimize",
+    "pyswarms",
+    "toml",
+    "statsmodels",
+    "MissForest",
+    "lightgbm",
+    "einops",
+    "ray",
+    "fire",
+    "fastdtw",
+    # pycatch22 must be installed via conda (not pip-installable on all platforms):
+    #   conda install -c conda-forge pycatch22
+    # PyTorch is also required for BRITS/GRIN/BayOTIDE/DeepMVI — see [torch] extra below
 ]
 
-extra = [
-    "pandas",
+# pip install climdata[torch]
+torch = [
+    # CPU-only wheels — for GPU see docs/installation.md
+    # pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
+    # pip install torch-cluster -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
+    "pytorch-lightning",
+    "torchmetrics",
+    "einops",
+]
+
+# pip install climdata[ml]
+ml = [
+    "scikit-learn",
+    "mlflow",
+    "xgboost",
+    "optuna",
+    "lightgbm",
+]
+
+# pip install climdata[impute,torch,ml]  — everything
+all = [
+    "scikit-learn",
+    "shap",
+    "scikit-optimize",
+    "pyswarms",
+    "toml",
+    "statsmodels",
+    "MissForest",
+    "lightgbm",
+    "einops",
+    "ray",
+    "fire",
+    "fastdtw",
+    "pytorch-lightning",
+    "torchmetrics",
+    "mlflow",
+    "xgboost",
+    "optuna",
 ]
 
 

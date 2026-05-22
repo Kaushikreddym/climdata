@@ -31,12 +31,17 @@ jobs:
       - name: Install package
         run: |
           pip install numpy
+          pip install -r requirements.txt
+          pip install . --no-build-isolation
+
+      - name: Install optional PyTorch deps (for imputation methods)
+        run: |
+          # PyTorch is optional — not in requirements.txt
+          # Install separately to verify base package works without it
           pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
           pip install torch-cluster \
             --no-build-isolation \
             -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
-          pip install -r requirements.txt
-          pip install . --no-build-isolation
 
       - name: Test import
         run: python -c "import climdata; print('climdata import successful')"

@@ -718,7 +718,7 @@ class HYRASmirror:
                 concat_dim="time",
                 preprocess=preprocess_point,
                 engine="netcdf4",
-                parallel=False,  # point preproc is tiny; parallel could be True on dask cluster
+                parallel=False,
             )
             if use_dask and chunking:
                 dset = dset.chunk(chunking)
@@ -730,7 +730,7 @@ class HYRASmirror:
             if "hurs" in dset:
                 if dset["hurs"].attrs.get("units") == "Percent":
                     dset["hurs"].attrs["units"] = "%"
-            
+
             self.dataset = dset
             return dset
 
@@ -762,16 +762,13 @@ class HYRASmirror:
                 if mode == "box":
                     sub = ds.isel(y=slice(y0, y1), x=slice(x0, x1))
                 else:  # shapefile
-                    # mask may be (ny,nx) and ds dims are (y,x)
-                    # create DataArray mask aligned to y,x
                     mask_da = xr.DataArray(mask, dims=("y", "x"))
-                    # where keeps coords; drop=False keeps dims even if all-NaN
                     sub = ds.where(mask_da, drop=False)
 
                 # optionally chunk lazily
                 if use_dask and chunking:
                     sub = sub.chunk(chunking)
-                
+
                 datasets.append(sub)
 
             # concatenate along time
@@ -818,7 +815,6 @@ class HYRASmirror:
             if "hurs" in dset:
                 if dset["hurs"].attrs.get("units") == "Percent":
                     dset["hurs"].attrs["units"] = "%"
-            
 
             self.dataset = dset
             return dset

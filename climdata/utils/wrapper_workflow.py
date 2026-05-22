@@ -629,9 +629,9 @@ class ClimateExtractor:
             self.dataset_class = cmip_w5e5
         elif dataset_upper == "NEXGDDP":
             nexgddp = climdata.NEXGDDP(cfg)
-            nexgddp.fetch()  # Download NEX-GDDP-CMIP6 data from NASA THREDDS
-            nexgddp.load()   # Load into xarray
-            nexgddp.extract(**extract_kwargs)
+            nexgddp.fetch()
+            nexgddp.extract(**extract_kwargs)  # set params BEFORE load so preprocess clips per-file
+            nexgddp.load()                     # spatial clip applied inside open_mfdataset preprocess
             ds = nexgddp.ds
             self.dataset_class = nexgddp
         elif dataset_upper == "AGRI_ISIMIP":
@@ -1081,6 +1081,354 @@ class ClimateExtractor:
         return str(path)
 
     # ----------------------------
+    # FAIR data object (RO-Crate)
+    # ----------------------------
+    def to_fair(
+        self,
+        ds: Optional[xr.Dataset] = None,
+        output_dir: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        license_url: str = "https://creativecommons.org/licenses/by/4.0/",
+        creator: Optional[str] = None,
+        zip_crate: bool = False,
+    ) -> str:
+        """Export the dataset as a FAIR Research Object Crate (RO-Crate).
+
+        Packages the dataset into a self-describing directory that satisfies
+        the FAIR principles (Findable, Accessible, Interoperable, Reusable):
+
+        * **Findable** – unique dataset identifier & rich JSON-LD metadata
+        * **Accessible** – standard CF-compliant NetCDF + open JSON-LD manifest
+        * **Interoperable** – CF conventions in NetCDF; Schema.org / RO-Crate vocab
+        * **Reusable** – license, provenance, variable descriptions embedded
+
+        The output folder contains:
+
+        .. code-block:: text
+
+            <output_dir>/
+                data.nc                  # CF-compliant NetCDF dataset
+                ro-crate-metadata.json   # JSON-LD manifest (RO-Crate 1.1)
+                ro-crate-preview.html    # human-readable summary (optional)
+
+        Uses the ``rocrate`` Python package when available; falls back to a
+        hand-written JSON-LD manifest so the method always works.
+
+        Args:
+            ds (xr.Dataset, optional): Dataset to package. Defaults to
+                ``self.current_ds``.
+            output_dir (str, optional): Destination folder. Defaults to
+                ``<filename_nc_stem>_fair_crate``.
+            title (str, optional): Human-readable dataset title.
+            description (str, optional): Free-text description of the dataset.
+            license_url (str): SPDX or Creative-Commons URL for the data
+                licence. Defaults to CC-BY-4.0.
+            creator (str, optional): Name of the person / organisation that
+                produced the data.
+            zip_crate (bool): If *True*, zip the crate directory and return
+                the ``.zip`` path. Defaults to *False*.
+
+        Returns:
+            str: Absolute path to the RO-Crate directory (or ``.zip`` file).
+
+        Raises:
+            ValueError: If no dataset is available.
+
+        Example:
+            >>> extractor = ClimData(overrides=["dataset=mswx", ...])
+            >>> ds = extractor.extract()
+            >>> crate_path = extractor.to_fair(title="MSWX Germany 2014")
+            >>> print(crate_path)      # …/mswx_fair_crate/
+        """
+        import datetime
+        import zipfile
+        import uuid
+
+        ds = ds if ds is not None else self.current_ds
+        if ds is None:
+            raise ValueError(
+                "No dataset available. Run extract() or upload_netcdf() first."
+            )
+
+        cfg = self.cfg
+
+        # ── 1. Resolve output directory ─────────────────────────────────────
+        if output_dir is None:
+            base = getattr(self, "filename_nc", None)
+            stem = Path(base).stem if base else getattr(cfg, "dataset", "climdata")
+            output_dir = str(Path(base).parent / f"{stem}_fair_crate") if base else f"{stem}_fair_crate"
+
+        crate_dir = Path(output_dir)
+        crate_dir.mkdir(parents=True, exist_ok=True)
+
+        # ── 2. Write the NetCDF payload ──────────────────────────────────────
+        nc_path = crate_dir / "data.nc"
+
+        # Embed CF global attributes before saving
+        ds_out = ds.copy()
+        ds_out.attrs.setdefault("Conventions", "CF-1.8")
+        ds_out.attrs.setdefault("institution", creator or "climdata")
+        ds_out.attrs.setdefault(
+            "source",
+            getattr(cfg, "dataset", "unknown"),
+        )
+        ds_out.attrs.setdefault(
+            "history",
+            f"{datetime.datetime.utcnow().isoformat()}Z climdata to_fair()",
+        )
+        ds_out.to_netcdf(nc_path)
+        self.logger.info("FAIR payload written to %s", nc_path)
+
+        # ── 3. Collect metadata from cfg ────────────────────────────────────
+        dataset_name = getattr(cfg, "dataset", "unknown")
+        variables = list(getattr(cfg, "variables", list(ds.data_vars)))
+
+        t_start = getattr(getattr(cfg, "time_range", None), "start_date", None)
+        t_end = getattr(getattr(cfg, "time_range", None), "end_date", None)
+        if t_start is None and "time" in ds.coords:
+            t_start = str(ds.time.values[0])[:10]
+        if t_end is None and "time" in ds.coords:
+            t_end = str(ds.time.values[-1])[:10]
+
+        # spatial extent
+        lat_min = lat_max = lon_min = lon_max = None
+        try:
+            box = getattr(cfg, "box", None)
+            if box and getattr(box, "lat_min", None) is not None:
+                lat_min = float(box.lat_min)
+                lat_max = float(box.lat_max)
+                lon_min = float(box.lon_min)
+                lon_max = float(box.lon_max)
+            elif getattr(cfg, "lat", None) is not None:
+                lat_min = lat_max = float(cfg.lat)
+                lon_min = lon_max = float(cfg.lon)
+            elif "lat" in ds.coords:
+                lat_min = float(ds.lat.values.min())
+                lat_max = float(ds.lat.values.max())
+                lon_min = float(ds.lon.values.min())
+                lon_max = float(ds.lon.values.max())
+        except Exception:
+            pass
+
+        # variable-level metadata
+        var_descriptions = []
+        varinfo = getattr(cfg, "varinfo", {})
+        for v in variables:
+            info = varinfo.get(v, {}) if varinfo else {}
+            units = getattr(info, "units", None) or ds[v].attrs.get("units", "1") if v in ds else "1"
+            long_name = ds[v].attrs.get("long_name", v) if v in ds else v
+            var_descriptions.append({"@type": "PropertyValue", "name": v,
+                                      "description": long_name, "unitText": units})
+
+        title = title or f"{dataset_name.upper()} climate data extract"
+        description = description or (
+            f"Climate dataset extracted by climdata v{climdata.__version__} "
+            f"from {dataset_name.upper()}. "
+            f"Variables: {', '.join(variables)}. "
+            f"Period: {t_start} to {t_end}."
+        )
+        crate_id = str(uuid.uuid4())
+        now_iso = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # ── 4. Try rocrate library; fall back to hand-crafted JSON-LD ────────
+        metadata_path = crate_dir / "ro-crate-metadata.json"
+        try:
+            from rocrate.rocrate import ROCrate  # type: ignore
+            from rocrate.model import ContextEntity  # type: ignore
+
+            crate = ROCrate()
+            crate.name = title
+            crate.description = description
+
+            data_entity = crate.add_file(
+                str(nc_path),
+                dest_path="data.nc",
+                properties={
+                    "name": "data.nc",
+                    "description": "CF-compliant NetCDF dataset",
+                    "encodingFormat": "application/x-netcdf",
+                    "variableMeasured": var_descriptions,
+                },
+            )
+
+            if t_start:
+                crate.root_dataset["temporalCoverage"] = f"{t_start}/{t_end}"
+            if lat_min is not None:
+                crate.root_dataset["spatialCoverage"] = {
+                    "@type": "Place",
+                    "geo": {
+                        "@type": "GeoShape",
+                        "box": f"{lat_min} {lon_min} {lat_max} {lon_max}",
+                    },
+                }
+            if creator:
+                person = crate.add(
+                    ContextEntity(crate, f"#{creator.replace(' ', '_')}",
+                                  properties={"@type": "Person", "name": creator})
+                )
+                crate.root_dataset["creator"] = person
+            crate.root_dataset["license"] = license_url
+            crate.root_dataset["datePublished"] = now_iso
+            crate.root_dataset["identifier"] = crate_id
+            crate.root_dataset["keywords"] = variables
+            crate.root_dataset["producer"] = {
+                "@type": "SoftwareApplication",
+                "name": "climdata",
+                "version": climdata.__version__,
+                "url": "https://github.com/climdata/climdata",
+            }
+            crate.write(str(crate_dir))
+            self.logger.info("RO-Crate written via rocrate library.")
+
+        except ImportError:
+            # ── fallback: hand-craft the JSON-LD ────────────────────────────
+            self.logger.warning(
+                "'rocrate' package not found. Writing plain JSON-LD metadata. "
+                "Install with: pip install rocrate"
+            )
+            geo_shape: Optional[Dict] = None
+            if lat_min is not None:
+                geo_shape = {
+                    "@type": "GeoShape",
+                    "box": f"{lat_min} {lon_min} {lat_max} {lon_max}",
+                }
+
+            metadata = {
+                "@context": [
+                    "https://w3id.org/ro/crate/1.1/context",
+                    {"climdata": "https://climdata.readthedocs.io/"},
+                ],
+                "@graph": [
+                    # ── RO-Crate metadata descriptor ────────────────────
+                    {
+                        "@id": "ro-crate-metadata.json",
+                        "@type": "CreativeWork",
+                        "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"},
+                        "about": {"@id": "./"},
+                    },
+                    # ── Root data entity (the crate itself) ─────────────
+                    {
+                        "@id": "./",
+                        "@type": "Dataset",
+                        "identifier": crate_id,
+                        "name": title,
+                        "description": description,
+                        "datePublished": now_iso,
+                        "license": {"@id": license_url},
+                        "keywords": variables,
+                        **({
+                            "creator": {
+                                "@type": "Person",
+                                "name": creator,
+                            }
+                        } if creator else {}),
+                        **({
+                            "temporalCoverage": f"{t_start}/{t_end}"
+                        } if t_start else {}),
+                        **({
+                            "spatialCoverage": {
+                                "@type": "Place",
+                                "geo": geo_shape,
+                            }
+                        } if geo_shape else {}),
+                        "producer": {
+                            "@type": "SoftwareApplication",
+                            "name": "climdata",
+                            "version": climdata.__version__,
+                            "url": "https://github.com/Kaushikreddym/climdata",
+                        },
+                        "hasPart": [{"@id": "data.nc"}],
+                    },
+                    # ── File entity (the NetCDF) ─────────────────────────
+                    {
+                        "@id": "data.nc",
+                        "@type": "File",
+                        "name": "data.nc",
+                        "description": "CF-compliant NetCDF dataset",
+                        "encodingFormat": "application/x-netcdf",
+                        "variableMeasured": var_descriptions,
+                        **({
+                            "temporalCoverage": f"{t_start}/{t_end}"
+                        } if t_start else {}),
+                    },
+                    # ── License entity ───────────────────────────────────
+                    {
+                        "@id": license_url,
+                        "@type": "CreativeWork",
+                        "name": "CC-BY 4.0" if "creativecommons" in license_url else license_url,
+                        "url": license_url,
+                    },
+                ],
+            }
+            with open(metadata_path, "w", encoding="utf-8") as f:
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+        # ── 5. Write a simple HTML preview ──────────────────────────────────
+        html_path = crate_dir / "ro-crate-preview.html"
+        var_rows = "".join(
+            f"<tr><td><code>{v['name']}</code></td>"
+            f"<td>{v['description']}</td>"
+            f"<td>{v['unitText']}</td></tr>"
+            for v in var_descriptions
+        )
+        spatial_str = (
+            f"{lat_min:.3f}°N – {lat_max:.3f}°N, {lon_min:.3f}°E – {lon_max:.3f}°E"
+            if lat_min is not None
+            else "(not specified)"
+        )
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8">
+<title>{title}</title>
+<style>
+  body{{font-family:sans-serif;max-width:900px;margin:2em auto;padding:0 1em}}
+  table{{border-collapse:collapse;width:100%}}
+  th,td{{border:1px solid #ccc;padding:.4em .8em;text-align:left}}
+  th{{background:#f0f0f0}}
+  .badge{{background:#0078d4;color:#fff;padding:.2em .6em;border-radius:4px;font-size:.85em}}
+</style>
+</head>
+<body>
+<h1>{title} <span class="badge">RO-Crate</span></h1>
+<p>{description}</p>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>Dataset</td><td>{dataset_name.upper()}</td></tr>
+  <tr><td>Period</td><td>{t_start} &#8594; {t_end}</td></tr>
+  <tr><td>Spatial coverage</td><td>{spatial_str}</td></tr>
+  <tr><td>License</td><td><a href="{license_url}">{license_url}</a></td></tr>
+  <tr><td>Produced by</td><td>climdata v{climdata.__version__}</td></tr>
+  <tr><td>Crate ID</td><td><code>{crate_id}</code></td></tr>
+</table>
+<h2>Variables</h2>
+<table>
+  <tr><th>CF name</th><th>Long name</th><th>Units</th></tr>
+  {var_rows}
+</table>
+<h2>Files</h2>
+<ul>
+  <li><a href="data.nc">data.nc</a> – CF-compliant NetCDF</li>
+  <li><a href="ro-crate-metadata.json">ro-crate-metadata.json</a> – JSON-LD metadata</li>
+</ul>
+</body>
+</html>
+"""
+        html_path.write_text(html_content, encoding="utf-8")
+
+        # ── 6. Optionally zip ────────────────────────────────────────────────
+        if zip_crate:
+            zip_path = crate_dir.with_suffix(".zip")
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for file in crate_dir.rglob("*"):
+                    zf.write(file, file.relative_to(crate_dir.parent))
+            self.logger.info("RO-Crate zipped to %s", zip_path)
+            return str(zip_path)
+
+        self.logger.info("FAIR RO-Crate ready at %s", crate_dir)
+        return str(crate_dir)
+
+    # ----------------------------
     # Unified workflow
     # ----------------------------
     def run_workflow(self, overrides: Optional[List[str]] = None,
@@ -1090,7 +1438,7 @@ class ClimateExtractor:
 
         Args:
             overrides (list[str], optional): Hydra overrides to apply (not all actions will use these).
-            actions (list[str], optional): Ordered list of actions to perform. Supported actions include: 'upload_netcdf', 'upload_csv', 'extract', 'calc_index', 'to_dataframe', 'to_csv', 'to_nc'.
+            actions (list[str], optional): Ordered list of actions to perform. Supported actions include: 'upload_netcdf', 'upload_csv', 'extract', 'calc_index', 'to_dataframe', 'to_csv', 'to_nc', 'to_fair'.
             file (str, optional): File path used for upload actions when required.
 
         Returns:
@@ -1177,6 +1525,14 @@ class ClimateExtractor:
                     self.impute()
                     result.dataset = self.current_ds
                     result.impute_ds = getattr(self, "impute_ds", None)
+
+                elif action == "to_fair":
+                    if self.current_ds is None:
+                        raise ValueError(
+                            "Action 'to_fair' requires a dataset, but no dataset is available. "
+                            "Upload or extract a dataset before exporting a FAIR crate."
+                        )
+                    result.filename = self.to_fair()
 
                 else:
                     raise ValueError(f"Unknown action '{action}'")

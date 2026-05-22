@@ -30,14 +30,14 @@ jobs:
       - name: Install dependencies
         run: |
           pip install numpy
-          pip install build
           pip install build twine
+          pip install -r requirements.txt
+          pip install . --no-build-isolation
+          # PyTorch is optional — install for full test coverage in release CI
           pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
           pip install torch-cluster \
             --no-build-isolation \
             -f https://data.pyg.org/whl/torch-2.3.1+cpu.html
-          pip install -r requirements.txt
-          pip install . --no-build-isolation
           
       # 4️⃣ Run unit tests
       - name: Run tests

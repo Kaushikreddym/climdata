@@ -653,7 +653,10 @@ def adjust_bias_one_location(
     data = {}
     i_loc_ts = (slice(None, None),) + i_loc
     for key, lazy_data_list in lazy_data.items():
-        data[key] = [d[i_loc_ts].compute() for d in lazy_data_list]
+        data[key] = [
+            d[i_loc_ts].compute() if hasattr(d[i_loc_ts], 'compute') else d[i_loc_ts]
+            for d in lazy_data_list
+        ]
 
     # abort here if there are only missing values in at least one dataset
     if uf.only_missing_values_in_at_least_one_dataset(data):
