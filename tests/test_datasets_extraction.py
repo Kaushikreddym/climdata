@@ -16,15 +16,14 @@ Run all enabled datasets:
 
 import json
 import os
-import pytest
+import unittest
 import xarray as xr
 
 # Skip the entire module when running in GitHub Actions CI
 # (tests require HPC data paths and external API credentials)
 if os.getenv("CI"):
-    pytest.skip(
-        "Integration tests require HPC data paths and credentials — skipped in CI",
-        allow_module_level=True,
+    raise unittest.SkipTest(
+        "Integration tests require HPC data paths and credentials — skipped in CI"
     )
 import geopandas as gpd
 from shapely.geometry import box as shapely_box

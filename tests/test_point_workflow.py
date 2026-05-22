@@ -1,14 +1,13 @@
 import json
 import os
-import pytest
+import unittest
 from climdata import ClimData
 import logging
 
 # Skip entirely in CI — requires HPC data paths and BRITS/torch
 if os.getenv("CI"):
-    pytest.skip(
-        "Point workflow test requires PyTorch — skipped in CI",
-        allow_module_level=True,
+    raise unittest.SkipTest(
+        "Point workflow test requires HPC data paths and PyTorch — skipped in CI"
     )
 logging.basicConfig(
     level=logging.INFO,
