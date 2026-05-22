@@ -1,6 +1,15 @@
 import json
+import os
+import pytest
 from climdata import ClimData
 import logging
+
+# Skip entirely in CI — requires HPC data paths and BRITS/torch
+if os.getenv("CI"):
+    pytest.skip(
+        "Point workflow test requires PyTorch — skipped in CI",
+        allow_module_level=True,
+    )
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
