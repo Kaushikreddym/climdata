@@ -114,6 +114,6 @@ outputs
 *.zarr
 *.nc
 
-usecase/*
+# usecase/*
 # climdata_gui
 climdata_gui/conf/
