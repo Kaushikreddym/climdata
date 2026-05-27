@@ -186,7 +186,7 @@ for CAST_PACKAGE in "${CAST_PACKAGES[@]}"; do
                 fi
 
                 # Use the latest version (lexicographic = chronological for vYYYYMMDD)
-                LATEST_VER="${VERSIONS[-1]}"
+                LATEST_VER="${VERSIONS[${#VERSIONS[@]}-1]}"
 
                 # 2d. List the actual .nc files under that version
                 FILES=()
