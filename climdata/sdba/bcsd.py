@@ -60,6 +60,122 @@ def _to_proleptic_gregorian(cube):
     return cube
 
 
+def _is_curvilinear(cube):
+    """Return True if cube's horizontal coords are 2D AuxCoords (curvilinear/rotated-pole)."""
+    try:
+        x_dim_coords = cube.coords(axis='x', dim_coords=True)
+        y_dim_coords = cube.coords(axis='y', dim_coords=True)
+        return len(x_dim_coords) != 1 or len(y_dim_coords) != 1
+    except Exception:
+        return True
+
+
+def _stamp_geogcs(cube):
+    """
+    Attach a GeogCS to every 1-D latitude/longitude DimCoord and normalise
+    their units to 'degrees'.
+
+    iris.analysis.Linear (RectilinearRegridder) has two distinct checks:
+
+    1. When *neither* cube has a CRS it compares metadata strings
+       (standard_name, units, var_name) exactly.  xarray→iris produces
+       'degrees_north'/'degrees_east', while _regrid_curvilinear_to_rectilinear
+       produces 'degrees' — the mismatch raises a ValueError.
+
+    2. Once a coord *has* a GeogCS, RectilinearRegridder._check_units strictly
+       requires units == 'degrees' (not 'degrees_north', not 'degrees_east').
+       Leaving the original units in place therefore causes a second ValueError.
+
+    This function fixes both by stamping the same GeogCS *and* setting
+    units='degrees' on every horizontal DimCoord.
+    """
+    import iris.coord_systems as ics
+    import cf_units
+    geog_cs = ics.GeogCS(6371229.0)   # standard sphere used by most climate models
+    deg = cf_units.Unit('degrees')
+    for coord in cube.coords(dim_coords=True):
+        axis = iris.util.guess_coord_axis(coord)
+        if axis in ('X', 'Y'):
+            coord.coord_system = geog_cs
+            coord.units = deg
+    return cube
+
+
+def _regrid_curvilinear_to_rectilinear(cube):
+    """
+    Reproject a curvilinear (e.g. rotated-pole) iris cube to a regular
+    geographic lat/lon grid using scipy griddata.
+
+    The output resolution is chosen to approximately preserve the number of
+    grid cells in each direction.  A 1D latitude DimCoord and 1D longitude
+    DimCoord are created so that iris.analysis.Linear can subsequently use
+    the resulting cube as a regrid target.
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Input cube with 2D AuxCoords for latitude and longitude.
+
+    Returns
+    -------
+    iris.cube.Cube
+        Cube on a regular lat/lon grid with 1D DimCoords.
+    """
+    from scipy.interpolate import griddata
+    import iris.coords
+    import iris.cube
+
+    # ── Extract 2-D lat/lon values ───────────────────────────────────────────
+    try:
+        lat2d = cube.coord('latitude').points
+        lon2d = cube.coord('longitude').points
+    except iris.exceptions.CoordinateNotFoundError:
+        # fall back to grid_latitude / grid_longitude (rotated pole)
+        lat2d = cube.coord('grid_latitude').points
+        lon2d = cube.coord('grid_longitude').points
+
+    ny, nx = lat2d.shape
+
+    # ── Build regular target grid ────────────────────────────────────────────
+    lat_min, lat_max = lat2d.min(), lat2d.max()
+    lon_min, lon_max = lon2d.min(), lon2d.max()
+    reg_lat = np.linspace(lat_min, lat_max, ny)
+    reg_lon = np.linspace(lon_min, lon_max, nx)
+    grid_lon, grid_lat = np.meshgrid(reg_lon, reg_lat)
+
+    # ── Interpolate each time step ───────────────────────────────────────────
+    src_points = np.column_stack([lat2d.ravel(), lon2d.ravel()])
+    nt = cube.shape[0]
+    out = np.full((nt, ny, nx), np.nan, dtype=np.float32)
+    data = cube.data if not hasattr(cube.data, 'compute') else cube.data.compute()
+    data = np.ma.filled(np.ma.asarray(data), np.nan)
+    for t in range(nt):
+        out[t] = griddata(src_points, data[t].ravel(),
+                          (grid_lat, grid_lon), method='linear')
+
+    # ── Build output iris cube with 1D DimCoords ─────────────────────────────
+    lat_coord = iris.coords.DimCoord(
+        reg_lat, standard_name='latitude', units='degrees')
+    lon_coord = iris.coords.DimCoord(
+        reg_lon, standard_name='longitude', units='degrees')
+    time_coord = cube.coord('time')
+
+    out_masked = np.ma.masked_invalid(out)
+    new_cube = iris.cube.Cube(
+        out_masked,
+        standard_name=cube.standard_name,
+        long_name=cube.long_name,
+        var_name=cube.var_name,
+        units=cube.units,
+        dim_coords_and_dims=[
+            (time_coord.copy(), 0),
+            (lat_coord, 1),
+            (lon_coord, 2),
+        ],
+    )
+    return new_cube
+
+
 def regrid_to_coarse(
     fine_data: xr.Dataset,
     coarse_template: xr.Dataset,
@@ -718,6 +834,8 @@ class StatisticalDownscaling:
         tmpdir.mkdir(parents=True, exist_ok=True)
         
         try:
+            import dask.array as da
+
             # Convert xarray → iris DIRECTLY in memory (no disk round-trip).
             print("   Converting xarray datasets to iris cubes (in-memory)...")
 
@@ -727,21 +845,115 @@ class StatisticalDownscaling:
             _of_cube.data = da.ma.masked_invalid(_of_cube.core_data())
             obs_fine_cube = _of_cube
 
+            # ── Reproject to regular lat/lon if obs_fine is curvilinear ──────
+            # iris.analysis.Linear (RectilinearRegridder) requires the TARGET
+            # cube to have 1D DimCoords.  Rotated-pole grids (e.g. HYRAS) only
+            # have 2D AuxCoords, so we reproject to a regular grid first.
+            # This must happen BEFORE the crop so the crop operates on the
+            # already-regular (1D DimCoord) cube whose shape is well-defined
+            # in terms of lat/lon axes.
+            if _is_curvilinear(obs_fine_cube):
+                print("   ⚠  obs_fine has curvilinear (rotated-pole) coords — "
+                      "reprojecting to regular lat/lon grid via scipy griddata...")
+                obs_fine_cube = _regrid_curvilinear_to_rectilinear(obs_fine_cube)
+                obs_fine_cube = _to_proleptic_gregorian(obs_fine_cube)
+                print(f"   obs_fine after reprojection: {obs_fine_cube.shape}")
+
+            # ── Crop obs_fine so its spatial shape is an exact integer multiple
+            # of sim_coarse's spatial shape.  ISIMIP3BASD's get_downscaling_factors
+            # asserts shape_fine % shape_coarse == 0.  Crop is done after
+            # reprojection so we work with the regular 1D-coord cube.
+            lat_coarse = sim_coarse['lat'].values if 'lat' in sim_coarse.coords else sim_coarse['latitude'].values
+            lon_coarse = sim_coarse['lon'].values if 'lon' in sim_coarse.coords else sim_coarse['longitude'].values
+            nlat_coarse, nlon_coarse = len(lat_coarse), len(lon_coarse)
+
+            nlat_fine, nlon_fine = obs_fine_cube.shape[1], obs_fine_cube.shape[2]
+            nlat_crop = (nlat_fine // nlat_coarse) * nlat_coarse
+            nlon_crop = (nlon_fine // nlon_coarse) * nlon_coarse
+
+            if nlat_crop != nlat_fine or nlon_crop != nlon_fine:
+                lat_trim = (nlat_fine - nlat_crop) // 2
+                lon_trim = (nlon_fine - nlon_crop) // 2
+                obs_fine_cube = obs_fine_cube[
+                    :,
+                    lat_trim : lat_trim + nlat_crop,
+                    lon_trim : lon_trim + nlon_crop,
+                ]
+                print(f"   ⚠  obs_fine cropped to ({nlat_crop}×{nlon_crop}) "
+                      f"[was {nlat_fine}×{nlon_fine}] so shape is divisible by "
+                      f"coarse ({nlat_coarse}×{nlon_coarse})")
+
             _sc_cube = _to_proleptic_gregorian(sim_coarse[self.variable].to_iris())
             _sc_cube.data = da.ma.masked_invalid(_sc_cube.core_data())
             sim_coarse_cube = _sc_cube
+
+            # ── Stamp identical GeogCS on both cubes ──────────────────────────
+            # iris.analysis.Linear (RectilinearRegridder) requires either:
+            #   (a) both cubes have the same coordinate system, OR
+            #   (b) neither has a CRS AND all coordinate metadata strings match.
+            # xarray→iris conversion produces 'degrees_north'/'degrees_east'
+            # while _regrid_curvilinear_to_rectilinear produces 'degrees'.
+            # Stamping GeogCS on both eliminates the string-metadata comparison.
+            _stamp_geogcs(obs_fine_cube)
+            _stamp_geogcs(sim_coarse_cube)
             print(f"   obs_fine  {obs_fine_cube.shape}, sim_coarse {sim_coarse_cube.shape}")
 
-            # Bilinear interpolation of coarse → fine grid (lazy xarray, then to iris)
-            print("   Creating bilinearly interpolated intermediate data...")
-            _remap_cube = _to_proleptic_gregorian(
-                sim_coarse[self.variable].interp(
-                    lat=obs_fine.lat,
-                    lon=obs_fine.lon,
-                    method='linear'
-                ).to_iris()
+            # Bilinear interpolation of coarse → fine grid.
+            # obs_fine may have a rotated-pole grid (2D lat/lon on y/x dims),
+            # so xr.interp cannot be used.  Use the vendor remapbil() instead:
+            # it calls iris.analysis.Linear which handles any CRS, with a
+            # iris.analysis.Nearest fallback for masked edge cells.
+            #
+            # Process in yearly chunks in parallel (ThreadPoolExecutor).
+            # iris.analysis.Linear is CPU-bound but releases the GIL during
+            # the scipy RegularGridInterpolator calls, so threading gives a
+            # meaningful speed-up without multiprocessing complexity.
+            print("   Creating bilinearly interpolated intermediate data "
+                  "(parallel by year)...")
+            from climdata._vendor.isimip3basd import utility_functions as uf
+            import iris.cube
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            try:
+                from tqdm import tqdm as _tqdm
+            except ImportError:
+                _tqdm = None
+
+            # get year labels from the coarse cube time axis
+            _time_coord = sim_coarse_cube.coord('time')
+            _datetimes  = _time_coord.units.num2date(_time_coord.points)
+            _years      = np.array([d.year for d in _datetimes])
+            _unique_yrs = np.unique(_years)
+
+            def _remapbil_year(yr):
+                _idx = np.where(_years == yr)[0]
+                # obs_fine_cube is used only as a spatial grid target by remapbil
+                # (iris.analysis.Linear just needs one cube with the right grid).
+                # Use a single time slice — indexing obs_fine by sim_coarse's
+                # time positions would go out of bounds (obs_fine is 1951-1980,
+                # sim_coarse is 2015-2100).
+                return yr, uf.remapbil(sim_coarse_cube[_idx], obs_fine_cube[0])
+
+            # n_processes workers — matches the SD parallelism already requested
+            _n_remap = max(1, self.n_processes)
+            _results_map = {}
+            with ThreadPoolExecutor(max_workers=_n_remap) as _pool:
+                _futures = {_pool.submit(_remapbil_year, yr): yr
+                            for yr in _unique_yrs}
+                _iter = as_completed(_futures)
+                if _tqdm is not None:
+                    _iter = _tqdm(_iter, total=len(_unique_yrs),
+                                  desc="   remapbil", unit="yr",
+                                  dynamic_ncols=True)
+                for _fut in _iter:
+                    _yr, _slice = _fut.result()
+                    _results_map[_yr] = _slice
+
+            _remap_slices = [_results_map[yr] for yr in _unique_yrs]
+            _remap_cube = iris.cube.CubeList(_remap_slices).concatenate_cube()
+            _remap_cube = _to_proleptic_gregorian(_remap_cube)
+            _remap_cube.data = da.ma.masked_invalid(
+                da.from_array(np.ma.asarray(_remap_cube.data))
             )
-            _remap_cube.data = da.ma.masked_invalid(_remap_cube.core_data())
             sim_coarse_remapbil_cube = _remap_cube
             
             # Prepare output path (always use absolute path)
@@ -759,25 +971,48 @@ class StatisticalDownscaling:
             uf.setup_npy_stack(str(sim_fine_path), obs_fine_cube.shape)
             print(f"   Created npy_stack directory: {npy_stack_path}")
             
-            print("   Running ISIMIP3BASD statistical downscaling...")
-            print(f"   (This may take a while for large datasets)")
+            print("   Running ISIMIP3BASD statistical downscaling (year-by-year loop)...")
             
-            # Run downscaling with iris cubes (single cubes, not lists)
-            sd.downscale(
-                obs_fine=obs_fine_cube,
-                sim_coarse=sim_coarse_cube,
-                sim_coarse_remapbil=sim_coarse_remapbil_cube,
-                sim_fine_path=str(sim_fine_path),
-                n_processes=self.n_processes,
-                n_iterations=self.n_iterations,
-                randomization_seed=self.randomization_seed,
-                lower_bound=self.lower_bound,
-                lower_threshold=self.lower_threshold,
-                upper_bound=self.upper_bound,
-                upper_threshold=self.upper_threshold,
-                **kwargs,
-                **self.kwargs
-            )
+            # ── Year-by-year loop to manage memory and reduce bottlenecks ─────
+            # Extract years from sim_coarse (future data)
+            _time_coord_sc = sim_coarse_cube.coord('time')
+            _datetimes_sc  = _time_coord_sc.units.num2date(_time_coord_sc.points)
+            _years_sc      = np.array([d.year for d in _datetimes_sc])
+            _unique_yrs_sd = np.unique(_years_sc)
+            
+            print(f"   Processing {len(_unique_yrs_sd)} years: "
+                  f"{_unique_yrs_sd[0]}—{_unique_yrs_sd[-1]}")
+            
+            for _yr_idx, _yr in enumerate(_unique_yrs_sd, start=1):
+                _idx_yr = np.where(_years_sc == _yr)[0]
+                
+                # Slice cubes to this year only
+                _sc_yr = sim_coarse_cube[_idx_yr]
+                _remap_yr = sim_coarse_remapbil_cube[_idx_yr]
+                
+                print(f"   [{_yr_idx}/{len(_unique_yrs_sd)}] Downscaling year {_yr} "
+                      f"({_sc_yr.shape[0]} timesteps)...")
+                _t0_yr = __import__('time').time()
+                
+                # Downscale this year's data
+                sd.downscale(
+                    obs_fine=obs_fine_cube,
+                    sim_coarse=_sc_yr,
+                    sim_coarse_remapbil=_remap_yr,
+                    sim_fine_path=str(sim_fine_path),
+                    n_processes=self.n_processes,
+                    n_iterations=self.n_iterations,
+                    randomization_seed=self.randomization_seed,
+                    lower_bound=self.lower_bound,
+                    lower_threshold=self.lower_threshold,
+                    upper_bound=self.upper_bound,
+                    upper_threshold=self.upper_threshold,
+                    **kwargs,
+                    **self.kwargs
+                )
+                
+                _elapsed_yr = __import__('time').time() - _t0_yr
+                print(f"      ✓ Year {_yr} complete in {_elapsed_yr:.0f}s")
             
             print("   ✅ Statistical downscaling complete!")
             print("   📦 Collecting results from npy_stack...")

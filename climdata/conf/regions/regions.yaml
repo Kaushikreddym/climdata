@@ -6,7 +6,7 @@ europe:
 
 germany:
   lat_min: 47.0
-  lat_max: 55.1
+  lat_max: 55.5
   lon_min: 5.9
   lon_max: 15.0
 
