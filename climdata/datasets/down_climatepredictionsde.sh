@@ -28,7 +28,7 @@ CATALOG_BASE="${HOST}/thredds/catalog/esgf3/data/climatepredictionsde/seasonal/o
 FILE_BASE="${HOST}/thredds/fileServer/esgf3/data/climatepredictionsde/seasonal/output/public/DE-0075x005/DWD/GCFS22"
 
 CAST_PACKAGES=()
-for year in {2023}; do
+for year in 2023; do
     for month in {01..12}; do
         CAST_PACKAGES+=("svh${year}${month}01")
     done
@@ -36,8 +36,8 @@ done
 RCM="DWD-EPISODES2022"
 RCM_VER="v1-r1"
 FREQ="day"
-#VARIABLES=("pr" "hurs" "tas" "tasmax" "tasmin" "rsds")
-VARIABLES=("sfcWind")
+VARIABLES=("pr" "hurs" "tas" "tasmax" "tasmin" "rsds")
+# VARIABLES=("sfcWind")
 OUTDIR="${OUTDIR:-/data01/FDS/muduchuru/Atmos/DWD/S2S/GCFS22_2010-2026}"
 LOGFILE="${OUTDIR}/download.log"
 
