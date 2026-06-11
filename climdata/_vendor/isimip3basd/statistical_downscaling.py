@@ -84,6 +84,7 @@ import dask.array as da
 from . import utility_functions as uf
 import iris.coord_categorisation as icc
 import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from optparse import OptionParser
 from functools import partial
 
@@ -492,17 +493,34 @@ def downscale(
         sum_weights=sum_weights,
         rotation_matrices=rotation_matrices,
         randomization_seed=randomization_seed, **kwargs)
-    print('downscaling at coarse location ...')
+    # Set shared globals (accessible by all threads in this process)
+    initializer(lazy_data, month_numbers)
+
+    i_locations_list = list(i_locations_coarse)
+    n_total = len(i_locations_list)
+    print(f'downscaling at coarse location ... ({n_total} locations, {n_processes} workers)')
+
     if n_processes > 1:
-        pool = mp.Pool(n_processes, initializer=initializer, initargs=(
-            lazy_data, month_numbers))
-        foo = list(pool.imap(sdol, i_locations_coarse))
-        pool.close()
-        pool.join()
-        pool.terminate()
+        # Use ProcessPoolExecutor: each worker gets lazy_data via initializer
+        # (dask task graphs are picklable), and workers bypass the GIL for
+        # CPU-bound scipy/numpy downscaling work.
+        with ProcessPoolExecutor(
+            max_workers=n_processes,
+            initializer=initializer,
+            initargs=(lazy_data, month_numbers)
+        ) as executor:
+            futures = {executor.submit(sdol, loc): loc for loc in i_locations_list}
+            done = 0
+            for future in as_completed(futures):
+                future.result()  # re-raise any exception
+                done += 1
+                if done % max(1, n_total // 20) == 0:
+                    print(f'  ... {done}/{n_total} locations done', flush=True)
     else:
-        initializer(lazy_data, month_numbers)
-        foo = list(map(sdol, i_locations_coarse))
+        for i, loc in enumerate(i_locations_list):
+            sdol(loc)
+            if (i + 1) % max(1, n_total // 20) == 0:
+                print(f'  ... {i+1}/{n_total} locations done', flush=True)
 
 
 

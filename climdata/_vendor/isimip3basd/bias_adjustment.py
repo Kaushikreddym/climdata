@@ -128,7 +128,9 @@ import numpy as np
 import dask.array as da
 import scipy.stats as sps
 from . import utility_functions as uf
-import multiprocessing as mp
+import os
+import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from optparse import OptionParser
 from functools import partial
 
@@ -913,17 +915,30 @@ def adjust_bias(
         rotation_matrices=rotation_matrices, 
         randomization_seed=randomization_seed, 
         step_size=step_size, window_centers=window_centers, **kwargs)
-    print('adjusting at location ...')
-    if n_processes > 1:
-        pool = mp.Pool(n_processes, initializer=initializer, initargs=(
-            lazy_data, month_numbers, years, doys))
-        foo = list(pool.imap(abol, i_locations))
-        pool.close()
-        pool.join()
-        pool.terminate()
+    initializer(lazy_data, month_numbers, years, doys)
+    i_locations_list = list(i_locations)
+    n_total = len(i_locations_list)
+    print(f'adjusting at location ... (0/{n_total})', flush=True)
+    _report_every = max(1, n_total // 20)
+    if n_processes != 1:
+        _workers = n_processes if n_processes > 0 else os.cpu_count()
+        with ProcessPoolExecutor(
+            max_workers=_workers,
+            initializer=initializer,
+            initargs=(lazy_data, month_numbers, years, doys)
+        ) as executor:
+            futures = {executor.submit(abol, loc): loc for loc in i_locations_list}
+            _done = 0
+            for future in as_completed(futures):
+                future.result()
+                _done += 1
+                if _done % _report_every == 0 or _done == n_total:
+                    print(f'adjusting at location ... ({_done}/{n_total})', flush=True)
     else:
-        initializer(lazy_data, month_numbers, years, doys)
-        foo = list(map(abol, i_locations))
+        for _i, loc in enumerate(i_locations_list):
+            abol(loc)
+            if (_i + 1) % _report_every == 0 or _i + 1 == n_total:
+                print(f'adjusting at location ... ({_i+1}/{n_total})', flush=True)
 
 
 
