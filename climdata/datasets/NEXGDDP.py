@@ -873,6 +873,10 @@ class NEXGDDP:
             if lat_name is None or lon_name is None:
                 raise ValueError("Could not find latitude/longitude coordinates in dataset")
             
+            # Preprocess already reduced lat/lon to scalars — nothing left to select
+            if lon_name not in self.ds.dims:
+                return
+
             if buffer_deg > 0:
                 self.ds = self.ds.sel(
                     {lon_name: slice(lon - buffer_deg, lon + buffer_deg),
@@ -895,7 +899,10 @@ class NEXGDDP:
             
             if lat_name is None or lon_name is None:
                 raise ValueError("Could not find latitude/longitude coordinates in dataset")
-            
+
+            if lon_name not in self.ds.dims:
+                return
+
             self.ds = self.ds.sel(
                 {lon_name: slice(box["lon_min"], box["lon_max"]),
                  lat_name: slice(box["lat_min"], box["lat_max"])}

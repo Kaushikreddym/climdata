@@ -306,7 +306,7 @@ def list_esm_models(dataset: str, experiment: Optional[str] = None) -> None:
             from climdata.datasets.CMIPCloud import CMIPCloud as DatasetClass
         elif key == "NEXGDDP":
             from climdata.datasets.NEXGDDP import NEXGDDP as DatasetClass
-        elif key == "CMIPW5E5":
+        elif key == "CMIP_W5E5":
             from climdata.datasets.CMIP_W5E5 import CMIPW5E5 as DatasetClass
         else:
             print(f"\n  ✗  {key} has no direct model access method yet.\n")

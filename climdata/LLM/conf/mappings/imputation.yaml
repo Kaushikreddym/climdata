@@ -1,0 +1,9 @@
+BRITS:
+  name: Bidirectional Recurrent Imputation
+  epochs: 5
+XGBOOST:
+  name: eXtreme Gradient Boosting
+CDRec:
+  name: Centroid Decomposition Recovery
+SoftImpute:
+  name: softImpute

@@ -27,55 +27,51 @@ def _load_registry() -> dict[str, dict]:
     """
     Load dataset registry directly from YAML configuration files,
     then add static/hardcoded datasets.
-    
+
+    Every top-level entry in parameters.yaml is treated as a dataset and
+    registered under its UPPER-CASED key (e.g. ``dwd`` → ``DWD``,
+    ``cmip_w5e5`` → ``CMIP_W5E5``). This auto-detects all providers regardless
+    of the case used in the YAML, so newly added datasets appear without code
+    changes.
+
     Returns a dictionary mapping dataset abbreviations to metadata dictionaries.
     """
     params = _load_parameters_yaml()
     registry = {}
-    
-    # Map config keys to uppercase registry keys
-    key_mapping = {
-        "dwd": "DWD",
-        "mswx": "MSWX",
-        "hyras": "HYRAS",
-        "cmip": "CMIP",
-        "power": "NASAPOWER",
-        "w5e5": "W5E5",
-        "cmip_w5e5": "CMIPW5E5",
-        "nexgddp": "NEXGDDP",
-    }
-    
-    # Extract datasets from config
-    for config_key, registry_key in key_mapping.items():
-        if config_key in params:
-            dataset_cfg = params[config_key]
-            
-            # Get explore metadata if available
-            explore_meta = dataset_cfg.get("explore", {})
-            
-            # Extract variables from config
-            variables = list(dataset_cfg.get("variables", {}).keys())
-            
-            # Extract experiments if available
-            experiments = []
-            if "experiment_id" in dataset_cfg:
-                exp = dataset_cfg["experiment_id"]
-                experiments = [exp] if isinstance(exp, str) else list(exp)
-            
-            # Build registry entry
-            registry[registry_key] = {
-                "full_name": explore_meta.get("full_name", config_key),
-                "type": explore_meta.get("type", "Unknown"),
-                "coverage": explore_meta.get("coverage", "Unknown"),
-                "resolution": explore_meta.get("resolution", "Unknown"),
-                "frequency": explore_meta.get("frequency", "Unknown"),
-                "time_range": explore_meta.get("time_range", "Unknown"),
-                "source": explore_meta.get("source", "Unknown"),
-                "notes": explore_meta.get("notes", ""),
-                "variables": variables,
-                "experiments": experiments,
-                "models": [],
-            }
+
+    # Extract every dataset from config (auto-discovered, upper-cased keys)
+    for config_key, dataset_cfg in params.items():
+        if not isinstance(dataset_cfg, dict):
+            continue
+
+        registry_key = config_key.upper()
+
+        # Get explore metadata if available
+        explore_meta = dataset_cfg.get("explore", {}) or {}
+
+        # Extract variables from config
+        variables = list((dataset_cfg.get("variables", {}) or {}).keys())
+
+        # Extract experiments if available
+        experiments = []
+        if "experiment_id" in dataset_cfg:
+            exp = dataset_cfg["experiment_id"]
+            experiments = [exp] if isinstance(exp, str) else list(exp)
+
+        # Build registry entry
+        registry[registry_key] = {
+            "full_name": explore_meta.get("full_name", config_key),
+            "type": explore_meta.get("type", "Unknown"),
+            "coverage": explore_meta.get("coverage", "Unknown"),
+            "resolution": explore_meta.get("resolution", "Unknown"),
+            "frequency": explore_meta.get("frequency", "Unknown"),
+            "time_range": explore_meta.get("time_range", "Unknown"),
+            "source": explore_meta.get("source", "Unknown"),
+            "notes": explore_meta.get("notes", ""),
+            "variables": variables,
+            "experiments": experiments,
+            "models": [],
+        }
     
     # Add static datasets not in config files (ERA5)
     static_datasets = {

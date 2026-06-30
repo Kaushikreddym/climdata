@@ -1,0 +1,4242 @@
+{
+  "version": "0.6.5",
+  "datasets": [
+    {
+      "name": "DWD",
+      "kind": "dataset",
+      "description": "Deutscher Wetterdienst (German Weather Service)",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "DWD",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "pr",
+            "rsds",
+            "sfcWind",
+            "hurs"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=DWD\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation (Station)",
+        "coverage": "Germany",
+        "resolution": "station-based",
+        "frequency": "daily / hourly",
+        "time_range": "varies by station",
+        "source": "wetterdienst library",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "pr",
+          "rsds",
+          "sfcWind",
+          "hurs"
+        ],
+        "experiments": [],
+        "notes": "Retrieves the nearest station(s) to a given coordinate."
+      }
+    },
+    {
+      "name": "MSWX",
+      "kind": "dataset",
+      "description": "Multi-Source Weather – GloH2O",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "MSWX",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tasmin",
+            "tasmax",
+            "tas",
+            "pr",
+            "rsds",
+            "hurs",
+            "sfcWind"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation",
+        "coverage": "Global",
+        "resolution": "0.1°",
+        "frequency": "daily",
+        "time_range": "1979-01-01 to present",
+        "source": "Google Drive",
+        "variables": [
+          "tasmin",
+          "tasmax",
+          "tas",
+          "pr",
+          "rsds",
+          "hurs",
+          "sfcWind"
+        ],
+        "experiments": [],
+        "notes": "Fetched via Google Drive API; supply a service-account JSON."
+      }
+    },
+    {
+      "name": "HYRAS",
+      "kind": "dataset",
+      "description": "Hydrologische Rasterdaten (DWD Gridded)",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "HYRAS",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tasmin",
+            "tasmax",
+            "tas",
+            "pr",
+            "rsds",
+            "hurs",
+            "evpot",
+            "soilMoist",
+            "soilTemp",
+            "et0"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=HYRAS\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation (Gridded)",
+        "coverage": "Germany",
+        "resolution": "1 km",
+        "frequency": "daily",
+        "time_range": "1951-01-01 to present",
+        "source": "DWD open-data server",
+        "variables": [
+          "tasmin",
+          "tasmax",
+          "tas",
+          "pr",
+          "rsds",
+          "hurs",
+          "evpot",
+          "soilMoist",
+          "soilTemp",
+          "et0"
+        ],
+        "experiments": [],
+        "notes": "High-resolution gridded climatology over Germany."
+      }
+    },
+    {
+      "name": "CMIP",
+      "kind": "dataset",
+      "description": "CMIP6 via Pangeo Cloud Catalog",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "CMIP",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "rsds",
+            "sfcWind",
+            "pr"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=CMIP\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "ESM (Raw)",
+        "coverage": "Global",
+        "resolution": "model-dependent (~1°)",
+        "frequency": "daily",
+        "time_range": "1850-01-01 to 2100-12-31",
+        "source": "Google Cloud Storage / Pangeo (intake-esm)",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "rsds",
+          "sfcWind",
+          "pr"
+        ],
+        "experiments": [
+          "historical"
+        ],
+        "notes": "Requires internet; queries Pangeo CMIP6 JSON catalogue."
+      }
+    },
+    {
+      "name": "POWER",
+      "kind": "dataset",
+      "description": "NASA POWER Agroclimatology",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "POWER",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "rsds",
+            "sfcWind",
+            "pr"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=POWER\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation (Reanalysis-derived)",
+        "coverage": "Global",
+        "resolution": "point / 0.5°",
+        "frequency": "daily",
+        "time_range": "1981-01-01 to present",
+        "source": "NASA POWER REST API",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "rsds",
+          "sfcWind",
+          "pr"
+        ],
+        "experiments": [],
+        "notes": "Point queries; no credentials required."
+      }
+    },
+    {
+      "name": "W5E5",
+      "kind": "dataset",
+      "description": "WFDE5 over Land merged with ERA5 over Ocean",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "W5E5",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "pr",
+            "rsds",
+            "rlds",
+            "hurs",
+            "sfcWind",
+            "ps",
+            "huss"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=W5E5\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation",
+        "coverage": "Global",
+        "resolution": "0.5°",
+        "frequency": "daily",
+        "time_range": "1979-01-01 to 2019-12-31",
+        "source": "ISIMIP repository (isimip-client)",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "pr",
+          "rsds",
+          "rlds",
+          "hurs",
+          "sfcWind",
+          "ps",
+          "huss"
+        ],
+        "experiments": [],
+        "notes": "Reference dataset for ISIMIP3b bias adjustment."
+      }
+    },
+    {
+      "name": "CMIP_W5E5",
+      "kind": "dataset",
+      "description": "CMIP6 corrected based on W5E5 (ISIMIP3BASD)",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "CMIP_W5E5",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "pr",
+            "rsds",
+            "rlds",
+            "hurs",
+            "sfcWind",
+            "ps",
+            "psl"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=CMIP_W5E5\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "ESM (Bias-Corrected)",
+        "coverage": "Global",
+        "resolution": "0.5°",
+        "frequency": "daily",
+        "time_range": "1850-01-01 to 2100-12-31",
+        "source": "ISIMIP repository (isimip-client)",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "pr",
+          "rsds",
+          "rlds",
+          "hurs",
+          "sfcWind",
+          "ps",
+          "psl"
+        ],
+        "experiments": [
+          "ssp585"
+        ],
+        "notes": "Bias-adjusted & statistically downscaled by ISIMIP3b protocol."
+      }
+    },
+    {
+      "name": "NEXGDDP",
+      "kind": "dataset",
+      "description": "NASA Earth Exchange Global Daily Downscaled Projections",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "NEXGDDP",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "pr",
+            "hurs",
+            "huss",
+            "sfcWind",
+            "rsds",
+            "rlds"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=NEXGDDP\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "ESM (Bias-Corrected)",
+        "coverage": "Global",
+        "resolution": "0.25°",
+        "frequency": "daily",
+        "time_range": "1950-01-01 to 2100-12-31",
+        "source": "NASA THREDDS server (HTTP)",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "pr",
+          "hurs",
+          "huss",
+          "sfcWind",
+          "rsds",
+          "rlds"
+        ],
+        "experiments": [
+          "historical"
+        ],
+        "notes": "Statistically downscaled NEX-GDDP-CMIP6 at 0.25° resolution."
+      }
+    },
+    {
+      "name": "HOSTRADA",
+      "kind": "dataset",
+      "description": "Hourly Station-based and Raster-based Terrestrial Atmospheric Dataset (HOSTRADA)",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "HOSTRADA",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "rsds",
+            "wspd"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=HOSTRADA\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation (Gridded)",
+        "coverage": "Germany",
+        "resolution": "1 km",
+        "frequency": "hourly",
+        "time_range": "1995-01-01 to present",
+        "source": "DWD open-data server",
+        "variables": [
+          "rsds",
+          "wspd"
+        ],
+        "experiments": [],
+        "notes": "Gridded hourly surface climate data over Germany on a regular lat/lon grid (EPSG:4326). Files are monthly NetCDF, named {var}_1hr_HOSTRADA-v1-0_BE_gn_{YYYYMMDDHH}-{YYYYMMDDHH}.nc.\n"
+      }
+    },
+    {
+      "name": "AGRI_ISIMIP",
+      "kind": "dataset",
+      "description": "Agricultural Impact Model Outputs from ISIMIP",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "AGRI_ISIMIP",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "yield",
+            "biom",
+            "plantyear",
+            "lai",
+            "evap",
+            "aet"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=AGRI_ISIMIP\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Simulated (Impact Model)",
+        "coverage": "Global",
+        "resolution": "0.5°",
+        "frequency": "daily",
+        "time_range": "varies by experiment (1986-2100)",
+        "source": "ISIMIP repository",
+        "variables": [
+          "yield",
+          "biom",
+          "plantyear",
+          "lai",
+          "evap",
+          "aet"
+        ],
+        "experiments": [],
+        "notes": "Agricultural model outputs driven by CMIP6 climate projections. Available for multiple crop models, ESMs, experiments, and irrigation conditions. Includes yields, biomass, plant year, and other agricultural metrics.\n"
+      }
+    },
+    {
+      "name": "ERA5",
+      "kind": "dataset",
+      "description": "ECMWF Reanalysis v5",
+      "required_params": [
+        {
+          "name": "dataset",
+          "type": "str",
+          "required": true,
+          "default": "ERA5",
+          "description": "Provider key for ClimData(overrides=...)"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": false,
+          "default": [
+            "tas",
+            "tasmax",
+            "tasmin",
+            "pr",
+            "tp",
+            "hurs",
+            "sfcWind",
+            "rsds",
+            "rlds"
+          ],
+          "description": null
+        },
+        {
+          "name": "time_range",
+          "type": "dict",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "experiment_id",
+          "type": "str",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=ERA5\", \"lat=52\", \"lon=13\"]).extract()",
+      "metadata": {
+        "type": "Observation",
+        "coverage": "Global",
+        "resolution": "0.25°",
+        "frequency": "hourly / daily",
+        "time_range": "1940-01-01 to present",
+        "source": "Copernicus CDS (cdsapi)",
+        "variables": [
+          "tas",
+          "tasmax",
+          "tasmin",
+          "pr",
+          "tp",
+          "hurs",
+          "sfcWind",
+          "rsds",
+          "rlds"
+        ],
+        "experiments": [],
+        "notes": "Requires a valid ~/.cdsapirc key."
+      }
+    }
+  ],
+  "variables": [
+    {
+      "name": "tas",
+      "kind": "variable",
+      "description": "Daily mean near-surface air temperature",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[tas]\"])",
+      "metadata": {
+        "cf_name": "air_temperature",
+        "units": "degC"
+      }
+    },
+    {
+      "name": "tasmax",
+      "kind": "variable",
+      "description": "Daily maximum near-surface air temperature",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[tasmax]\"])",
+      "metadata": {
+        "cf_name": "air_temperature",
+        "units": "degC"
+      }
+    },
+    {
+      "name": "tasmin",
+      "kind": "variable",
+      "description": "Daily minimum near-surface air temperature",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[tasmin]\"])",
+      "metadata": {
+        "cf_name": "air_temperature",
+        "units": "degC"
+      }
+    },
+    {
+      "name": "pr",
+      "kind": "variable",
+      "description": "Precipitation",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[pr]\"])",
+      "metadata": {
+        "cf_name": "precipitation_flux",
+        "units": "mm/day"
+      }
+    },
+    {
+      "name": "ps",
+      "kind": "variable",
+      "description": "Surface air pressure",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[ps]\"])",
+      "metadata": {
+        "cf_name": "surface_air_pressure",
+        "units": "Pa"
+      }
+    },
+    {
+      "name": "hurs",
+      "kind": "variable",
+      "description": "Near-surface relative humidity",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[hurs]\"])",
+      "metadata": {
+        "cf_name": "relative_humidity",
+        "units": "%"
+      }
+    },
+    {
+      "name": "huss",
+      "kind": "variable",
+      "description": "Near-surface specific humidity",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[huss]\"])",
+      "metadata": {
+        "cf_name": "specific_humidity",
+        "units": 1
+      }
+    },
+    {
+      "name": "sfcWind",
+      "kind": "variable",
+      "description": "Near-surface wind speed",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[sfcWind]\"])",
+      "metadata": {
+        "cf_name": "wind_speed",
+        "units": "m s-1"
+      }
+    },
+    {
+      "name": "rsds",
+      "kind": "variable",
+      "description": "Surface downwelling shortwave radiation",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[rsds]\"])",
+      "metadata": {
+        "cf_name": "surface_downwelling_shortwave_flux_in_air",
+        "units": "W m-2"
+      }
+    },
+    {
+      "name": "rlds",
+      "kind": "variable",
+      "description": "Surface downwelling longwave radiation",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[rlds]\"])",
+      "metadata": {
+        "cf_name": "surface_downwelling_longwave_flux_in_air",
+        "units": "W m-2"
+      }
+    },
+    {
+      "name": "evpot",
+      "kind": "variable",
+      "description": "Potential evapotranspiration",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[evpot]\"])",
+      "metadata": {
+        "cf_name": "water_evapotranspiration_flux",
+        "units": "mm"
+      }
+    },
+    {
+      "name": "soilMoist",
+      "kind": "variable",
+      "description": "Soil moisture content",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[soilMoist]\"])",
+      "metadata": {
+        "cf_name": "soil_moisture_content",
+        "units": "%"
+      }
+    },
+    {
+      "name": "soilTemp",
+      "kind": "variable",
+      "description": "Soil temperature at 5cm depth",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"variables=[soilTemp]\"])",
+      "metadata": {
+        "cf_name": "soil_temperature",
+        "units": "degC"
+      }
+    }
+  ],
+  "indices": [
+    {
+      "name": "daily_pr_intensity",
+      "kind": "index",
+      "description": "xclim.indices.daily_pr_intensity on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "daily_pr_intensity",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "10 mm/day",
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": ">=",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=daily_pr_intensity\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.daily_pr_intensity",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "thresh": "10 mm/day",
+          "freq": "YS",
+          "op": ">="
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "Rx1day",
+      "kind": "index",
+      "description": "xclim.indices.max_n_day_precipitation_amount on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "Rx1day",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 1,
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=Rx1day\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.max_n_day_precipitation_amount",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "window": 1,
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "Rx3day",
+      "kind": "index",
+      "description": "xclim.indices.max_n_day_precipitation_amount on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "Rx3day",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=Rx3day\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.max_n_day_precipitation_amount",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "window": 3,
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "dry_days",
+      "kind": "index",
+      "description": "xclim.indices.dry_days on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "dry_days",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "0.2 mm/d",
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "<",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=dry_days\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.dry_days",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "thresh": "0.2 mm/d",
+          "freq": "YS",
+          "op": "<"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "dry_spell_frequency",
+      "kind": "index",
+      "description": "xclim.indices.dry_spell_frequency on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "dry_spell_frequency",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "1.0 mm",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "resample_before_rl",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "sum",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=dry_spell_frequency\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.dry_spell_frequency",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "thresh": "1.0 mm",
+          "window": 3,
+          "freq": "YS",
+          "resample_before_rl": true,
+          "op": "sum"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "dry_spell_max_length",
+      "kind": "index",
+      "description": "xclim.indices.dry_spell_max_length on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "dry_spell_max_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "1.0 mm",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "resample_before_rl",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "sum",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=dry_spell_max_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.dry_spell_max_length",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "thresh": "1.0 mm",
+          "window": 3,
+          "freq": "YS",
+          "resample_before_rl": true,
+          "op": "sum"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "dry_spell_total_length",
+      "kind": "index",
+      "description": "xclim.indices.dry_spell_total_length on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "dry_spell_total_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "1.0 mm",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "resample_before_rl",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "sum",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=dry_spell_total_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.dry_spell_total_length",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "thresh": "1.0 mm",
+          "window": 3,
+          "freq": "YS",
+          "resample_before_rl": true,
+          "op": "sum"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "r75p",
+      "kind": "index",
+      "description": "xclim.indices.days_over_precip_thresh on ['pr', 'p75']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "r75p",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr",
+            "p75"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=r75p\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.days_over_precip_thresh",
+        "input_variables": [
+          "pr",
+          "p75"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": true
+      }
+    },
+    {
+      "name": "f75p",
+      "kind": "index",
+      "description": "xclim.indices.fraction_over_precip_thresh on ['pr', 'p75']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "f75p",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr",
+            "p75"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=f75p\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.fraction_over_precip_thresh",
+        "input_variables": [
+          "pr",
+          "p75"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": true
+      }
+    },
+    {
+      "name": "max_cdd",
+      "kind": "index",
+      "description": "xclim.indices.maximum_consecutive_dry_days on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "max_cdd",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "1 mm/day",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=max_cdd\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.maximum_consecutive_dry_days",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "1 mm/day"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "max_cwd",
+      "kind": "index",
+      "description": "xclim.indices.maximum_consecutive_wet_days on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "max_cwd",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "1 mm/day",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=max_cwd\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.maximum_consecutive_wet_days",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "1 mm/day"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "prcptot",
+      "kind": "index",
+      "description": "xclim.indices.prcptot on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "prcptot",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "0 mm/day",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=prcptot\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.prcptot",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "0 mm/day"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "precip_seasonality",
+      "kind": "index",
+      "description": "xclim.indices.precip_seasonality on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "precip_seasonality",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=precip_seasonality\"]).calc_index()",
+      "metadata": {
+        "family": "bioclimatic",
+        "function": "xclim.indices.precip_seasonality",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "SPI1",
+      "kind": "index",
+      "description": "xclim.indices.standardized_precipitation_index on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "SPI1",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "MS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 1,
+          "description": null
+        },
+        {
+          "name": "dist",
+          "type": "str",
+          "required": false,
+          "default": "gamma",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=SPI1\"]).calc_index()",
+      "metadata": {
+        "family": "drought_spi",
+        "function": "xclim.indices.standardized_precipitation_index",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "MS",
+          "window": 1,
+          "dist": "gamma"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "SPI3",
+      "kind": "index",
+      "description": "xclim.indices.standardized_precipitation_index on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "SPI3",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "MS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "dist",
+          "type": "str",
+          "required": false,
+          "default": "gamma",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=SPI3\"]).calc_index()",
+      "metadata": {
+        "family": "drought_spi",
+        "function": "xclim.indices.standardized_precipitation_index",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "MS",
+          "window": 3,
+          "dist": "gamma"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "SPI6",
+      "kind": "index",
+      "description": "xclim.indices.standardized_precipitation_index on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "SPI6",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "MS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 6,
+          "description": null
+        },
+        {
+          "name": "dist",
+          "type": "str",
+          "required": false,
+          "default": "gamma",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=SPI6\"]).calc_index()",
+      "metadata": {
+        "family": "drought_spi",
+        "function": "xclim.indices.standardized_precipitation_index",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "MS",
+          "window": 6,
+          "dist": "gamma"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "wet_spell_frequency",
+      "kind": "index",
+      "description": "xclim.indices.wet_spell_frequency on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "wet_spell_frequency",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "10.0 mm",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "sum",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=wet_spell_frequency\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.wet_spell_frequency",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3,
+          "thresh": "10.0 mm",
+          "op": "sum"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "wet_spell_max_length",
+      "kind": "index",
+      "description": "xclim.indices.wet_spell_max_length on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "wet_spell_max_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "10.0 mm",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "sum",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=wet_spell_max_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.wet_spell_max_length",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3,
+          "thresh": "10.0 mm",
+          "op": "sum"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "wet_spell_total_length",
+      "kind": "index",
+      "description": "xclim.indices.wet_spell_total_length on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "wet_spell_total_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "10.0 mm",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "sum",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=wet_spell_total_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.wet_spell_total_length",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3,
+          "thresh": "10.0 mm",
+          "op": "sum"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "wetdays",
+      "kind": "index",
+      "description": "xclim.indices.wetdays on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "wetdays",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "3.0 mm/day",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": ">=",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=wetdays\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.wetdays",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "3.0 mm/day",
+          "op": ">="
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "wetdays_prop",
+      "kind": "index",
+      "description": "xclim.indices.wetdays_prop on ['pr']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "wetdays_prop",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "3.0 mm/day",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": ">=",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=wetdays_prop\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_precipitation",
+        "function": "xclim.indices.wetdays_prop",
+        "input_variables": [
+          "pr"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "3.0 mm/day",
+          "op": ">="
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "heat_wave_index",
+      "kind": "index",
+      "description": "xclim.indices.heat_wave_index on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "heat_wave_index",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "25 degC",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 5,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=heat_wave_index\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.heat_wave_index",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "25 degC",
+          "window": 5
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "heat_wave_frequency",
+      "kind": "index",
+      "description": "xclim.indices.heat_wave_frequency on ['tasmin', 'tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "heat_wave_frequency",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin",
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=heat_wave_frequency\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.heat_wave_frequency",
+        "input_variables": [
+          "tasmin",
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "heat_wave_max_length",
+      "kind": "index",
+      "description": "xclim.indices.heat_wave_max_length on ['tasmin', 'tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "heat_wave_max_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin",
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=heat_wave_max_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.heat_wave_max_length",
+        "input_variables": [
+          "tasmin",
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "heat_wave_total_length",
+      "kind": "index",
+      "description": "xclim.indices.heat_wave_total_length on ['tasmin', 'tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "heat_wave_total_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin",
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=heat_wave_total_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.heat_wave_total_length",
+        "input_variables": [
+          "tasmin",
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "heating_degree_days",
+      "kind": "index",
+      "description": "xclim.indices.heating_degree_days on ['tas']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "heating_degree_days",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "17 degC",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=heating_degree_days\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.heating_degree_days",
+        "input_variables": [
+          "tas"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "17 degC"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "hot_spell_frequency",
+      "kind": "index",
+      "description": "xclim.indices.hot_spell_frequency on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "hot_spell_frequency",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=hot_spell_frequency\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.hot_spell_frequency",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "hot_spell_max_length",
+      "kind": "index",
+      "description": "xclim.indices.hot_spell_max_length on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "hot_spell_max_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=hot_spell_max_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.hot_spell_max_length",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "hot_spell_total_length",
+      "kind": "index",
+      "description": "xclim.indices.hot_spell_total_length on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "hot_spell_total_length",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=hot_spell_total_length\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.hot_spell_total_length",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "hot_spell_max_magnitude",
+      "kind": "index",
+      "description": "xclim.indices.hot_spell_max_magnitude on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "hot_spell_max_magnitude",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "window",
+          "type": "int",
+          "required": false,
+          "default": 3,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=hot_spell_max_magnitude\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.hot_spell_max_magnitude",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "window": 3
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "huglin_index",
+      "kind": "index",
+      "description": "xclim.indices.huglin_index on ['tas', 'tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "huglin_index",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas",
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=huglin_index\"]).calc_index()",
+      "metadata": {
+        "family": "agroclimatic",
+        "function": "xclim.indices.huglin_index",
+        "input_variables": [
+          "tas",
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "ice_days",
+      "kind": "index",
+      "description": "xclim.indices.ice_days on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "ice_days",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "0 degC",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=ice_days\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.ice_days",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "0 degC"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "isothermality",
+      "kind": "index",
+      "description": "xclim.indices.isothermality on ['tasmin', 'tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "isothermality",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin",
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=isothermality\"]).calc_index()",
+      "metadata": {
+        "family": "bioclimatic",
+        "function": "xclim.indices.isothermality",
+        "input_variables": [
+          "tasmin",
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "keetch_byram_drought_index",
+      "kind": "index",
+      "description": "xclim.indices.keetch_byram_drought_index on ['pr', 'tasmax', 'pr_annual']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "keetch_byram_drought_index",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "pr",
+            "tasmax",
+            "pr_annual"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=keetch_byram_drought_index\"]).calc_index()",
+      "metadata": {
+        "family": "drought_spi",
+        "function": "xclim.indices.keetch_byram_drought_index",
+        "input_variables": [
+          "pr",
+          "tasmax",
+          "pr_annual"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": true
+      }
+    },
+    {
+      "name": "maximum_consecutive_frost_days",
+      "kind": "index",
+      "description": "xclim.indices.maximum_consecutive_frost_days on ['tasmin']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "maximum_consecutive_frost_days",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "0 degC",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=maximum_consecutive_frost_days\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.maximum_consecutive_frost_days",
+        "input_variables": [
+          "tasmin"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "0 degC"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "maximum_consecutive_frost_free_days",
+      "kind": "index",
+      "description": "xclim.indices.maximum_consecutive_frost_free_days on ['tasmin']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "maximum_consecutive_frost_free_days",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "0 degC",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=maximum_consecutive_frost_free_days\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.maximum_consecutive_frost_free_days",
+        "input_variables": [
+          "tasmin"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "0 degC"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "maximum_consecutive_tx_days",
+      "kind": "index",
+      "description": "xclim.indices.maximum_consecutive_tx_days on ['tasmax']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "maximum_consecutive_tx_days",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmax"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "25 degC",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=maximum_consecutive_tx_days\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.maximum_consecutive_tx_days",
+        "input_variables": [
+          "tasmax"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "25 degC"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "temperature_seasonality",
+      "kind": "index",
+      "description": "xclim.indices.temperature_seasonality on ['tas']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "temperature_seasonality",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=temperature_seasonality\"]).calc_index()",
+      "metadata": {
+        "family": "bioclimatic",
+        "function": "xclim.indices.temperature_seasonality",
+        "input_variables": [
+          "tas"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "tg10p",
+      "kind": "index",
+      "description": "xclim.indices.tg10p on ['tas', 'tas_per']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "tg10p",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas",
+            "tas_per"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=tg10p\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.tg10p",
+        "input_variables": [
+          "tas",
+          "tas_per"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": true
+      }
+    },
+    {
+      "name": "tg90p",
+      "kind": "index",
+      "description": "xclim.indices.tg90p on ['tas', 'tas_per']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "tg90p",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas",
+            "tas_per"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=tg90p\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.tg90p",
+        "input_variables": [
+          "tas",
+          "tas_per"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": true
+      }
+    },
+    {
+      "name": "tg_days_above_10degC",
+      "kind": "index",
+      "description": "xclim.indices.tg_days_above on ['tas']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "tg_days_above_10degC",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "10 degC",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": ">=",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=tg_days_above_10degC\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.tg_days_above",
+        "input_variables": [
+          "tas"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "10 degC",
+          "op": ">="
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "tg_days_below_10degC",
+      "kind": "index",
+      "description": "xclim.indices.tg_days_below on ['tas']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "tg_days_below_10degC",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        },
+        {
+          "name": "thresh",
+          "type": "str",
+          "required": false,
+          "default": "10 degC",
+          "description": null
+        },
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "<=",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=tg_days_below_10degC\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.tg_days_below",
+        "input_variables": [
+          "tas"
+        ],
+        "default_args": {
+          "freq": "YS",
+          "thresh": "10 degC",
+          "op": "<="
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "warmest_quarter",
+      "kind": "index",
+      "description": "xclim.indices.tg_mean_warmcold_quarter on ['tas']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "warmest_quarter",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "warmest",
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=warmest_quarter\"]).calc_index()",
+      "metadata": {
+        "family": "bioclimatic",
+        "function": "xclim.indices.tg_mean_warmcold_quarter",
+        "input_variables": [
+          "tas"
+        ],
+        "default_args": {
+          "op": "warmest",
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "coldest_quarter",
+      "kind": "index",
+      "description": "xclim.indices.tg_mean_warmcold_quarter on ['tas']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "coldest_quarter",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tas"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "op",
+          "type": "str",
+          "required": false,
+          "default": "coldest",
+          "description": null
+        },
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=coldest_quarter\"]).calc_index()",
+      "metadata": {
+        "family": "bioclimatic",
+        "function": "xclim.indices.tg_mean_warmcold_quarter",
+        "input_variables": [
+          "tas"
+        ],
+        "default_args": {
+          "op": "coldest",
+          "freq": "YS"
+        },
+        "has_linked_inputs": false
+      }
+    },
+    {
+      "name": "tn10p",
+      "kind": "index",
+      "description": "xclim.indices.tn10p on ['tasmin', 'tasmin_per']",
+      "required_params": [
+        {
+          "name": "index",
+          "type": "str",
+          "required": true,
+          "default": "tn10p",
+          "description": null
+        },
+        {
+          "name": "variables",
+          "type": "list[str]",
+          "required": true,
+          "default": [
+            "tasmin",
+            "tasmin_per"
+          ],
+          "description": "Input variables this index needs"
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "freq",
+          "type": "str",
+          "required": false,
+          "default": "YS",
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"dataset=MSWX\", \"index=tn10p\"]).calc_index()",
+      "metadata": {
+        "family": "etccdi_temperature",
+        "function": "xclim.indices.tn10p",
+        "input_variables": [
+          "tasmin",
+          "tasmin_per"
+        ],
+        "default_args": {
+          "freq": "YS"
+        },
+        "has_linked_inputs": true
+      }
+    }
+  ],
+  "bias_correction": [
+    {
+      "name": "BiasCorrection",
+      "kind": "bias_correction",
+      "description": "Bias correction using ISIMIP3BASD trend-preserving quantile mapping.",
+      "required_params": [
+        {
+          "name": "variable",
+          "type": "Union",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "method",
+          "type": "str",
+          "required": false,
+          "default": "parametric",
+          "description": null
+        },
+        {
+          "name": "distribution",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "trend_preservation",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "detrend",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": null
+        },
+        {
+          "name": "adjust_p_values",
+          "type": "bool",
+          "required": false,
+          "default": false,
+          "description": null
+        },
+        {
+          "name": "lower_bound",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "lower_threshold",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "upper_bound",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "upper_threshold",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "halfwin_upper_bound_climatology",
+          "type": "int",
+          "required": false,
+          "default": 0,
+          "description": null
+        },
+        {
+          "name": "n_processes",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "n_quantiles",
+          "type": "int",
+          "required": false,
+          "default": 50,
+          "description": null
+        },
+        {
+          "name": "n_iterations",
+          "type": "int",
+          "required": false,
+          "default": 20,
+          "description": null
+        },
+        {
+          "name": "randomization_seed",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "BiasCorrection(variable='tas').correct(obs_hist, sim_hist, sim_fut)",
+      "metadata": {
+        "method": "ISIMIP3BASD (trend-preserving quantile mapping / MBCn)",
+        "supported_variables": [
+          "hurs",
+          "pr",
+          "psl",
+          "rlds",
+          "rsds",
+          "sfcWind",
+          "tas",
+          "tasmax",
+          "tasmin"
+        ],
+        "per_variable_defaults": {
+          "tas": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "detrend": true,
+            "adjust_p_values": false
+          },
+          "tasmax": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "detrend": true,
+            "adjust_p_values": false
+          },
+          "tasmin": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "detrend": true,
+            "adjust_p_values": false
+          },
+          "pr": {
+            "distribution": "gamma",
+            "trend_preservation": "mixed",
+            "lower_bound": 0,
+            "lower_threshold": 0.1,
+            "adjust_p_values": true
+          },
+          "rsds": {
+            "distribution": "beta",
+            "trend_preservation": "bounded",
+            "lower_bound": 0,
+            "lower_threshold": 0.01,
+            "upper_bound": 1,
+            "upper_threshold": 0.9999,
+            "adjust_p_values": true,
+            "halfwin_upper_bound_climatology": 15
+          },
+          "hurs": {
+            "distribution": "beta",
+            "trend_preservation": "bounded",
+            "lower_bound": 0,
+            "lower_threshold": 0.01,
+            "upper_bound": 100,
+            "upper_threshold": 99.99,
+            "adjust_p_values": true
+          },
+          "sfcWind": {
+            "distribution": "weibull",
+            "trend_preservation": "mixed",
+            "lower_bound": 0,
+            "lower_threshold": 0.01,
+            "adjust_p_values": true
+          },
+          "psl": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "adjust_p_values": true,
+            "detrend": true
+          },
+          "rlds": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "adjust_p_values": true,
+            "detrend": true
+          }
+        }
+      }
+    },
+    {
+      "name": "StatisticalDownscaling",
+      "kind": "bias_correction",
+      "description": "Statistical downscaling using the ISIMIP3BASD modified MBCn algorithm.",
+      "required_params": [
+        {
+          "name": "variable",
+          "type": "str",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "n_processes",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "n_iterations",
+          "type": "int",
+          "required": false,
+          "default": 20,
+          "description": null
+        },
+        {
+          "name": "randomization_seed",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "lower_bound",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "lower_threshold",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "upper_bound",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "upper_threshold",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "StatisticalDownscaling(variable='tas').downscale(obs_fine, sim_coarse)",
+      "metadata": {
+        "method": "ISIMIP3BASD (trend-preserving quantile mapping / MBCn)",
+        "supported_variables": [
+          "hurs",
+          "pr",
+          "psl",
+          "rlds",
+          "rsds",
+          "sfcWind",
+          "tas",
+          "tasmax",
+          "tasmin"
+        ],
+        "per_variable_defaults": {
+          "tas": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "detrend": true,
+            "adjust_p_values": false
+          },
+          "tasmax": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "detrend": true,
+            "adjust_p_values": false
+          },
+          "tasmin": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "detrend": true,
+            "adjust_p_values": false
+          },
+          "pr": {
+            "distribution": "gamma",
+            "trend_preservation": "mixed",
+            "lower_bound": 0,
+            "lower_threshold": 0.1,
+            "adjust_p_values": true
+          },
+          "rsds": {
+            "distribution": "beta",
+            "trend_preservation": "bounded",
+            "lower_bound": 0,
+            "lower_threshold": 0.01,
+            "upper_bound": 1,
+            "upper_threshold": 0.9999,
+            "adjust_p_values": true,
+            "halfwin_upper_bound_climatology": 15
+          },
+          "hurs": {
+            "distribution": "beta",
+            "trend_preservation": "bounded",
+            "lower_bound": 0,
+            "lower_threshold": 0.01,
+            "upper_bound": 100,
+            "upper_threshold": 99.99,
+            "adjust_p_values": true
+          },
+          "sfcWind": {
+            "distribution": "weibull",
+            "trend_preservation": "mixed",
+            "lower_bound": 0,
+            "lower_threshold": 0.01,
+            "adjust_p_values": true
+          },
+          "psl": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "adjust_p_values": true,
+            "detrend": true
+          },
+          "rlds": {
+            "distribution": "normal",
+            "trend_preservation": "additive",
+            "adjust_p_values": true,
+            "detrend": true
+          }
+        }
+      }
+    },
+    {
+      "name": "BCSD",
+      "kind": "bias_correction",
+      "description": "Complete Bias Correction and Statistical Downscaling (BCSD) workflow.",
+      "required_params": [
+        {
+          "name": "variable",
+          "type": "str",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "bias_correction_kwargs",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "downscaling_kwargs",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "regridding_method",
+          "type": "str",
+          "required": false,
+          "default": "conservative",
+          "description": null
+        },
+        {
+          "name": "regridding_tool",
+          "type": "str",
+          "required": false,
+          "default": "xesmf",
+          "description": null
+        },
+        {
+          "name": "cdo_method",
+          "type": "str",
+          "required": false,
+          "default": "remapcon",
+          "description": null
+        },
+        {
+          "name": "cdo_env",
+          "type": "str",
+          "required": false,
+          "default": "cdo_stable",
+          "description": null
+        },
+        {
+          "name": "weights_dir",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "BCSD(variable='tas').run(obs_fine, sim_hist_coarse, sim_fut_coarse)",
+      "metadata": {
+        "method": "ISIMIP3BASD (trend-preserving quantile mapping / MBCn)",
+        "supported_variables": [],
+        "per_variable_defaults": {}
+      }
+    },
+    {
+      "name": "regrid_to_coarse",
+      "kind": "bias_correction",
+      "description": "Regrid fine-resolution data to a coarse target grid (xESMF or CDO).",
+      "required_params": [
+        {
+          "name": "fine_data",
+          "type": "Dataset",
+          "required": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "coarse_template",
+          "type": "Dataset",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "method",
+          "type": "str",
+          "required": false,
+          "default": "conservative",
+          "description": null
+        },
+        {
+          "name": "regridding_tool",
+          "type": "str",
+          "required": false,
+          "default": "xesmf",
+          "description": null
+        },
+        {
+          "name": "cdo_method",
+          "type": "str",
+          "required": false,
+          "default": "remapcon",
+          "description": null
+        },
+        {
+          "name": "cdo_env",
+          "type": "str",
+          "required": false,
+          "default": "cdo_stable",
+          "description": null
+        },
+        {
+          "name": "weights_dir",
+          "type": "Optional",
+          "required": false,
+          "default": null,
+          "description": null
+        }
+      ],
+      "example": "regrid_to_coarse(fine_data, coarse_template, method='conservative')",
+      "metadata": {
+        "tools": [
+          "xesmf",
+          "cdo"
+        ]
+      }
+    }
+  ],
+  "imputation": [
+    {
+      "name": "BRITS",
+      "kind": "imputation",
+      "description": "Bidirectional Recurrent Imputation",
+      "required_params": [
+        {
+          "name": "impute",
+          "type": "str",
+          "required": true,
+          "default": "BRITS",
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "normalize",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        },
+        {
+          "name": "epochs",
+          "type": "int",
+          "required": false,
+          "default": 5,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"impute=BRITS\"]).impute()",
+      "metadata": {
+        "wired_in_impute": true,
+        "requires_pytorch": true
+      }
+    },
+    {
+      "name": "XGBOOST",
+      "kind": "imputation",
+      "description": "eXtreme Gradient Boosting",
+      "required_params": [
+        {
+          "name": "impute",
+          "type": "str",
+          "required": true,
+          "default": "XGBOOST",
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "normalize",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"impute=XGBOOST\"]).impute()",
+      "metadata": {
+        "wired_in_impute": true,
+        "requires_pytorch": false
+      }
+    },
+    {
+      "name": "CDRec",
+      "kind": "imputation",
+      "description": "Centroid Decomposition Recovery",
+      "required_params": [
+        {
+          "name": "impute",
+          "type": "str",
+          "required": true,
+          "default": "CDRec",
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "normalize",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"impute=CDRec\"]).impute()",
+      "metadata": {
+        "wired_in_impute": true,
+        "requires_pytorch": false
+      }
+    },
+    {
+      "name": "SoftImpute",
+      "kind": "imputation",
+      "description": "softImpute",
+      "required_params": [
+        {
+          "name": "impute",
+          "type": "str",
+          "required": true,
+          "default": "SoftImpute",
+          "description": null
+        }
+      ],
+      "optional_params": [
+        {
+          "name": "normalize",
+          "type": "bool",
+          "required": false,
+          "default": true,
+          "description": null
+        }
+      ],
+      "example": "ClimData(overrides=[\"impute=SoftImpute\"]).impute()",
+      "metadata": {
+        "wired_in_impute": true,
+        "requires_pytorch": false
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "name": "extract",
+      "kind": "workflow",
+      "description": "Downloads climate data to DATA_DIR if required, fetches the files and converts to xarray Dataset",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.extract(...)",
+      "metadata": {
+        "action_type": "primary",
+        "output": "dataset"
+      }
+    },
+    {
+      "name": "calc_index",
+      "kind": "workflow",
+      "description": "Compute extreme index from Dataset",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.calc_index(...)",
+      "metadata": {
+        "action_type": "primary",
+        "output": "dataset"
+      }
+    },
+    {
+      "name": "impute",
+      "kind": "workflow",
+      "description": "Impute missing values in the dataset",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.impute(...)",
+      "metadata": {
+        "action_type": "primary",
+        "output": "dataset"
+      }
+    },
+    {
+      "name": "to_nc",
+      "kind": "workflow",
+      "description": "Save xarray dataset to NetCDF",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_nc(...)",
+      "metadata": {
+        "action_type": "secondary",
+        "output": "filename"
+      }
+    },
+    {
+      "name": "to_csv",
+      "kind": "workflow",
+      "description": "Save current long-form DataFrame to CSV file",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_csv(...)",
+      "metadata": {
+        "action_type": "secondary",
+        "output": "filename"
+      }
+    },
+    {
+      "name": "upload_netcdf",
+      "kind": "workflow",
+      "description": "Upload a NetCDF file and store it as xarray Dataset",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.upload_netcdf(...)",
+      "metadata": {
+        "action_type": "secondary",
+        "output": "dataset"
+      }
+    },
+    {
+      "name": "upload_csv",
+      "kind": "workflow",
+      "description": "Upload a CSV file and convert it to xarray Dataset",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.upload_csv(...)",
+      "metadata": {
+        "action_type": "secondary",
+        "output": "dataset"
+      }
+    }
+  ],
+  "extraction_modes": [
+    {
+      "name": "point",
+      "kind": "extraction_mode",
+      "description": "Nearest grid cell to a lat/lon point (DWD adds a 30 km buffer).",
+      "required_params": [
+        {
+          "name": "lat",
+          "type": "float",
+          "required": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "lon",
+          "type": "float",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"lat=52\", \"lon=13\"])",
+      "metadata": {}
+    },
+    {
+      "name": "box",
+      "kind": "extraction_mode",
+      "description": "Rectangular bounding box subset.",
+      "required_params": [
+        {
+          "name": "box.lat_min",
+          "type": "float",
+          "required": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "box.lat_max",
+          "type": "float",
+          "required": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "box.lon_min",
+          "type": "float",
+          "required": true,
+          "default": null,
+          "description": null
+        },
+        {
+          "name": "box.lon_max",
+          "type": "float",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"box.lat_min=47\", \"box.lat_max=55\", \"box.lon_min=5\", \"box.lon_max=15\"])",
+      "metadata": {}
+    },
+    {
+      "name": "region",
+      "kind": "extraction_mode",
+      "description": "Named region whose bounds come from regions.yaml.",
+      "required_params": [
+        {
+          "name": "region",
+          "type": "str",
+          "required": true,
+          "default": null,
+          "description": "One of: ['europe', 'germany', 'asia', 'india', 'usa', 'custom']"
+        }
+      ],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"region=germany\"])",
+      "metadata": {
+        "available_regions": [
+          "europe",
+          "germany",
+          "asia",
+          "india",
+          "usa",
+          "custom"
+        ]
+      }
+    },
+    {
+      "name": "shapefile",
+      "kind": "extraction_mode",
+      "description": "Clip to the geometry of a shapefile / GeoJSON (rioxarray).",
+      "required_params": [
+        {
+          "name": "shapefile",
+          "type": "str",
+          "required": true,
+          "default": null,
+          "description": null
+        }
+      ],
+      "optional_params": [],
+      "example": "ClimData(overrides=[\"shapefile=/path/to/aoi.shp\"])",
+      "metadata": {}
+    }
+  ],
+  "output_formats": [
+    {
+      "name": "dataframe",
+      "kind": "output_format",
+      "description": "Long-form pandas DataFrame (time, lat, lon, variable, value, units, source).",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_dataframe(ds)",
+      "metadata": {
+        "method": "to_dataframe"
+      }
+    },
+    {
+      "name": "csv:default",
+      "kind": "output_format",
+      "description": "Tab-separated long-form CSV.",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_csv(df, format=\"default\")",
+      "metadata": {
+        "method": "to_csv",
+        "format": "default"
+      }
+    },
+    {
+      "name": "csv:simplace",
+      "kind": "output_format",
+      "description": "SIMPLACE crop-model format (per-location, tab-separated).",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_csv(df, format=\"simplace\")",
+      "metadata": {
+        "method": "to_csv",
+        "format": "simplace"
+      }
+    },
+    {
+      "name": "csv:monica",
+      "kind": "output_format",
+      "description": "MONICA crop-model format (per-location, tab-separated).",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_csv(df, format=\"monica\")",
+      "metadata": {
+        "method": "to_csv",
+        "format": "monica"
+      }
+    },
+    {
+      "name": "netcdf",
+      "kind": "output_format",
+      "description": "CF-style NetCDF file.",
+      "required_params": [],
+      "optional_params": [],
+      "example": "extractor.to_nc(ds)",
+      "metadata": {
+        "method": "to_nc"
+      }
+    },
+    {
+      "name": "zarr",
+      "kind": "output_format",
+      "description": "Zarr store (filename template configured in output.filename_zarr).",
+      "required_params": [],
+      "optional_params": [],
+      "example": "ds.to_zarr(extractor.filename_zarr)",
+      "metadata": {
+        "method": "to_zarr"
+      }
+    }
+  ]
+}
