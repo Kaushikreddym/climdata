@@ -5,7 +5,7 @@ from tqdm import tqdm
 import warnings
 from datetime import datetime, timedelta
 import xarray as xr
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 try:
     from google.oauth2 import service_account
@@ -34,13 +34,82 @@ class MSWXmirror:
         self._extract_mode = None
         self._extract_params = None
 
-    def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
-        """Ensure latitude is ascending and longitude is in the range [0, 360]."""
-        ds = ds.cf.sortby("latitude")
-        lon_name = ds.cf["longitude"].name
-        ds = ds.assign_coords({lon_name: ds.cf["longitude"] % 360})
-        return ds.sortby(lon_name)
+    def _load_opts(self):
+        """Read the optional ``cfg.load`` block, falling back to sensible defaults.
 
+        Keeping this defensive means configs/overrides without a ``load:`` section
+        continue to work unchanged.
+        """
+        defaults = {
+            "engine": "h5netcdf",
+            "parallel": True,
+            # One chunk per global frame. Leaving lat/lon unset makes xarray
+            # inherit the file's native ~(8, 32) on-disk chunking, i.e. ~25k
+            # tiny chunks per frame (~46M tasks/global-year) that stall dask's
+            # graph optimisation. Pin the spatial dims to the whole extent.
+            "chunks": {"time": 1, "lat": -1, "lon": -1},
+            "fix_coords": True,
+        }
+        opts = dict(defaults)
+
+        chunks = OmegaConf.select(self.cfg, "load.chunks", default="__missing__")
+        if chunks != "__missing__":
+            # Allow either a mapping of dim -> size, or the string "auto".
+            if isinstance(chunks, str):
+                opts["chunks"] = chunks
+            else:
+                chunks = OmegaConf.to_container(chunks, resolve=True)
+                # Any spatial dim the caller didn't pin defaults to the whole
+                # extent (-1) rather than the tiny native on-disk chunking.
+                for dim in ("lat", "lon"):
+                    chunks.setdefault(dim, -1)
+                opts["chunks"] = chunks
+
+        for key in ("engine", "parallel", "fix_coords"):
+            val = OmegaConf.select(self.cfg, f"load.{key}", default="__missing__")
+            if val != "__missing__":
+                opts[key] = val
+
+        # When the Dask cluster is disabled, treat extraction as eager: the
+        # dataset is materialised into memory (NumPy) at the end of load() so
+        # nothing downstream stays lazily dask-backed. `load.dask.enabled`
+        # defaults to False (opt-in cluster), matching the wrapper's default.
+        opts["eager"] = not bool(
+            OmegaConf.select(self.cfg, "load.dask.enabled", default=False)
+        )
+
+        return opts
+
+    def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
+        """Ensure latitude is ascending and longitude is in the range [-180, 180).
+
+        Latitude is flipped with a plain slice reversal instead of ``sortby``
+        when it is monotonically decreasing: ``sortby`` builds an argsort +
+        fancy-index reindex layer *per file*, which — over ~1800 daily global
+        files — explodes the dask graph and stalls the client in graph
+        optimisation. A ``[::-1]`` reversal is exact for a monotone axis and
+        adds essentially no graph.
+        """
+        lat_name = ds.cf["latitude"].name
+        lat = ds[lat_name]
+        # A single .values read of the (tiny) 1-D coord; cheaper than argsort.
+        lat_vals = lat.values
+        if lat_vals[0] > lat_vals[-1]:               # descending -> flip
+            ds = ds.isel({lat_name: slice(None, None, -1)})
+        elif not (lat_vals[1:] >= lat_vals[:-1]).all():
+            ds = ds.sortby(lat_name)                 # non-monotone: fall back
+
+        lon_name = ds.cf["longitude"].name
+        lon = ds[lon_name]
+
+        # Only convert if longitudes are in the [0, 360] convention
+        if lon.max().item() > 180:
+            ds = ds.assign_coords(
+                {lon_name: ((lon + 180) % 360) - 180}
+            )
+            ds = ds.sortby(lon_name)
+
+        return ds
     def fetch(self, folder_id: str, variable: str):
         """
         Fetch MSWX files from Google Drive for a given variable.
@@ -73,8 +142,20 @@ class MSWXmirror:
         print(f"📂 {len(local_files)} exist, {len(missing_files)} missing — fetching {variable} from Drive...")
 
         SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+        key_file = self.cfg.dsinfo.MSWX.params.google_service_account
+        # Hydra/YAML can hand back the literal string "None" as well as a real null.
+        if key_file in (None, "None", ""):
+            raise ValueError(
+                "MSWX downloads need a Google service-account key. Add the override "
+                "'dsinfo.MSWX.params.google_service_account=/path/to/service.json' "
+                "(note the key is case-sensitive and must not be prefixed with '+')."
+            )
+        key_file = os.path.expanduser(str(key_file))
+        if not os.path.exists(key_file):
+            raise FileNotFoundError(f"MSWX service-account key not found: {key_file}")
+
         creds = service_account.Credentials.from_service_account_file(
-            self.cfg.dsinfo.MSWX.params.google_service_account, scopes=SCOPES
+            key_file, scopes=SCOPES
         )
         service = build('drive', 'v3', credentials=creds)
 
@@ -97,9 +178,11 @@ class MSWXmirror:
         return local_files
     def _extract_preprocess(self, ds):
         """Apply extraction to a single-daily dataset during preprocessing."""
-        
-        # Fix coords first
-        ds = self._fix_coords(ds)
+
+        # Fix coords first (can be disabled via cfg.load.fix_coords for speed
+        # when the source grid is already ascending-lat / [0,360]-lon).
+        if getattr(self, "_fix_coords_enabled", True):
+            ds = self._fix_coords(ds)
 
         # ---- Point extraction ----
         if self._extract_mode == "point":
@@ -196,43 +279,41 @@ class MSWXmirror:
         # MSWX internal variable name
         varname = self.cfg.dsinfo[self.cfg.dataset.upper()].variables[variable].name
 
+        # Resolve open/preprocess options from cfg.load (with defaults).
+        opts = self._load_opts()
+        self._fix_coords_enabled = opts["fix_coords"]
+
         # Optional: preprocess each file (e.g., rename variable)
         def preprocess(ds):
             ds = self._extract_preprocess(ds)
             return ds[[varname]].rename({varname: variable})
-        import dask
-        # Open all files as a single dataset
+
+        # Open all files as a single, lazily-loaded (Dask-backed) dataset.
+        # `chunks` triggers xarray's Dask backend so data stays on disk until
+        # explicitly computed; `parallel=True` opens files concurrently.
         try:
-            @dask.delayed
-            def open_point(f):
-                ds = preprocess(xr.open_dataset(f, engine="h5netcdf"))
-                return ds
-            batch_size = 500  # process 500 files at a time
-            dsets = []
-
-            for i in range(0, len(file_paths), batch_size):
-                batch_files = file_paths[i:i+batch_size]
-                delayed_batch = [dask.delayed(open_point)(f) for f in batch_files]
-                batch_ds = list(dask.compute(*delayed_batch))
-                dsets.extend(batch_ds)
-
-            dset = xr.concat(dsets, dim="time")
-
-            # dset = xr.open_mfdataset(
-            #     file_paths,
-            #     combine="nested",
-            #     concat_dim="time",
-            #     parallel=True,            # uses Dask for parallel reading
-            #     engine="h5netcdf",       # faster than netcdf4
-            #     # chunks = {"time": 90, "lat": 200, "lon": 200},  # quarterly chunks
-            #     preprocess=preprocess
-            # )
+            dset = xr.open_mfdataset(
+                file_paths,
+                combine="nested",
+                concat_dim="time",
+                parallel=opts["parallel"],   # uses Dask for parallel file opening
+                engine=opts["engine"],       # e.g. h5netcdf, faster than netcdf4
+                chunks=opts["chunks"],       # Dask chunks -> lazy access
+                preprocess=preprocess,
+            )
         except Exception as e:
             raise RuntimeError(f"Failed to load dataset for variable '{variable}': {e}")
 
         # Ensure consistent dimension order
         if self._extract_mode != "point":
             dset = dset.transpose("time", "lat", "lon")
+
+        # Eager mode (Dask cluster disabled): pull the data into memory now so
+        # the returned dataset is NumPy-backed, not lazily Dask-backed. The
+        # bounded chunking above keeps this a straightforward read rather than a
+        # graph-optimisation stall.
+        if opts["eager"]:
+            dset = dset.load()
 
         # Store in the class
         self.dataset = dset

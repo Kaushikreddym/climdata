@@ -569,14 +569,24 @@ class BiasCorrection:
             result_datasets = []
             for var, ba_path, sf_cube in zip(self.variables, ba_paths, sf_cubes):
                 npy_dir = uf.npy_stack_dir(str(ba_path))
-                d = da.from_npy_stack(npy_dir, mmap_mode=None).reshape(sf_cube.shape)
+                # Assemble a contiguous array from the per-location npy stack. Each
+                # {flat}.npy holds one location's (n_time, 1) series; flat is the
+                # row-major index over the spatial dims. This replaces
+                # da.from_npy_stack(...).reshape(...), whose lazy graph yielded
+                # all-NaN with this dask/iris stack. Building the xarray EAGERLY
+                # from the numpy array (no iris.save -> lazy load_cube roundtrip)
+                # also avoids returning data bound to the temp file that the
+                # `finally` block below deletes.
+                arr = np.full(sf_cube.shape, np.nan, dtype=np.float32)
+                flat_view = arr.reshape(sf_cube.shape[0], -1)
+                for flat in range(flat_view.shape[1]):
+                    fp = f"{npy_dir}{flat}.npy"
+                    if os.path.exists(fp):
+                        flat_view[:, flat] = np.load(fp).squeeze()
                 out_cube = sf_cube.copy()
-                out_cube.data = da.ma.masked_invalid(d)
-                iris.save(out_cube, str(ba_path),
-                          saver=iris.fileformats.netcdf.save,
-                          unlimited_dimensions=['time'], zlib=True, complevel=1)
+                out_cube.data = np.ma.masked_invalid(arr)
                 result_datasets.append(
-                    xr.DataArray.from_iris(iris.load_cube(str(ba_path))).to_dataset(name=var))
+                    xr.DataArray.from_iris(out_cube).to_dataset(name=var))
 
             result = xr.merge(result_datasets)
             result.attrs['bias_correction_method'] = (
@@ -761,8 +771,12 @@ class StatisticalDownscaling:
 
                 # Slice and prepare per-year cubes
                 sc_yr    = _ensure_rectilinear_iris_cube(sim_coarse_cube[idx])
-                # Vendor uf.remapbil bilinearly interpolates coarse → fine grid
+                # Vendor uf.remapbil bilinearly interpolates coarse → fine grid.
+                # iris Linear regrid realizes the data to a numpy MaskedArray, but
+                # the vendor sd.downscale calls .compute() on every cube's
+                # core_data(), so re-wrap as a dask masked array (as _xda_to_cube does).
                 remap_yr = uf.remapbil(sc_yr, obs_fine_cube)
+                remap_yr.data = da.ma.masked_invalid(remap_yr.core_data())
                 _stamp_geogcs(remap_yr)
 
                 t0 = __import__("time").time()
@@ -782,10 +796,24 @@ class StatisticalDownscaling:
                 )
                 elapsed = __import__("time").time() - t0
 
-                # npy_stack → iris cube → yearly NetCDF
-                sim_fine_yr = obs_fine_cube[idx].copy()
-                d = da.from_npy_stack(uf.npy_stack_dir(yr_npy_sentinel), mmap_mode=None)
-                sim_fine_yr.data = da.ma.masked_invalid(d.reshape(sim_fine_yr.shape))
+                # npy_stack → contiguous array → yearly NetCDF. Assemble each
+                # {flat}.npy (one fine location's (n_time, 1) series; flat is the
+                # row-major spatial index) into a contiguous numpy array. This
+                # replaces da.from_npy_stack(...).reshape(...) fed straight to
+                # iris.save, which produced thousands of tiny HDF5 chunks (~1 GB,
+                # very slow). A contiguous array writes a compact ~MB file quickly.
+                sim_fine_yr = obs_fine_cube[:len(idx)].copy()
+                npy_dir = uf.npy_stack_dir(yr_npy_sentinel)
+                arr = np.full(sim_fine_yr.shape, np.nan, dtype=np.float32)
+                flat_view = arr.reshape(sim_fine_yr.shape[0], -1)
+                for flat in range(flat_view.shape[1]):
+                    fp = f"{npy_dir}{flat}.npy"
+                    if os.path.exists(fp):
+                        flat_view[:, flat] = np.load(fp).squeeze()
+                sim_fine_yr.data = np.ma.masked_invalid(arr)
+                # Output carries the (application) sim_coarse times, not obs_fine's.
+                _t = sim_fine_yr.coord("time")
+                _t.points, _t.units = sc_yr.coord("time").points, sc_yr.coord("time").units
                 iris.save(sim_fine_yr, str(yr_path),
                           saver=iris.fileformats.netcdf.save,
                           unlimited_dimensions=["time"], zlib=True, complevel=1)

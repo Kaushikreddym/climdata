@@ -40,7 +40,7 @@ from pydantic import (
 )
 from typing_extensions import Annotated, Literal
 
-from capabilities import discover_all, CapabilityRegistry
+from .capabilities import discover_all, CapabilityRegistry
 
 
 # ===========================================================================
@@ -85,6 +85,25 @@ class AnalysisIntent(str, Enum):
     BIAS_CORRECTION = "bias_correction"
 
 
+class Experiment(str, Enum):
+    """
+    CMIP6 experiment / scenario identifiers (closed set).
+
+    The capability registry cannot supply these: its ``experiments`` field is
+    populated from each dataset's *default* ``experiment_id`` in
+    parameters.yaml (see climdata/explore/registry.py), so it holds exactly one
+    value per dataset rather than the set of valid ones.
+    """
+    HISTORICAL = "historical"
+    SSP119 = "ssp119"
+    SSP126 = "ssp126"
+    SSP245 = "ssp245"
+    SSP370 = "ssp370"
+    SSP434 = "ssp434"
+    SSP460 = "ssp460"
+    SSP585 = "ssp585"
+
+
 class ClarificationReason(str, Enum):
     MISSING_COORDINATES = "missing_coordinates"
     MISSING_VARIABLE = "missing_variable"
@@ -123,11 +142,29 @@ class ReadyPlan(BaseModel):
 
     variable: Union[str, List[str]] = Field(..., description="Registry variable key(s).")
     dataset: Optional[str] = Field(None, description="Registry dataset key, if named.")
-    time_range: Optional[TimeRange] = None
+    time_range: Optional[TimeRange] = Field(
+        None, description="Historical / reference / observation period.")
+    future_time_range: Optional[TimeRange] = Field(
+        None, description=(
+            "Future / projection period, ONLY when the user names one that is "
+            "distinct from time_range (e.g. a separate reference vs. future "
+            "window). Applies to the future_projections role; leave null "
+            "otherwise."))
     analysis: List[AnalysisIntent] = Field(..., min_length=1)
     indices: Optional[List[str]] = Field(
         None, description="Registry index keys, when extremes/ETCCDI indices are requested."
     )
+    experiment_id: Optional[Experiment] = Field(
+        None, description=(
+            "CMIP6 scenario for the model roles, ONLY when the user names one "
+            "(e.g. 'SSP2-4.5' -> ssp245). Null leaves the orchestrator's "
+            "per-role default in place."))
+    source_id: Optional[str] = Field(
+        None, description=(
+            "Global climate model (GCM) name, ONLY when the user names one "
+            "(e.g. 'GFDL-ESM4', 'MIROC6'). Free-form: the set of valid models "
+            "is dataset-specific and only resolvable via a network catalogue "
+            "query, so this is validated at extraction time, not here."))
 
     model_config = {"use_enum_values": True, "extra": "forbid"}
 
@@ -267,6 +304,7 @@ def build_planner_prompt() -> str:
         fam.setdefault(c.metadata.get("family", "other"), []).append(c.name)
     index_lines = "\n".join(f"  - {f}: {sorted(n)}" for f, n in sorted(fam.items()))
     intents = ", ".join(i.value for i in AnalysisIntent)
+    experiments = ", ".join(e.value for e in Experiment)
 
     return f"""You are the PLANNER for the ClimData climate toolkit. Convert the
 user's request into ONE JSON object. Output JSON ONLY — no prose, no markdown.
@@ -296,8 +334,11 @@ LEVEL — never nest them under "extent", "point", or "coordinates"):
     "variable":"<key>" | ["<key>",...],
     "dataset":<KEY|null>,                    # only if the user named a source
     "time_range":{{"start":<ISO|null>,"end":<ISO|null>}}|null,
+    "future_time_range":{{"start":<ISO|null>,"end":<ISO|null>}}|null,
     "analysis":["<intent>",...],
-    "indices":["<index_key>",...]|null}}     # only for extremes / ETCCDI
+    "indices":["<index_key>",...]|null,      # only for extremes / ETCCDI
+    "experiment_id":<scenario|null>,         # only if the user names a scenario
+    "source_id":<GCM name|null>}}            # only if the user names a model
 
 RULES
 - Use ONLY the variables, datasets, indices and intents listed below. NEVER
@@ -306,8 +347,31 @@ RULES
   "temperature"->tas, "rainfall"/"precipitation"->pr, "humidity"->hurs,
   "wind"->sfcWind, "solar"/"radiation"->rsds.
 - Set "dataset": null unless the user names a source/coverage that pins it.
+- Dataset name aliases: "NASA POWER"/"NASAPOWER"/"POWER" -> POWER,
+  "MSWX"/"GloH2O" -> MSWX, "CMIP"/"CMIP6" -> CMIP, "NEX-GDDP"/"NEXGDDP" -> NEXGDDP,
+  "ISIMIP"/"W5E5" -> W5E5. Use the registry key exactly as listed under DATASETS.
+- "experiment_id" is one of: {experiments}. Set it ONLY when the user names a
+  scenario: "SSP2-4.5"/"SSP245" -> ssp245, "SSP5-8.5" -> ssp585,
+  "SSP1-2.6" -> ssp126, "SSP3-7.0" -> ssp370, "historical" -> historical.
+  Leave null otherwise — a per-role default is applied downstream.
+- "source_id" is a GCM name (e.g. GFDL-ESM4, MIROC6, MPI-ESM1-2-HR). Set it
+  ONLY when the user names a specific model; leave null otherwise.
 - "indices" is only filled when the intent is extremes or etccdi_indices and the
   user (or the index family) identifies specific indices.
+- TWO TIME PERIODS: if the user names ONE period (or none), put it in
+  "time_range" and leave "future_time_range" null — it will be reused
+  everywhere it applies. If the user names TWO distinct periods — a
+  historical/reference period AND a separate future/projection period (e.g.
+  "use 2005-2014 as the reference period and 2040-2059 as the future
+  period") — put the historical/reference one in "time_range" and the
+  future one in "future_time_range". Never merge two named periods into one.
+- STATISTIC WORDS -> intent: "mean"/"average"/"climatology"/"normal" ->
+  climatology. "trend"/"change over time"/"warming rate"/"getting
+  warmer/wetter" -> historical_trend. "extreme"/"heatwave"/"heavy rain"/a
+  named index -> extremes or etccdi_indices. A request can name more than
+  one of these — include every intent it actually asks for, and prefer
+  climatology over historical_trend when the user asks for a mean/average
+  value rather than a rate of change.
 
 ANALYSIS INTENTS
   {intents}

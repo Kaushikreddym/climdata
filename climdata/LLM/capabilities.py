@@ -22,7 +22,7 @@ package already declares):
 
 Usage
 -----
-    from capabilities import discover_all
+    from climdata.LLM.capabilities import discover_all
     reg = discover_all()
     print(reg.summary())
     reg.to_json("climdata_capabilities.json")

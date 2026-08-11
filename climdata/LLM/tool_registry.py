@@ -9,7 +9,7 @@ capability registry (datasets + indices) — is looked up here by name.
 New datasets and indices are already auto-discovered from ClimData's YAML config
 (Phase 1). New *analytics* (diagnostics) plug in by decorating a function:
 
-    from tool_registry import REGISTRY
+    from climdata.LLM.tool_registry import REGISTRY
 
     @REGISTRY.diagnostic("cold_days_change", intent="extremes",
                          required_roles=["observation"], provided_by="analytics")
@@ -27,8 +27,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
-import analytics
-from capabilities import discover_all
+from . import analytics
+from .capabilities import discover_all
 
 
 # ===========================================================================
@@ -123,13 +123,11 @@ def _diag_climatology(roles, variable=None) -> Dict:
                      required_roles=["observation"], provided_by="climdata",
                      description="ETCCDI/threshold extremes (reuses ClimData calc_index).")
 def _diag_extremes(roles, variable=None, indices=None) -> Dict:
-    out: Dict = {}
-    for idx in (indices or []):
-        val = analytics.compute_index(roles["observation"], idx, reduce="change")
-        if val is not None:
-            out[f"{idx}_change"] = val
-    out["hot_days_change"] = analytics.hot_days_change(roles["observation"], variable=variable)
-    return out
+    # Delegates to analytics.analyze so the threshold/index rules — including
+    # which variables a fixed-degree threshold applies to, and the notes emitted
+    # for indices that could not be computed — live in exactly one place.
+    return analytics.analyze(roles["observation"], intents=["extremes"],
+                             variable=variable, indices=indices)
 
 
 # etccdi_indices shares the extremes adapter

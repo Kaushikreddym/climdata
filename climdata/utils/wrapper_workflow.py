@@ -167,6 +167,9 @@ class ClimateExtractor:
         self.filename = None
         self.filetype = None
 
+        # Optional shared Dask distributed client (created lazily by extract())
+        self._dask_client = None
+
         # Automatically load config on init
         self.load_config(overrides)
         self.cfg = self.preprocess_aoi(self.cfg)
@@ -535,6 +538,68 @@ class ClimateExtractor:
     # ----------------------------
     # Extract data from datasets like CMIP, DWD, etc.
     # ----------------------------
+    def _ensure_dask_client(self):
+        """Optionally start a shared Dask distributed cluster for parallel opens/compute.
+
+        Controlled by ``cfg.load.dask``. Opt-in (``enabled: false`` by default) so
+        other entry points are unaffected. Idempotent: reuses a client this
+        extractor already created, or one the user started elsewhere in the
+        process, instead of spinning up a second cluster.
+
+        Once a distributed client exists in the process, ``open_mfdataset(parallel=True)``
+        routes its per-file opens through it automatically — no other code changes.
+
+        Returns:
+            distributed.Client | None: The active client, or None when disabled/unavailable.
+        """
+        from omegaconf import OmegaConf
+
+        if not OmegaConf.select(self.cfg, "load.dask.enabled", default=False):
+            return None
+
+        # Reuse a client we already created for this extractor.
+        if self._dask_client is not None:
+            return self._dask_client
+
+        try:
+            from dask.distributed import Client, LocalCluster, get_client
+        except ImportError:
+            self.logger.warning(
+                "cfg.load.dask.enabled=true but dask.distributed is not installed; "
+                "falling back to the default scheduler."
+            )
+            return None
+
+        # Reuse an externally-created client if the user already started one.
+        try:
+            self._dask_client = get_client()
+            self.logger.info("Reusing existing Dask client (dashboard: %s)", self._dask_client.dashboard_link)
+            return self._dask_client
+        except ValueError:
+            pass  # no active client -> create our own below
+
+        cluster = LocalCluster(
+            n_workers=int(OmegaConf.select(self.cfg, "load.dask.n_workers", default=4)),
+            threads_per_worker=int(OmegaConf.select(self.cfg, "load.dask.threads_per_worker", default=2)),
+            memory_limit=OmegaConf.select(self.cfg, "load.dask.memory_limit", default="auto"),
+        )
+        self._dask_client = Client(cluster)
+        self.logger.info("Started Dask cluster (dashboard: %s)", self._dask_client.dashboard_link)
+        return self._dask_client
+
+    def close_dask(self):
+        """Shut down the cluster started by :meth:`_ensure_dask_client`, if any."""
+        client = self._dask_client
+        if client is None:
+            return
+        cluster = getattr(client, "cluster", None)
+        try:
+            client.close()
+            if cluster is not None:
+                cluster.close()
+        finally:
+            self._dask_client = None
+
     @update_ds(attr_name='ds')
     def extract(self) -> xr.Dataset:
         """Extract data from the configured provider using ``self.cfg``.
@@ -547,6 +612,10 @@ class ClimateExtractor:
         """
         cfg = self.cfg
         extract_kwargs = {}
+
+        # Optionally start a shared Dask cluster so per-file opens (and later
+        # compute) run in parallel across worker processes.
+        self._ensure_dask_client()
 
         if cfg.lat is not None and cfg.lon is not None:
             extract_kwargs["point"] = (cfg.lon, cfg.lat)
@@ -695,6 +764,29 @@ class ClimateExtractor:
     # ----------------------------
     # Dataset → Long-form DataFrame
     # ----------------------------
+    def plot(self, variable=None, ds: xr.Dataset = None, **kwargs):
+        """Plot a variable on a Cartopy map with coastlines and country borders.
+
+        Thin wrapper around :func:`climdata.viz.plot_map` operating on
+        ``self.current_ds`` by default.
+
+        Args:
+            variable (str, optional): Variable to plot. Defaults to the sole
+                data variable if the dataset has exactly one.
+            ds (xr.Dataset, optional): Dataset to plot. If ``None``, uses ``self.current_ds``.
+            **kwargs: Forwarded to :func:`climdata.viz.plot_map`
+                (e.g. ``time``, ``reduce``, ``cmap``, ``ax``).
+
+        Returns:
+            The Cartopy ``GeoAxes`` the field was drawn on.
+        """
+        from climdata.viz import plot_map
+
+        ds = ds if ds is not None else self.current_ds
+        if ds is None:
+            raise ValueError("No dataset provided and no current_ds is available.")
+        return plot_map(ds, variable=variable, **kwargs)
+
     @update_df()
     def to_dataframe(self, ds: xr.Dataset = None) -> pd.DataFrame:
         """Convert a dataset to a long-form pandas DataFrame.

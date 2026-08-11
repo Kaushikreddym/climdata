@@ -29,8 +29,8 @@ from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
-from capabilities import discover_all
-from planner import ReadyPlan, AnalysisIntent
+from .capabilities import discover_all
+from .planner import ReadyPlan, AnalysisIntent
 
 # The planner's ReadyPlan IS the execution layer's input contract.
 ClimateRequest = ReadyPlan
@@ -60,6 +60,23 @@ DEFAULT_DATASET_PRIORITY = [
     "ERA5", "MSWX", "W5E5", "HYRAS", "POWER", "DWD",
     "NEXGDDP", "CMIP_W5E5", "CMIP", "HOSTRADA", "AGRI_ISIMIP",
 ]
+
+# Datasets ClimData can actually extract. This mirrors the `dataset_upper == "..."`
+# dispatch in climdata/utils/wrapper_workflow.py::ClimateExtractor.extract().
+#
+# It is NOT the same set as the capability registry: registry entries come from
+# conf/mappings/parameters.yaml plus a hard-coded ERA5 block in
+# climdata/explore/registry.py, and ERA5 has no extract() branch. Selecting one
+# leaves `ds = None` and fails with a bare TypeError three stages downstream, so
+# an undispatchable dataset has to be caught here, at plan time, with a reason.
+#
+# test_execution.py::test_dispatchable_datasets_match_climdata re-derives this
+# from the climdata source, so drift shows up as a failing test rather than a
+# runtime crash.
+DISPATCHABLE_DATASETS = frozenset({
+    "AGRI_ISIMIP", "CMIP", "CMIP_W5E5", "DWD", "HOSTRADA",
+    "HYRAS", "MSWX", "NEXGDDP", "POWER", "W5E5",
+})
 
 # Analysis intents ClimData can satisfy natively vs. those deferred to analytics.
 _CLIMDATA_NATIVE_INTENTS = {AnalysisIntent.EXTREMES.value, AnalysisIntent.ETCCDI_INDICES.value}
@@ -103,6 +120,10 @@ class ExecutionPlan(BaseModel):
 
     def climdata_call(self) -> str:
         """Reproducible one-liner to recreate the extraction."""
+        if self.status == ExecutionStatus.ERROR.value:
+            raise ValueError(
+                "This plan is not executable: "
+                + "; ".join(f"{m.kind} {m.name}: {m.detail}" for m in self.missing))
         return f"ClimData(overrides={self.overrides!r})"
 
 
@@ -128,6 +149,13 @@ def _resolve_dataset(
                 kind="dataset", name=requested,
                 detail=f"Unknown dataset. Known: {caps['dataset_names']}"))
             return None
+        if requested not in DISPATCHABLE_DATASETS:
+            missing.append(MissingCapability(
+                kind="dataset", name=requested,
+                detail=(f"'{requested}' is in the capability registry but ClimData "
+                        f"cannot extract it. Extractable: "
+                        f"{sorted(DISPATCHABLE_DATASETS)}")))
+            return None
         unsupported = need - caps["dataset_vars"][requested]
         if unsupported:
             missing.append(MissingCapability(
@@ -136,13 +164,15 @@ def _resolve_dataset(
             return None
         return requested
 
-    # auto-resolve by priority
+    # auto-resolve by priority — skipping anything ClimData cannot extract
     for cand in DEFAULT_DATASET_PRIORITY:
+        if cand not in DISPATCHABLE_DATASETS:
+            continue
         if cand in caps["dataset_vars"] and need.issubset(caps["dataset_vars"][cand]):
             return cand
     missing.append(MissingCapability(
         kind="dataset", name="<auto>",
-        detail=f"No single dataset provides all of {sorted(need)}."))
+        detail=f"No single extractable dataset provides all of {sorted(need)}."))
     return None
 
 
@@ -177,6 +207,24 @@ def _overrides(dataset: Optional[str], variables: List[str], spatial: Dict,
     return ov
 
 
+def _validate_variables(variables: List[str],
+                        missing: List[MissingCapability]) -> None:
+    """
+    Check every requested variable exists in the registry.
+
+    The planner validates this too, but a plan can also be built from a raw
+    dict, and ClimData's extract() unit-conversion loop raises a bare KeyError
+    for anything absent from conf/mappings/variables.yaml — so an unknown
+    variable must be caught here rather than mid-extraction.
+    """
+    known = _caps()["variables"]
+    for name in variables:
+        if name not in known:
+            missing.append(MissingCapability(
+                kind="variable", name=name,
+                detail=f"Not a registry variable. Known: {sorted(known)}"))
+
+
 def _validate_indices(req: ClimateRequest, variables: List[str],
                       missing: List[MissingCapability]) -> List[str]:
     """Validate requested indices exist and their input variables are covered."""
@@ -198,13 +246,26 @@ def _validate_indices(req: ClimateRequest, variables: List[str],
     return valid
 
 
-def build_execution_plan(request: Union[ClimateRequest, dict]) -> ExecutionPlan:
-    """Convert a validated planner request into a reproducible ExecutionPlan."""
+def build_execution_plan(
+    request: Union[ClimateRequest, dict],
+    extra_overrides: Optional[List[str]] = None,
+    extra_config: Optional[Dict] = None,
+) -> ExecutionPlan:
+    """
+    Convert a validated planner request into a reproducible ExecutionPlan.
+
+    ``extra_overrides`` / ``extra_config`` carry caller-supplied settings the
+    planner schema does not model (an ``experiment_id``, say). They must be
+    passed here rather than appended to a finished plan, because the plan hash
+    is computed over them — two extractions that differ only in experiment are
+    different extractions and must not share a provenance hash.
+    """
     req = ReadyPlan.model_validate(request) if isinstance(request, dict) else request
     caps = _caps()
     missing: List[MissingCapability] = []
 
     variables = req.variables
+    _validate_variables(variables, missing)
     dataset = _resolve_dataset(variables, req.dataset, missing)
     spatial = _spatial(req)
     time_range = (
@@ -221,32 +282,45 @@ def build_execution_plan(request: Union[ClimateRequest, dict]) -> ExecutionPlan:
             detail="extremes/etccdi_indices intent requires at least one valid index."))
 
     overrides = _overrides(dataset, variables, spatial, time_range)
-
-    # ----- ordered workflow steps -----
-    steps: List[WorkflowStep] = [
-        WorkflowStep(action="extract", provided_by="climdata",
-                     params={"overrides": overrides})
-    ]
-    for idx in valid_indices:
-        steps.append(WorkflowStep(action="calc_index", provided_by="climdata",
-                                  params={"index": idx}))
-    # intents ClimData doesn't compute natively → analytics layer
-    for intent in req.analysis:
-        if intent not in _CLIMDATA_NATIVE_INTENTS:
-            steps.append(WorkflowStep(action="analyze", provided_by="analytics",
-                                      params={"intent": intent}))
+    overrides += list(extra_overrides or [])
 
     # ----- resolved config snapshot (reproducible) -----
+    # future_time_range is included even though it produces no override of its
+    # own: the orchestrator routes it to the future role's `time_range`, so two
+    # requests differing only in projection window are different extractions and
+    # must not collide on the plan hash.
     config = {
         "dataset": dataset,
         "variables": variables,
         "spatial": spatial,
         "time_range": time_range,
+        "future_time_range": (
+            {"start": req.future_time_range.start, "end": req.future_time_range.end}
+            if req.future_time_range else None
+        ),
         "indices": valid_indices,
         "analysis": list(req.analysis),
+        **(extra_config or {}),
     }
 
     status = ExecutionStatus.ERROR if missing else ExecutionStatus.READY
+
+    # ----- ordered workflow steps -----
+    # An error plan carries no steps: `overrides` and `config` stay for
+    # inspection, but a runner iterating steps can never execute an extraction
+    # this layer has already judged invalid.
+    steps: List[WorkflowStep] = []
+    if status is ExecutionStatus.READY:
+        steps.append(WorkflowStep(action="extract", provided_by="climdata",
+                                  params={"overrides": overrides}))
+        for idx in valid_indices:
+            steps.append(WorkflowStep(action="calc_index", provided_by="climdata",
+                                      params={"index": idx}))
+        # intents ClimData doesn't compute natively → analytics layer
+        for intent in req.analysis:
+            if intent not in _CLIMDATA_NATIVE_INTENTS:
+                steps.append(WorkflowStep(action="analyze", provided_by="analytics",
+                                          params={"intent": intent}))
     plan_hash = hashlib.sha256(
         json.dumps({"overrides": overrides, "config": config}, sort_keys=True,
                    default=str).encode()

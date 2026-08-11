@@ -19,6 +19,7 @@ from .datasets.NASAPOWER import POWER as POWER
 from .datasets.AGRI_ISIMIP import AGRI_ISIMIP as AGRI_ISIMIP
 from .extremes.indices import extreme_index as extreme_index
 from .utils.wrapper_workflow import ClimateExtractor as ClimData
+from .viz import plot_map as plot_map
 from ._vendor import imputegap
 from .explore import (
     list_available_data,
