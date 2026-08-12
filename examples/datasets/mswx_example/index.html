@@ -901,7 +901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../sdba/sdba.ipynb/" class="md-nav__link">
+      <a href="../../sdba/sdba/" class="md-nav__link">
         
   
   
@@ -1909,13 +1909,23 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </style>
 <!-- End of mermaid configuration --><div class="jupyter-wrapper">
 <div class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=79179141">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=760224f84cf5">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p><a href="https://colab.research.google.com/github/Kaushikreddym/climdata/blob/main/docs/examples/datasets/mswx_example.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg"/></a></p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4d7cae98925d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-1">
@@ -2016,7 +2026,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-2">
@@ -2088,25 +2098,25 @@ logging.basicConfig(
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="n">overrides</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">"dataset=CMIP_W5E5"</span><span class="p">,</span>                             <span class="c1"># Select the MSWX dataset</span>
-    <span class="s2">"region=germany"</span><span class="p">,</span>
-    <span class="s2">"time_range.start_date=1979-01-01"</span><span class="p">,</span>         <span class="c1"># Start date for data extraction</span>
-    <span class="s2">"time_range.end_date=2024-12-31"</span><span class="p">,</span>           <span class="c1"># End date for data extraction</span>
-    <span class="s2">"variables=[rsds, hurs, tas, sfcWind, pr]"</span><span class="p">,</span>             <span class="c1"># Variables to extract</span>
-    <span class="s2">"data_dir=/data01/FDS/muduchuru/Atmos/"</span><span class="p">,</span>                          <span class="c1"># Local directory to store downloaded files</span>
-    <span class="s2">"dsinfo.MSWX.params.google_service_account=/home/muduchuru/.climdata_conf/service.json"</span><span class="p">,</span>  <span class="c1"># Path to service account key</span>
+    <span class="s2">"dataset=mswx"</span><span class="p">,</span>                             <span class="c1"># Select the MSWX dataset</span>
+    <span class="s2">"region=germany"</span><span class="p">,</span>                           <span class="c1"># Predefined bounding box</span>
+    <span class="s2">"time_range.start_date=2010-01-01"</span><span class="p">,</span>         <span class="c1"># Start date for data extraction</span>
+    <span class="s2">"time_range.end_date=2010-03-31"</span><span class="p">,</span>           <span class="c1"># End date for data extraction</span>
+    <span class="s2">"variables=[tasmin,tasmax,pr]"</span><span class="p">,</span>             <span class="c1"># Variables to extract</span>
+    <span class="s2">"data_dir=./data"</span><span class="p">,</span>                          <span class="c1"># Local directory to store downloaded files</span>
+    <span class="s2">"dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json"</span><span class="p">,</span>  <span class="c1"># Service account key</span>
 <span class="p">]</span>
 
 <span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-3">overrides = [
-    "dataset=CMIP_W5E5",                             # Select the MSWX dataset
-    "region=germany",
-    "time_range.start_date=1979-01-01",         # Start date for data extraction
-    "time_range.end_date=2024-12-31",           # End date for data extraction
-    "variables=[rsds, hurs, tas, sfcWind, pr]",             # Variables to extract
-    "data_dir=/data01/FDS/muduchuru/Atmos/",                          # Local directory to store downloaded files
-    "dsinfo.MSWX.params.google_service_account=/home/muduchuru/.climdata_conf/service.json",  # Path to service account key
+    "dataset=mswx",                             # Select the MSWX dataset
+    "region=germany",                           # Predefined bounding box
+    "time_range.start_date=2010-01-01",         # Start date for data extraction
+    "time_range.end_date=2010-03-31",           # End date for data extraction
+    "variables=[tasmin,tasmax,pr]",             # Variables to extract
+    "data_dir=./data",                          # Local directory to store downloaded files
+    "dsinfo.mswx.params.google_service_account=./.climdata_conf/service.json",  # Service account key
 ]
 
 extractor = ClimData(overrides=overrides)</div>
@@ -2127,13 +2137,13 @@ extractor = ClimData(overrides=overrides)</div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=7920a2b5">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=7920a2b5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div><div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="CodeMirror cm-s-jupyter">
 <div class="zeroclipboard-container">
 <clipboard-copy ,="" aria-label="Copy to Clipboard" for="cell-4">
@@ -2169,50 +2179,6 @@ for var in cfg.variables:
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>INFO | file_cache is only supported with oauth2client&lt;4.0.0
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>📂 16801 exist, 1 missing — fetching rsds from Drive...
-⚠️ No rsds files found in Drive for requested dates.
-rsds: 16801 files staged in /data01/FDS/muduchuru/Atmos//MSWX/RSDS
-✅ All 16802 hurs files already exist locally.
-hurs: 16802 files staged in /data01/FDS/muduchuru/Atmos//MSWX/HURS
-✅ All 16802 tas files already exist locally.
-tas: 16802 files staged in /data01/FDS/muduchuru/Atmos//MSWX/TAS
-✅ All 16802 sfcWind files already exist locally.
-sfcWind: 16802 files staged in /data01/FDS/muduchuru/Atmos//MSWX/SFCWIND
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>INFO | file_cache is only supported with oauth2client&lt;4.0.0
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>📂 16801 exist, 1 missing — fetching pr from Drive...
-⚠️ No pr files found in Drive for requested dates.
-pr: 16801 files staged in /data01/FDS/muduchuru/Atmos//MSWX/PR
-</pre>
-</div>
-</div>
-</div>
-</div>
 </div>
 </div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=3243c537">
@@ -2225,8 +2191,8 @@ pr: 16801 files staged in /data01/FDS/muduchuru/Atmos//MSWX/PR
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=4f7697da">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4f7697da">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -2249,58 +2215,6 @@ pr: 16801 files staged in /data01/FDS/muduchuru/Atmos//MSWX/PR
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-5">ds = extractor.extract()
 print(ds)</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>INFO | file_cache is only supported with oauth2client&lt;4.0.0
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>📂 16801 exist, 1 missing — fetching rsds from Drive...
-⚠️ No rsds files found in Drive for requested dates.
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
-<pre>/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/delayed.py:115: ResourceWarning: unclosed &lt;ssl.SSLSocket fd=80, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('10.110.1.103', 54074), raddr=('216.239.32.223', 443)&gt;
-  args, collections = unzip((unpack_collections(e) for e in expr), 2)
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/delayed.py:115: ResourceWarning: unclosed &lt;ssl.SSLSocket fd=79, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('10.110.1.103', 51546), raddr=('142.251.127.95', 443)&gt;
-  args, collections = unzip((unpack_collections(e) for e in expr), 2)
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/delayed.py:115: ResourceWarning: unclosed &lt;ssl.SSLSocket fd=83, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('10.110.1.103', 41536), raddr=('172.217.116.4', 443)&gt;
-  args, collections = unzip((unpack_collections(e) for e in expr), 2)
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/delayed.py:115: ResourceWarning: unclosed &lt;ssl.SSLSocket fd=82, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('10.110.1.103', 42120), raddr=('142.251.127.95', 443)&gt;
-  args, collections = unzip((unpack_collections(e) for e in expr), 2)
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/delayed.py:115: ResourceWarning: unclosed &lt;ssl.SSLSocket fd=85, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('10.110.1.103', 38768), raddr=('172.217.114.4', 443)&gt;
-  args, collections = unzip((unpack_collections(e) for e in expr), 2)
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/home/muduchuru/miniforge3/envs/sdba/lib/python3.10/site-packages/dask/delayed.py:115: ResourceWarning: unclosed &lt;ssl.SSLSocket fd=84, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=6, laddr=('10.110.1.103', 47086), raddr=('142.251.127.95', 443)&gt;
-  args, collections = unzip((unpack_collections(e) for e in expr), 2)
-ResourceWarning: Enable tracemalloc to get the object allocation traceback
-</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>✅ All 16802 hurs files already exist locally.
-</pre>
 </div>
 </div>
 </div>
@@ -2337,10 +2251,10 @@ ResourceWarning: Enable tracemalloc to get the object allocation traceback
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Inspect one variable</span>
-<span class="n">ds_tasmin</span>
+<span class="n">ds</span><span class="p">[</span><span class="s1">'tasmin'</span><span class="p">]</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-6"># Inspect one variable
-ds_tasmin</div>
+ds['tasmin']</div>
 </div>
 </div>
 </div>
@@ -2366,11 +2280,11 @@ ds_tasmin</div>
 </clipboard-copy>
 </div>
 <div class="highlight-ipynb hl-python"><pre><span></span><span class="c1"># Convert to pandas DataFrame for quick inspection</span>
-<span class="n">df_tasmin</span> <span class="o">=</span> <span class="n">ds_tasmin</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+<span class="n">df_tasmin</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'tasmin'</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 <span class="n">df_tasmin</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 <div class="clipboard-copy-txt" id="cell-7"># Convert to pandas DataFrame for quick inspection
-df_tasmin = ds_tasmin.to_dataframe().reset_index()
+df_tasmin = ds['tasmin'].to_dataframe().reset_index()
 df_tasmin.head()</div>
 </div>
 </div>
@@ -2536,7 +2450,7 @@ result</div>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="8-save-to-csv">8. Save to CSV<a class="anchor-link" href="#8-save-to-csv">¶</a></h2>
+<h2 id="8-save-to-csv">8. Save to CSV<a class="anchor-link" href="#8-save-to-csv">¶</a></h2><p>Write the extracted data out as a flat CSV file.</p>
 </div>
 </div>
 </div>
@@ -2559,11 +2473,11 @@ result</div>
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">mswx</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="s2">"mswx_point_2010.csv"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Saved to mswx_point_2010.csv"</span><span class="p">)</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="n">mswx_box</span><span class="o">.</span><span class="n">save_csv</span><span class="p">(</span><span class="s2">"mswx_tasmax_2010.csv"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Saved to mswx_tasmax_2010.csv"</span><span class="p">)</span>
 </pre></div>
-<div class="clipboard-copy-txt" id="cell-10">mswx.save_csv("mswx_point_2010.csv")
-print("Saved to mswx_point_2010.csv")</div>
+<div class="clipboard-copy-txt" id="cell-10">mswx_box.save_csv("mswx_tasmax_2010.csv")
+print("Saved to mswx_tasmax_2010.csv")</div>
 </div>
 </div>
 </div>
@@ -2599,7 +2513,7 @@ print("Saved to mswx_point_2010.csv")</div>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 11, 2026 10:22:52 UTC"><span class="timeago" datetime="2026-08-11T10:22:52+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 11, 2026 10:22:52 UTC">2026-08-11</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-timeago" title="August 12, 2026 15:14:25 UTC"><span class="timeago" datetime="2026-08-12T15:14:25+00:00" locale="en"></span></span><span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-iso_date" title="August 12, 2026 15:14:25 UTC">2026-08-12</span>
   </span>
 
     
