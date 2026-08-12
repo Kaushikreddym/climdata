@@ -89,7 +89,7 @@ nav:
             - MSWX Example: examples/datasets/mswx_example.ipynb
         - Advanced:
             - CMIP validation: examples/advanced/cmip_obs_comparison.ipynb
-            - Bias Correction Downscaling: examples/sdba/sdba.ipynb\
+            - Bias Correction Downscaling: examples/sdba/sdba.ipynb
             - Multi-Dataset Climate Comparison - point location: examples/datasets/multi_dataset_comparison.ipynb
     - API Reference:
         - Workflow Reference: api.md

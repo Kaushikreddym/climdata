@@ -46,11 +46,50 @@ warnings.filterwarnings("ignore", category=Warning)
 # ---------------------------------------------------------------------------
 
 def _to_proleptic_gregorian(cube):
-    """Reinterpret iris cube time coord as proleptic_gregorian (ISIMIP3BASD requirement)."""
+    """Convert an iris cube time coord to proleptic_gregorian (ISIMIP3BASD requirement).
+
+    The point values count time steps *in the source calendar*, so a 365_day
+    (noleap) coord cannot simply be relabelled: every date would slip backwards by
+    the number of leap days between the unit origin and the data (40 days for
+    GFDL-ESM4 / CanESM5 on 'days since 1850-01-01').  Convert points → dates →
+    points instead, so each step keeps its real calendar date.  For
+    standard/gregorian/julian a relabel is exact over the CF data range.
+    """
     import cf_units
+    from datetime import datetime as _dt
+
     t = cube.coord('time')
-    if t.units.calendar != 'proleptic_gregorian':
-        t.units = cf_units.Unit(t.units.origin, calendar='proleptic_gregorian')
+    src = t.units
+    if src.calendar == 'proleptic_gregorian':
+        return cube
+
+    tgt = cf_units.Unit(src.origin, calendar='proleptic_gregorian')
+
+    if src.calendar in ('standard', 'gregorian', 'julian'):
+        t.units = tgt
+        return cube
+
+    if src.calendar in ('360_day', '360'):
+        raise NotImplementedError(
+            f"calendar '{src.calendar}' has dates (e.g. Feb 30) with no "
+            "proleptic_gregorian equivalent; resample the input to a real "
+            "calendar before bias correction"
+        )
+
+    def _renumber(points):
+        dates = np.atleast_1d(src.num2date(points))
+        return tgt.date2num(
+            [_dt(d.year, d.month, d.day, d.hour, d.minute, d.second) for d in dates]
+        )
+
+    new_points = _renumber(t.points)
+    new_bounds = (
+        _renumber(t.bounds.ravel()).reshape(t.bounds.shape)
+        if t.bounds is not None else None
+    )
+    t.units = tgt
+    t.points = new_points
+    t.bounds = new_bounds
     return cube
 
 
