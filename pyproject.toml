@@ -29,6 +29,13 @@ classifiers = [
 climdata = "climdata.main:run"
 
 [project.optional-dependencies]
+# pip install climdata[grid]
+# Dask-parallel reprojection. rioxarray's own docs point at odc-geo for this;
+# the plain (in-memory) reprojection path needs nothing beyond rioxarray.
+grid = [
+    "odc-geo>=0.4",
+]
+
 # pip install climdata[full]
 # Includes all optional imputation and ML backends.
 # NOTE: pycatch22 and PyTorch are NOT included here — install them separately:

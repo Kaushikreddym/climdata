@@ -49,6 +49,7 @@ class CapabilityKind(str, Enum):
     VARIABLE = "variable"
     INDEX = "index"               # climate / ETCCDI / bioclim index
     BIAS_CORRECTION = "bias_correction"
+    REGRIDDING = "regridding"     # projection / resolution transformation
     IMPUTATION = "imputation"
     WORKFLOW = "workflow"         # high-level action (extract, calc_index, ...)
     EXTRACTION_MODE = "extraction_mode"
@@ -98,6 +99,7 @@ class CapabilityRegistry(BaseModel):
     variables: List[Capability] = Field(default_factory=list)
     indices: List[Capability] = Field(default_factory=list)
     bias_correction: List[Capability] = Field(default_factory=list)
+    regridding: List[Capability] = Field(default_factory=list)
     imputation: List[Capability] = Field(default_factory=list)
     workflows: List[Capability] = Field(default_factory=list)
     extraction_modes: List[Capability] = Field(default_factory=list)
@@ -107,15 +109,15 @@ class CapabilityRegistry(BaseModel):
     def all(self) -> List[Capability]:
         return (
             self.datasets + self.variables + self.indices + self.bias_correction
-            + self.imputation + self.workflows + self.extraction_modes
-            + self.output_formats
+            + self.regridding + self.imputation + self.workflows
+            + self.extraction_modes + self.output_formats
         )
 
     def summary(self) -> str:
         groups = {
             "datasets": self.datasets, "variables": self.variables,
             "indices": self.indices, "bias_correction": self.bias_correction,
-            "imputation": self.imputation, "workflows": self.workflows,
+            "regridding": self.regridding, "imputation": self.imputation, "workflows": self.workflows,
             "extraction_modes": self.extraction_modes,
             "output_formats": self.output_formats,
         }
@@ -356,6 +358,71 @@ def discover_bias_correction() -> List[Capability]:
     return caps
 
 
+def discover_regridding() -> List[Capability]:
+    """Projection and resolution transformation exposed by :mod:`climdata.grid`."""
+    return [
+        Capability(
+            name="reproject",
+            kind=CapabilityKind.REGRIDDING,
+            description=(
+                "Reproject and/or resample a dataset onto a target CRS and resolution "
+                "(rasterio/rioxarray), with the grid origin snapped so that separately "
+                "processed domains stay co-registered."
+            ),
+            required_params=[],
+            optional_params=[
+                ParamSpec(
+                    name="target_projection", type="str", required=False,
+                    description=(
+                        "Destination CRS: 'EPSG:4326', an integer EPSG code, OGC WKT or "
+                        "a PROJ string. Defaults to the source CRS."
+                    ),
+                ),
+                ParamSpec(
+                    name="target_resolution", type="str", required=False,
+                    description=(
+                        "Destination cell size. Units MUST match the target CRS: linear "
+                        "('10 km', '1000 m') for a projected CRS, angular ('0.1 deg', "
+                        "'30 arcsec') for a geographic one. Combining a metric "
+                        "resolution with a geographic CRS such as EPSG:4326 raises "
+                        "ResolutionCRSMismatch, because 10 km spans 0.1395 deg of "
+                        "longitude but 0.0899 deg of latitude at 50N."
+                    ),
+                ),
+                ParamSpec(
+                    name="regrid.method", type="str", required=False,
+                    description=(
+                        "Resampling: nearest | bilinear | cubic | cubic_spline | lanczos "
+                        "| average | mode | min | max | med | q1 | q3 | sum | rms. Use "
+                        "'bilinear' for state variables, 'average' for fluxes, "
+                        "'nearest' for categorical fields."
+                    ),
+                ),
+                ParamSpec(
+                    name="regrid.align", type="bool", required=False,
+                    description="Snap the grid origin to whole multiples of the resolution.",
+                ),
+                ParamSpec(
+                    name="regrid.engine", type="str", required=False,
+                    description="'rasterio' (default) or 'xesmf' for area-weighted conservative remapping.",
+                ),
+            ],
+            example=(
+                'ClimData(overrides=["target_projection=EPSG:3035", '
+                '"target_resolution=10 km"])'
+            ),
+            metadata={
+                "tools": ["rasterio", "rioxarray", "pyproj", "xclim.core.units"],
+                "valid_combinations": {
+                    "projected_crs": "linear resolution (10 km, 1000 m, 30 ft)",
+                    "geographic_crs": "angular resolution (0.1 deg, 30 arcsec, 5 arcmin)",
+                },
+                "raises": "ResolutionCRSMismatch on linear+geographic or angular+projected",
+            },
+        ),
+    ]
+
+
 def discover_imputation() -> List[Capability]:
     """
     Imputation methods declared in imputation.yaml, cross-checked against the
@@ -532,6 +599,7 @@ def discover_all() -> CapabilityRegistry:
         variables=discover_variables(),
         indices=discover_indices(),
         bias_correction=discover_bias_correction(),
+        regridding=discover_regridding(),
         imputation=discover_imputation(),
         workflows=discover_workflows(),
         extraction_modes=discover_extraction_modes(),

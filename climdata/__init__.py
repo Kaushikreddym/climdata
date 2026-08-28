@@ -8,7 +8,7 @@ from .utils.config import load_config
 from .datasets.DWD import DWDmirror as DWD
 from .datasets.MSWX import MSWXmirror as MSWX
 from .datasets.ERA5 import ERA5Mirror as ERA5
-# from .datasets.CMIPlocal import CMIPmirror as CMIPlocal
+from .datasets.CMIPlocal import CMIPmirror as CMIPlocal
 from .datasets.CMIPCloud import CMIPCloud as CMIP
 from .datasets.W5E5 import W5E5 as W5E5
 from .datasets.CMIP_W5E5 import CMIPW5E5 as CMIPW5E5
@@ -20,6 +20,14 @@ from .datasets.AGRI_ISIMIP import AGRI_ISIMIP as AGRI_ISIMIP
 from .extremes.indices import extreme_index as extreme_index
 from .utils.wrapper_workflow import ClimateExtractor as ClimData
 from .viz import plot_map as plot_map
+from .grid import (
+    reproject,
+    parse_crs,
+    parse_resolution,
+    to_angular,
+    Resolution,
+    ResolutionCRSMismatch,
+)
 from ._vendor import imputegap
 from .explore import (
     list_available_data,

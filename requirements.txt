@@ -5,6 +5,9 @@ openpyxl
 pandas
 geopandas
 rioxarray
+rasterio
+pyproj
+affine
 dask[complete]
 cartopy
 colormaps

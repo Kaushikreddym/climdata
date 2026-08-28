@@ -7,10 +7,10 @@ from typing import Optional, Dict, Union
 from omegaconf import DictConfig
 import warnings
 from pathlib import Path
-from tqdm.notebook import tqdm
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from xclim.core import units
+from tqdm.auto import tqdm
 warnings.filterwarnings("ignore", category=Warning)
 
 
@@ -187,7 +187,8 @@ class CMIPmirror:
         else:
             return (var, model, None)
 
-    def load(self, df_filtered, vars_of_interest, subset_experiments = ["historical", "hist-aer", "hist-GHG"]):
+    def load(self, df_filtered, vars_of_interest, subset_experiments=None):
+        subset_experiments = subset_experiments or self.experiments
         data_dict = defaultdict(dict)
         var_model_pairs = list(
             df_filtered[df_filtered['variable_id'].isin(vars_of_interest)]
@@ -208,13 +209,13 @@ class CMIPmirror:
         self.dataset = data_dict
         return data_dict
 
-    def to_zarr(self, dataset=None):
+    def to_zarr(self, dataset=None, output_dir="data"):
         if self.dataset is None:
             raise ValueError("No dataset loaded. Call `load()` before `to_zarr()`.")
         for mod_name in self.dataset.keys():
             for var_name in self.dataset[mod_name].keys():
                 ds_model = self.dataset[mod_name][var_name]
-            
+
                 dataset_name = mod_name
                 region = self.var_cfg.region
 
@@ -222,7 +223,7 @@ class CMIPmirror:
                     ds_model.attrs['units'] = 'kg m-2 s-1'
                 elif var_name in ['tas', 'tasmax', 'tasmin']:
                     ds_model.attrs['units'] = 'degC'
-        
+
                 zarr_filename = self.var_cfg.output.filename.format(
                     index=var_name,
                     dataset=dataset_name,
@@ -231,8 +232,8 @@ class CMIPmirror:
                     end=self.var_cfg.time_range.end_date,
                     freq='1D',
                 )
-                zarr_path = os.path.join(f"data/{mod_name}/", zarr_filename)
+                zarr_path = os.path.join(output_dir, mod_name, zarr_filename)
                 os.makedirs(os.path.dirname(zarr_path), exist_ok=True)
-        
+
                 print(f"💾 Saving {var_name} to Zarr: {zarr_path}")
                 ds_model.to_zarr(zarr_path, mode="w")

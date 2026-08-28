@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
-# build_mac.sh — Build climdata_gui.app using PyInstaller in the climdata_dev conda env
+# build_mac.sh — Build climdata_gui.app using PyInstaller in a conda env
 #
-# Usage (from workspace root):
-#   bash build_mac.sh
+# Usage (from anywhere):
+#   bash build/build_mac.sh              # uses the climdata_dev env
+#   CLIMDATA_ENV=sdba bash build/build_mac.sh
 #
 # Output: dist/climdata_gui.app
 
 set -euo pipefail
 
-CONDA_ENV="climdata_dev"
+# ── 0. Always operate from the repository root ────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${REPO_ROOT}"
+
+CONDA_ENV="${CLIMDATA_ENV:-climdata_dev}"
 SPEC_FILE="climdata_gui.spec"
+WORK_DIR="build_work"
 
 # ── 1. Verify the conda env exists ────────────────────────────────────────
 if ! conda env list | grep -q "^${CONDA_ENV}[[:space:]]"; then
@@ -31,7 +38,10 @@ cp -r climdata/conf climdata_gui/conf
 
 # ── 4. Build the .app bundle ──────────────────────────────────────────────
 echo "==> Running PyInstaller..."
-conda run -n "${CONDA_ENV}" pyinstaller "${SPEC_FILE}" --noconfirm
+conda run -n "${CONDA_ENV}" pyinstaller "${SPEC_FILE}" \
+    --noconfirm \
+    --workpath "${WORK_DIR}" \
+    --distpath dist
 
 # ── 4. Fix QtWebEngineProcess search paths ────────────────────────────────
 # conda-forge PySide6 places QtWebEngineProcess under

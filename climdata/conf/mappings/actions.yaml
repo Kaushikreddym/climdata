@@ -13,6 +13,11 @@ impute:
   output: dataset
   description: "Impute missing values in the dataset"
 
+reproject:
+  type: primary
+  output: dataset
+  description: "Reproject and/or resample the dataset onto a target CRS and resolution (rasterio/rioxarray)"
+
 to_nc:
   type: secondary
   output: filename

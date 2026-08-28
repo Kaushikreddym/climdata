@@ -87,6 +87,8 @@ nav:
             - W5E5 0.5 deg reference dataset: examples/datasets/w5e5_example.ipynb
             - CMIP NEX-GDDP Downscaled (0.25 deg): examples/datasets/cmip_nex_gddp.ipynb
             - MSWX Example: examples/datasets/mswx_example.ipynb
+        - Grids:
+            - Resolution & Projection Transformation: examples/grid/reprojection.ipynb
         - Advanced:
             - CMIP validation: examples/advanced/cmip_obs_comparison.ipynb
             - Bias Correction Downscaling: examples/sdba/sdba.ipynb

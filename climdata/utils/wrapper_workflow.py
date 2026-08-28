@@ -63,6 +63,8 @@ class WorkflowResult:
     index_filename: Optional[str] = None
     impute_ds: Optional[xr.Dataset] = None
     impute_filename: Optional[str] = None
+    reprojected_ds: Optional[xr.Dataset] = None
+    reprojected_filename: Optional[str] = None
 
     def keys(self):
         return [k for k, v in self.__dict__.items() if v is not None]
@@ -153,6 +155,7 @@ class ClimateExtractor:
         self.current_ds = None
         self.index_ds = None
         self.impute_ds = None
+        self.reprojected_ds = None
         self.bias_corrected_ds = None
 
         # Stage DataFrames
@@ -1803,6 +1806,84 @@ class ClimateExtractor:
 
         # Return dataset (decorator will set current_ds and impute_ds and generate filenames)
         return ds_out
+
+    @update_ds("reprojected_ds")
+    def reproject(self, ds: xr.Dataset = None, **overrides) -> xr.Dataset:
+        """Reproject / resample the dataset onto the configured target grid.
+
+        Reads ``target_projection`` and ``target_resolution`` from the config, plus
+        the secondary knobs under ``regrid``. Returns ``None`` (leaving the current
+        dataset untouched) when neither target is configured.
+
+        The units of ``target_resolution`` must match the axis units of
+        ``target_projection``: a metric resolution such as ``"10 km"`` has no fixed
+        angular size, so combining it with a geographic CRS raises
+        :class:`~climdata.grid.units.ResolutionCRSMismatch` rather than silently
+        approximating. The check runs before any data is touched.
+
+        Args:
+            ds (xr.Dataset, optional): Dataset to transform. If ``None``, uses
+                ``self.current_ds``.
+            **overrides: Any argument of :func:`climdata.grid.reproject`, overriding
+                the configured value for this call (e.g. ``method="average"``).
+
+        Returns:
+            xr.Dataset | None: The reprojected dataset (also sets ``self.current_ds``
+            and ``self.reprojected_ds``), or ``None`` if no target grid is configured.
+
+        Raises:
+            ValueError: If ``ds`` is ``None`` and ``self.current_ds`` is not set.
+            ResolutionCRSMismatch: If the resolution units contradict the target CRS.
+
+        Example:
+            extractor = ClimData(overrides=[
+                "target_projection=EPSG:3035", "target_resolution=10 km",
+            ])
+            extractor.extract()
+            grid_ds = extractor.reproject()
+        """
+        from climdata.grid import reproject as _reproject
+
+        cfg = self.cfg
+        ds = ds if ds is not None else self.current_ds
+        if ds is None:
+            raise ValueError("No dataset provided and no current_ds is available.")
+
+        target_projection = overrides.pop("target_projection", cfg.get("target_projection"))
+        target_resolution = overrides.pop("target_resolution", cfg.get("target_resolution"))
+        if target_projection is None and target_resolution is None and "like" not in overrides:
+            self.logger.info(
+                "No target_projection or target_resolution configured; skipping reprojection."
+            )
+            return None
+
+        regrid_cfg = cfg.get("regrid") or {}
+        kwargs = {
+            "method": regrid_cfg.get("method", "bilinear"),
+            "align": regrid_cfg.get("align", True),
+            "bounds": regrid_cfg.get("bounds"),
+            "engine": regrid_cfg.get("engine", "rasterio"),
+        }
+        kwargs.update(overrides)
+
+        # Dimension names are already declared per dataset in parameters.yaml.
+        try:
+            dsinfo = cfg.dsinfo[cfg.dataset.upper()]
+            kwargs.setdefault(
+                "dsinfo_dims", (dsinfo.get("lon_dim", "lon"), dsinfo.get("lat_dim", "lat"))
+            )
+        except Exception:
+            pass
+
+        if kwargs.get("bounds") is not None:
+            kwargs["bounds"] = [float(v) for v in kwargs["bounds"]]
+        if isinstance(kwargs.get("method"), DictConfig):
+            kwargs["method"] = dict(kwargs["method"])
+
+        self.logger.info(
+            "Reprojecting to %s at %s", target_projection or "source CRS", target_resolution
+        )
+        return _reproject(ds, target_projection, target_resolution, **kwargs)
 
     def get_impute_methods(self) -> Dict[str, dict]:
         """Return mapping of available imputation methods from config.

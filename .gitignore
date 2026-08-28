@@ -11,6 +11,11 @@ private/
 .Python
 env/
 build/
+!build/
+build/*
+!build/*.sh
+!build/README.md
+build_work/
 develop-eggs/
 dist/
 downloads/
@@ -32,9 +37,9 @@ wheels/
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-# Track our packaging spec and script
+# Track our packaging specs (the build scripts live in build/)
 !climdata_gui.spec
-!build_mac.sh
+!climdata_gui_win.spec
 
 # Installer logs
 pip-log.txt
@@ -117,3 +122,10 @@ outputs
 usecase/*
 # climdata_gui
 climdata_gui/conf/
+
+# Working artifacts created when executing example notebooks.
+# nbconvert runs with the notebook's directory as cwd, so _ensure_local_conf()
+# drops a conf/ copy there, and data/ holds local downloads or symlinks to
+# machine-specific archives. Neither belongs in the repo.
+docs/examples/**/conf/
+docs/examples/**/data/

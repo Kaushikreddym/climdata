@@ -31,6 +31,20 @@ time_range:
 index: null
 impute: null
 
+# Target grid for climdata.reproject().
+# The units of target_resolution must match the axis units of target_projection:
+#   projected CRS  (EPSG:3035, EPSG:32632, ...) -> linear,  e.g. "10 km", "1000 m"
+#   geographic CRS (EPSG:4326, EPSG:4258, ...)  -> angular, e.g. "0.1 deg", "30 arcsec"
+# Mixing them (e.g. "10 km" with EPSG:4326) raises ResolutionCRSMismatch.
+target_projection: null
+target_resolution: null
+
+regrid:
+  method: bilinear     # nearest | bilinear | cubic | average | mode | sum | ...
+  align: true          # snap the grid origin to whole multiples of the resolution
+  bounds: null         # [left, bottom, right, top] in target_projection units
+  engine: rasterio     # rasterio | xesmf (xesmf = area-weighted conservative)
+
 experiment_id: historical
 source_id: MIROC6
 table_id: day

@@ -54,6 +54,11 @@ def _to_proleptic_gregorian(cube):
     GFDL-ESM4 / CanESM5 on 'days since 1850-01-01').  Convert points → dates →
     points instead, so each step keeps its real calendar date.  For
     standard/gregorian/julian a relabel is exact over the CF data range.
+
+    365_day (noleap) GCMs never have a 29 Feb, which would otherwise leave a
+    day-of-year gap in every real-calendar leap year and misalign day-of-year
+    based steps (e.g. halfwin_upper_bound_climatology) against obs data.  See
+    `_insert_feb29`, which duplicates 28 Feb as 29 Feb for those years.
     """
     import cf_units
     from datetime import datetime as _dt
@@ -76,6 +81,9 @@ def _to_proleptic_gregorian(cube):
             "calendar before bias correction"
         )
 
+    if src.calendar in ('365_day', 'noleap'):
+        return _insert_feb29(cube, src, tgt)
+
     def _renumber(points):
         dates = np.atleast_1d(src.num2date(points))
         return tgt.date2num(
@@ -91,6 +99,66 @@ def _to_proleptic_gregorian(cube):
     t.points = new_points
     t.bounds = new_bounds
     return cube
+
+
+def _insert_feb29(cube, src, tgt):
+    """Duplicate 28 Feb as 29 Feb in every Gregorian leap year, for a 365_day source.
+
+    The source calendar has no 29 Feb, so a new time step has to be inserted
+    (not just relabelled) to get a gapless proleptic_gregorian axis. We reuse
+    28 Feb's data for the inserted 29 Feb step, then rebuild the cube since its
+    time dimension length changes. Time bounds are dropped rather than carried
+    over incorrectly, since downstream BASD code only reads time points.
+    """
+    import calendar as _calendar
+    from iris.coords import DimCoord
+    from iris.cube import Cube
+    from datetime import datetime as _dt
+
+    t = cube.coord('time')
+    dates = np.atleast_1d(src.num2date(t.points))
+
+    gather_idx = []
+    new_dates = []
+    for i, d in enumerate(dates):
+        gather_idx.append(i)
+        new_dates.append(_dt(d.year, d.month, d.day, d.hour, d.minute, d.second))
+        if d.month == 2 and d.day == 28 and _calendar.isleap(d.year):
+            gather_idx.append(i)
+            new_dates.append(_dt(d.year, 2, 29, d.hour, d.minute, d.second))
+
+    new_time_coord = DimCoord(
+        tgt.date2num(new_dates), standard_name='time', units=tgt
+    )
+
+    if not any(g != i for i, g in enumerate(gather_idx)):
+        # no leap years in range: nothing to insert, just relabel
+        t.units = tgt
+        t.points = new_time_coord.points
+        return cube
+
+    time_dim = cube.coord_dims(t)[0]
+    new_data = np.take(cube.core_data(), gather_idx, axis=time_dim)
+
+    dim_coords_and_dims = [
+        (new_time_coord if c is t else c.copy(), cube.coord_dims(c)[0])
+        for c in cube.coords(dim_coords=True)
+    ]
+    aux_coords_and_dims = [
+        (c.copy(), cube.coord_dims(c)) for c in cube.coords(dim_coords=False) if c is not t
+    ]
+
+    return Cube(
+        new_data,
+        standard_name=cube.standard_name,
+        long_name=cube.long_name,
+        var_name=cube.var_name,
+        units=cube.units,
+        attributes=cube.attributes,
+        cell_methods=cube.cell_methods,
+        dim_coords_and_dims=dim_coords_and_dims,
+        aux_coords_and_dims=aux_coords_and_dims,
+    )
 
 
 def _stamp_geogcs(cube):
