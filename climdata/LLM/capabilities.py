@@ -107,6 +107,11 @@ class CapabilityRegistry(BaseModel):
 
     # -- convenience ----------------------------------------------------
     def all(self) -> List[Capability]:
+        """Flatten every capability group into one list.
+
+        Returns:
+            list[Capability]: All capabilities, grouped in declaration order.
+        """
         return (
             self.datasets + self.variables + self.indices + self.bias_correction
             + self.regridding + self.imputation + self.workflows
@@ -114,6 +119,11 @@ class CapabilityRegistry(BaseModel):
         )
 
     def summary(self) -> str:
+        """Render a counts-per-group table of the registry.
+
+        Returns:
+            str: A printable table with one row per capability group and a total.
+        """
         groups = {
             "datasets": self.datasets, "variables": self.variables,
             "indices": self.indices, "bias_correction": self.bias_correction,
@@ -129,6 +139,16 @@ class CapabilityRegistry(BaseModel):
         return "\n".join(lines)
 
     def to_json(self, path: str | Path) -> Path:
+        """Write the whole registry to a JSON file.
+
+        This is what an LLM is handed as its inventory of what climdata can do.
+
+        Args:
+            path (str | Path): Destination path. The parent directory must exist.
+
+        Returns:
+            Path: The path written.
+        """
         path = Path(path)
         path.write_text(self.model_dump_json(indent=2))
         return path

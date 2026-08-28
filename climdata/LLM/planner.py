@@ -54,6 +54,16 @@ def _registry() -> CapabilityRegistry:
 
 @lru_cache(maxsize=1)
 def vocab() -> dict:
+    """Build the closed vocabularies the planner validates against.
+
+    Derived from the live capability registry, so the planner rejects any
+    dataset, variable or index that climdata cannot actually deliver. Cached for
+    the process — the registry does not change at runtime.
+
+    Returns:
+        dict: Sets and mappings of valid dataset names, variable names, index
+        names and their relationships.
+    """
     reg = _registry()
     datasets = {c.name: c for c in reg.datasets}
     return {
@@ -69,6 +79,14 @@ def vocab() -> dict:
 # ===========================================================================
 
 class Status(str, Enum):
+    """Whether the planner could turn the request into a runnable plan.
+
+    Attributes:
+        READY: The request was specific enough; a :class:`ReadyPlan` follows.
+        NEEDS_CLARIFICATION: Something essential is missing; a
+            :class:`ClarificationRequest` follows.
+    """
+
     READY = "ready"
     NEEDS_CLARIFICATION = "needs_clarification"
 
@@ -105,6 +123,16 @@ class Experiment(str, Enum):
 
 
 class ClarificationReason(str, Enum):
+    """Why the planner cannot proceed without asking the user something.
+
+    Attributes:
+        MISSING_COORDINATES: No location was given, in any form.
+        MISSING_VARIABLE: No climate variable was named.
+        UNSUPPORTED_VARIABLE: The named variable is not in the registry.
+        UNSUPPORTED_DATASET: The named dataset is not in the registry.
+        MISSING_ANALYSIS: No recognisable analysis intent was expressed.
+    """
+
     MISSING_COORDINATES = "missing_coordinates"
     MISSING_VARIABLE = "missing_variable"
     UNSUPPORTED_VARIABLE = "unsupported_variable"
@@ -118,6 +146,13 @@ _MISSING_COORDS_MSG = (
 
 
 class TimeRange(BaseModel):
+    """An inclusive ISO date range.
+
+    Attributes:
+        start (str | None): ISO date, e.g. ``"1980-01-01"``.
+        end (str | None): ISO date, e.g. ``"2020-12-31"``.
+    """
+
     start: Optional[str] = Field(None, description="ISO date, e.g. 1980-01-01")
     end: Optional[str] = Field(None, description="ISO date, e.g. 2020-12-31")
     model_config = {"extra": "forbid"}
@@ -184,6 +219,14 @@ class ReadyPlan(BaseModel):
     # ---- helpers -----------------------------------------------------------
     @property
     def variables(self) -> List[str]:
+        """Return the requested variables, always as a list.
+
+        ``variable`` may be a single name or several; this normalises both to a
+        list so callers need not check.
+
+        Returns:
+            list[str]: CF variable names.
+        """
         return [self.variable] if isinstance(self.variable, str) else list(self.variable)
 
     # ---- 2. VALIDATION (registry-grounded; never invent) -------------------
@@ -295,6 +338,16 @@ def validate_response(raw: Union[str, dict]) -> Union[ReadyPlan, ClarificationRe
 # ===========================================================================
 
 def build_planner_prompt() -> str:
+    """Build the planner's system prompt from the live capability registry.
+
+    The prompt enumerates every dataset, variable and index climdata actually
+    provides, so the model chooses from what exists rather than from what it
+    remembers. Generated rather than written out, so adding a dataset to the
+    configuration updates the prompt with no code change.
+
+    Returns:
+        str: The system prompt text.
+    """
     reg = _registry()
     variable_lines = "\n".join(f"  - {c.name}: {c.description}" for c in reg.variables)
     datasets = ", ".join(c.name for c in reg.datasets)

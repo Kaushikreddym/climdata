@@ -35,14 +35,25 @@ LOG = logging.getLogger("climdata.analytics")
 # ===========================================================================
 
 def capability_report() -> Dict[str, Dict]:
-    """What ClimData already provides vs. what this layer implements."""
+    """Map each analysis to whether it reuses ClimData or is implemented here.
+
+    A reuse-first audit: extremes and ETCCDI indices delegate to ClimData's
+    config-driven index engine, while trends, climatology and evaluation metrics
+    have no ClimData equivalent and are implemented in this module.
+
+    Returns:
+        dict[str, dict]: One entry per analysis, with ``source``
+        (``"climdata"`` or ``"analytics"``), ``mode`` (``"reuse"`` or
+        ``"implement"``), and either an ``entrypoint`` or a ``reason``.
+    """
     return {
         "etccdi_indices": {"source": "climdata", "mode": "reuse",
                            "entrypoint": "ClimateExtractor.calc_index"},
         "extremes": {"source": "climdata", "mode": "reuse",
                      "entrypoint": "ClimateExtractor.calc_index"},
         "climatology": {"source": "analytics", "mode": "implement",
-                        "reason": "sdba.utils.compute_daily_climatology not importable (argparse side-effect)"},
+                        "reason": "sdba.utils.compute_daily_climatology returns a smoothed "
+                                  "day-of-year cycle; this layer needs plain monthly means"},
         "trends": {"source": "analytics", "mode": "implement",
                    "reason": "no trend function in climdata"},
         "evaluation_metrics": {"source": "analytics", "mode": "implement",
@@ -104,11 +115,22 @@ def _linear_slope(years: np.ndarray, values: np.ndarray) -> float:
 
 
 def is_temperature(data, variable: Optional[str] = None) -> bool:
-    """
-    Whether a fixed degree-Celsius threshold is meaningful for these data.
+    """Test whether a fixed degree-Celsius threshold means anything here.
 
-    Decided from the registry variable key when one is given, otherwise from
-    the array's declared units.
+    Guards the hot-day count in :func:`hot_days_change`, which would otherwise
+    silently produce a number for precipitation or wind speed. Decided from the
+    registry variable name when one is given, otherwise from the array's
+    declared units.
+
+    Args:
+        data (xr.Dataset | xr.DataArray): Data whose units are inspected when
+            ``variable`` is ``None``.
+        variable (str, optional): Registry variable name, e.g. ``"tasmax"``.
+
+    Returns:
+        bool: ``True`` for a temperature variable or temperature units.
+        ``False`` when neither can be established — the safe answer, since it
+        suppresses the threshold statistic rather than fabricating one.
     """
     if variable is not None:
         return variable in _TEMPERATURE_VARIABLES
@@ -120,14 +142,20 @@ def is_temperature(data, variable: Optional[str] = None) -> bool:
 
 
 def variable_units(variable: Optional[str]) -> Optional[str]:
-    """
-    Canonical display units for a variable, for the narrator to quote.
+    """Return the canonical display units for a variable, for the narrator to quote.
 
-    Temperature variables are always reported in degC and precipitation
-    (``pr``) is always mm/day, regardless of a dataset's native units —
-    ClimData standardises to these on extraction, and the narrator must never
-    invent or convert units on its own. Other variables fall back to the
-    registry's declared units (``climdata/conf/mappings/variables.yaml``).
+    Temperature is always reported in ``degC`` and precipitation in ``mm/day``
+    regardless of a dataset's native units, because ClimData standardises to
+    those on extraction. Fixing them here is what stops the narrator inventing
+    or converting units of its own. Anything else falls back to the units
+    declared in ``conf/mappings/variables.yaml``.
+
+    Args:
+        variable (str, optional): Registry variable name.
+
+    Returns:
+        str | None: The units string, or ``None`` if the variable is unknown or
+        the registry cannot be read. Lookup failures are logged, never raised.
     """
     if variable in _TEMPERATURE_VARIABLES:
         return "degC"
@@ -148,17 +176,37 @@ def variable_units(variable: Optional[str]) -> Optional[str]:
 # ===========================================================================
 
 def annual_trend(data, variable: Optional[str] = None) -> float:
-    """Linear trend of the annual-mean series, in <units> per year."""
+    """Fit a linear trend to the annual-mean series.
+
+    Any spatial dimensions are averaged away first, so a gridded input yields a
+    single domain-mean trend.
+
+    Args:
+        data (xr.Dataset | xr.DataArray): Data with a ``time`` dimension.
+        variable (str, optional): Variable to analyse. Required when ``data`` is
+            a Dataset with more than one.
+
+    Returns:
+        float: Slope in units per year, rounded to four decimals. NaN if fewer
+        than two years have finite values.
+    """
     s = _annual_mean(_as_dataarray(data, variable))
     return round(_linear_slope(s["year"].values, s.values), 4)
 
 
 def seasonal_trend(data, season: str = "JJA", variable: Optional[str] = None) -> float:
-    """
-    Linear trend of a single season's annual-mean series, in <units> per year.
+    """Fit a linear trend to one season's annual-mean series.
 
-    Returns NaN when the record contains no data for the season, rather than
-    failing on an empty grouping.
+    Args:
+        data (xr.Dataset | xr.DataArray): Data with a ``time`` dimension.
+        season (str): Three-letter season code — ``"DJF"``, ``"MAM"``, ``"JJA"``
+            or ``"SON"``. Defaults to ``"JJA"``.
+        variable (str, optional): Variable to analyse.
+
+    Returns:
+        float: Slope in units per year, rounded to four decimals. NaN when the
+        record holds no days in that season — logged, rather than failing on an
+        empty grouping.
     """
     da = _reduce_space(_as_dataarray(data, variable))
     da = da.sel(time=da["time"].dt.season == season)
@@ -174,7 +222,20 @@ def seasonal_trend(data, season: str = "JJA", variable: Optional[str] = None) ->
 # ===========================================================================
 
 def climatology(data, variable: Optional[str] = None) -> Dict[str, float]:
-    """Long-term mean and monthly climatology (machine-readable)."""
+    """Compute the long-term mean and the mean of each calendar month.
+
+    Distinct from :func:`climdata.sdba.compute_daily_climatology`, which builds a
+    Fourier-smoothed day-of-year cycle for bias adjustment. This is the coarser,
+    directly quotable summary the narrator needs.
+
+    Args:
+        data (xr.Dataset | xr.DataArray): Data with a ``time`` dimension.
+        variable (str, optional): Variable to analyse.
+
+    Returns:
+        dict: ``overall_mean`` (float) and ``monthly_mean`` (month number 1-12
+        to mean), all rounded to four decimals.
+    """
     da = _reduce_space(_as_dataarray(data, variable))
     monthly = da.groupby("time.month").mean()
     return {
@@ -186,14 +247,29 @@ def climatology(data, variable: Optional[str] = None) -> Dict[str, float]:
 
 def hot_days_change(data, thresh: float = 25.0, variable: Optional[str] = None,
                     window: int = 10) -> Optional[int]:
-    """
-    Change in the annual count of days above `thresh`, comparing the mean of the
-    last `window` years to the first `window` years. Threshold-based extreme;
-    falls back to ClimData ETCCDI for named indices via compute_index().
+    """Measure how the annual count of days above a threshold has changed.
 
-    Years with no valid observations are excluded rather than counted as zero
-    exceedances, and the statistic is None — not a fabricated 0 — when the
-    record holds fewer than two usable years.
+    Compares the mean count over the last ``window`` years against the first
+    ``window`` years. A record too short for two non-overlapping windows falls
+    back to a linear slope projected across its span, so a short series gets an
+    estimate rather than nothing.
+
+    Two guards keep the answer honest. Years with no valid observations are
+    dropped rather than counted as zero exceedances, which would otherwise read
+    as a spurious cooling; and a record with fewer than two usable years returns
+    ``None`` rather than a fabricated ``0``.
+
+    Only meaningful for temperature — check :func:`is_temperature` first.
+
+    Args:
+        data (xr.Dataset | xr.DataArray): Data with a ``time`` dimension.
+        thresh (float): Threshold in the data's units. Defaults to ``25.0``.
+        variable (str, optional): Variable to analyse.
+        window (int): Years averaged at each end. Defaults to ``10``.
+
+    Returns:
+        int | None: Change in days per year, or ``None`` when the record is too
+        short or too gappy to support one.
     """
     da = _reduce_space(_as_dataarray(data, variable))
     observed = da.notnull().groupby("time.year").sum()
@@ -224,7 +300,22 @@ def hot_days_change(data, thresh: float = 25.0, variable: Optional[str] = None,
 # ===========================================================================
 
 def evaluation_metrics(model, reference, variable: Optional[str] = None) -> Dict[str, float]:
-    """Model-vs-reference metrics on the temporally-overlapping period."""
+    """Score a model series against a reference over the period they share.
+
+    The two series are inner-joined on time first, so only overlapping steps are
+    compared, and non-finite pairs are dropped. With no overlap at all every
+    metric is NaN rather than an exception, so one unusable pairing degrades the
+    assessment instead of ending the pipeline.
+
+    Args:
+        model (xr.Dataset | xr.DataArray): The simulation.
+        reference (xr.Dataset | xr.DataArray): The observations.
+        variable (str, optional): Variable to analyse.
+
+    Returns:
+        dict[str, float]: ``model_mean``, ``obs_mean``, ``model_bias``,
+        ``rmse``, ``mae`` and ``correlation``, rounded to four decimals.
+    """
     m = _reduce_space(_as_dataarray(model, variable))
     o = _reduce_space(_as_dataarray(reference, variable))
     m, o = xr.align(m, o, join="inner")
@@ -252,13 +343,27 @@ def evaluation_metrics(model, reference, variable: Optional[str] = None) -> Dict
 
 def compute_index(data, index: str, dataset: str = "MSWX",
                   reduce: str = "mean") -> Optional[float]:
-    """
-    Reuse ClimData's config-driven index engine for an ETCCDI/extreme index.
+    """Compute one ETCCDI or extreme index through ClimData's index engine.
 
-    Returns a scalar summary (mean / change) of the index series, or None if the
-    ClimData machinery is unavailable or rejects the data (graceful
-    degradation). Every failure is logged — a None here means the caller asked
-    for an index it will not get, and that must be traceable.
+    Reuses :meth:`~climdata.utils.wrapper_workflow.ClimateExtractor.calc_index`
+    rather than reimplementing the index, so the definitions stay in
+    ``conf/mappings/indices.yaml``.
+
+    Every failure path returns ``None`` and logs why — an unimportable engine, a
+    rejected dataset, an index the data cannot support. That keeps the pipeline
+    fail-soft while leaving a trace, because a ``None`` here means the caller
+    asked for something it will not get.
+
+    Args:
+        data (xr.Dataset | xr.DataArray): Input data.
+        index (str): Index name, e.g. ``"tx90p"``, ``"rx1day"``.
+        dataset (str): Provider name for the index engine's configuration.
+            Defaults to ``"MSWX"``.
+        reduce (str): ``"mean"`` for the average over the index series, or
+            ``"change"`` for last minus first. Defaults to ``"mean"``.
+
+    Returns:
+        float | None: The scalar summary, or ``None`` if it could not be computed.
     """
     try:
         from climdata.utils.wrapper_workflow import ClimateExtractor

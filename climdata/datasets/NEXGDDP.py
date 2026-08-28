@@ -1,20 +1,29 @@
-"""
-NEX-GDDP-CMIP6 dataset access module
+"""NEX-GDDP-CMIP6: NASA's statistically downscaled CMIP6 projections.
 
-This module provides access to NASA Earth Exchange Global Daily Downscaled Projections (NEX-GDDP-CMIP6) data.
-NEX-GDDP-CMIP6 provides downscaled climate projections from CMIP6 at 0.25° resolution (~25km) globally.
+NEX-GDDP-CMIP6 provides daily CMIP6 projections downscaled to a global 0.25
+degree grid (~25 km), served as one NetCDF per variable per year from NASA's
+THREDDS HTTP file server. There is no catalogue API, so file URLs are
+constructed from the model, experiment, member and grid label; the last two are
+discovered by probing candidate URLs when they are not configured.
 
-Data is accessed via NASA's THREDDS Data Server using the HTTP file server for direct file downloads.
-The dataset includes daily climate data for various CMIP6 models and scenarios.
+A global annual file is roughly 1440x600 cells, of which a country-sized request
+needs a few dozen squared. :meth:`NEXGDDP.load` therefore clips each file as it
+is opened rather than after concatenation.
 
-More info: https://www.nccs.nasa.gov/services/data-collections/land-based-products/nex-gddp-cmip6
+More info:
+https://www.nccs.nasa.gov/services/data-collections/land-based-products/nex-gddp-cmip6
+
+Example:
+    >>> nex = NEXGDDP(cfg)                                     # doctest: +SKIP
+    >>> nex.fetch()                                            # doctest: +SKIP
+    >>> nex.extract(point=(13.4, 52.5))   # before load        # doctest: +SKIP
+    >>> nex.load()                                             # doctest: +SKIP
 """
 
 import os
 import xarray as xr
 import pandas as pd
 import dask
-import dask.array as da
 from dask.diagnostics import ProgressBar
 from pathlib import Path
 from datetime import datetime
@@ -22,33 +31,40 @@ from omegaconf import DictConfig
 from typing import Optional, Tuple, Dict, List
 import warnings
 import requests
-from tqdm import tqdm
 import time
 
 warnings.filterwarnings("ignore", category=Warning)
 
 
 class NEXGDDP:
-    """
-    A class to download and process NEX-GDDP-CMIP6 climate data from NASA's THREDDS server.
-    
-    NEX-GDDP-CMIP6 provides statistically downscaled CMIP6 climate projections at 0.25° resolution.
-    Data is available for multiple climate models, scenarios, and variables at daily temporal resolution.
-    
-    Attributes
-    ----------
-    cfg : DictConfig
-        Configuration containing lat, lon, variables, time_range, experiment_id, source_id, etc.
-    ds : xr.Dataset
-        Loaded xarray dataset
-    experiment_id : str
-        CMIP6 experiment identifier (e.g., 'historical', 'ssp126', 'ssp585')
-    source_id : str
-        CMIP6 model identifier (e.g., 'GFDL-ESM4', 'UKESM1-0-LL', 'MRI-ESM2-0')
-    member_id : str
-        CMIP6 realization identifier (e.g., 'r1i1p1f1')
-    base_url : str
-        Base URL for NASA THREDDS HTTP file server
+    """Download and assemble NEX-GDDP-CMIP6 downscaled projections.
+
+    Call order matters here: :meth:`extract` should run *before* :meth:`load`, so
+    the region of interest is known while each global annual file is being
+    opened. Calling it afterwards still works but materialises whole global
+    frames first.
+
+    Unrecognised models, experiments and variables are warned about rather than
+    rejected, because NASA adds to the collection faster than the hardcoded
+    lists here are updated; a genuinely wrong name surfaces as a download
+    failure in :meth:`fetch`.
+
+    Attributes:
+        cfg (DictConfig): Configuration supplying ``variables``, ``time_range``
+            and ``data_dir``.
+        ds (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+        experiment_id (str): Experiment, e.g. ``"historical"``, ``"ssp585"``.
+        source_id (str): Model, uppercase, e.g. ``"GFDL-ESM4"``.
+        member_id (str): Realisation, e.g. ``"r1i1p1f1"``. Discovered by probing
+            when not configured.
+        grid_label (str): Grid label, e.g. ``"gn"`` or ``"gr1"``. Also discovered.
+        base_url (str): NASA THREDDS HTTP file server root.
+        downloaded_files (list[str]): Local paths accumulated by :meth:`fetch`.
+
+    Example:
+        >>> nex = NEXGDDP(cfg)                                    # doctest: +SKIP
+        >>> nex.get_source_ids()[:3]                              # doctest: +SKIP
+        ['ACCESS-CM2', 'ACCESS-ESM1-5', 'BCC-CSM2-MR']
     """
     
     # Available models in NEX-GDDP-CMIP6
@@ -112,20 +128,18 @@ class NEXGDDP:
     }
     
     def __init__(self, cfg: DictConfig):
-        """
-        Initialize NEX-GDDP data accessor.
-        
-        Parameters
-        ----------
-        cfg : DictConfig
-            Configuration with required fields:
-            - variables: list of variable names
-            - time_range: dict with start_date and end_date
-            - data_dir: directory to save downloaded files
-            Optional fields:
-            - experiment_id: experiment/scenario (default: 'historical')
-            - source_id: model name (default: 'GFDL-ESM4')
-            - member_id: realization (default: 'r1i1p1f1')
+        """Initialize NEX-GDDP data accessor.
+
+        Args:
+            cfg (DictConfig):
+                Configuration with required fields:
+                - variables: list of variable names
+                - time_range: dict with start_date and end_date
+                - data_dir: directory to save downloaded files
+                Optional fields:
+                - experiment_id: experiment/scenario (default: 'historical')
+                - source_id: model name (default: 'GFDL-ESM4')
+                - member_id: realization (default: 'r1i1p1f1')
         """
         self.cfg = cfg
         self.ds = None
@@ -151,7 +165,15 @@ class NEXGDDP:
         self._auto_discover_metadata()
     
     def _validate_inputs(self):
-        """Validate model, experiment, and variable selections."""
+        """Warn about model, experiment or variable names that look unfamiliar.
+
+        Warns rather than raises: the hardcoded lists lag what NASA publishes, so
+        rejecting an unknown name would block access to newly added data. A name
+        that is genuinely wrong fails later, in :meth:`fetch`.
+
+        Returns:
+            None: Messages are printed.
+        """
         # Normalize model name to uppercase with hyphens
         # self.source_id = self.source_id.upper().replace('_', '-')
         
@@ -169,16 +191,13 @@ class NEXGDDP:
                 print(f"   Available variables: {', '.join(self.AVAILABLE_VARIABLES.keys())}")
     
     def _validate_time_range(self):
-        """
-        Validate that the requested time range is appropriate for the experiment.
-        
+        """Validate that the requested time range is appropriate for the experiment.
+
         Historical runs: 1950-2014
         SSP scenarios: 2015-2100
-        
-        Raises
-        ------
-        ValueError
-            If the time range doesn't match the experiment period
+
+        Raises:
+            ValueError: If the time range doesn't match the experiment period
         """
         start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
         end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
@@ -216,9 +235,17 @@ class NEXGDDP:
             print(f"   Data availability may be limited.")
     
     def _auto_discover_metadata(self):
-        """
-        Auto-discover member_id and grid_label by querying THREDDS catalog.
-        If member_id was explicitly provided in config, use that instead.
+        """Probe the THREDDS server for this model's realisation and grid label.
+
+        NEX-GDDP has no catalogue API, and models differ in which realisation
+        they publish (``r1i1p1f1`` for most, ``r1i1p1f2`` for the UKESM family)
+        and on which grid (``gn`` or ``gr1``). Both are found by issuing HEAD
+        requests against candidate URLs and keeping the first that answers 200.
+
+        Values given explicitly in the config are used as-is and not probed.
+
+        Returns:
+            None: Sets :attr:`member_id` and :attr:`grid_label`.
         """
         # Only auto-discover if member_id was not explicitly set
         if 'member_id' in self.cfg:
@@ -254,14 +281,11 @@ class NEXGDDP:
             print(f"   Using defaults: member_id={self.member_id}, grid_label={self.grid_label}")
     
     def _get_available_member_ids(self) -> List[str]:
-        """
-        Get available member_ids (realizations) for the current model and experiment
+        """Get available member_ids (realizations) for the current model and experiment
         by probing the server with common member_id patterns.
-        
-        Returns
-        -------
-        List[str]
-            List of available member_ids (e.g., ['r1i1p1f1', 'r2i1p1f1'])
+
+        Returns:
+            List[str]: List of available member_ids (e.g., ['r1i1p1f1', 'r2i1p1f1'])
         """
         # Common member_id patterns to check
         common_members = [
@@ -306,42 +330,29 @@ class NEXGDDP:
         return sorted(set(available_members))
     
     def _construct_test_url(self, variable: str, year: int, member_id: str, grid_label: str) -> str:
-        """
-        Construct a test URL for probing file availability.
-        
-        Parameters
-        ----------
-        variable : str
-            Variable name
-        year : int
-            Year
-        member_id : str
-            Member/realization ID
-        grid_label : str
-            Grid label (e.g., 'gn', 'gr')
-            
-        Returns
-        -------
-        str
-            Complete URL for testing
+        """Construct a test URL for probing file availability.
+
+        Args:
+            variable (str): Variable name
+            year (int): Year
+            member_id (str): Member/realization ID
+            grid_label (str): Grid label (e.g., 'gn', 'gr')
+
+        Returns:
+            str: Complete URL for testing
         """
         filename = f"{variable}_day_{self.source_id}_{self.experiment_id}_{member_id}_{grid_label}_{year}_v2.0.nc"
         url = f"{self.base_url}/{self.source_id}/{self.experiment_id}/{member_id}/{variable}/{filename}"
         return url
     
     def _get_grid_label(self, member_id: str) -> Optional[str]:
-        """
-        Get grid label by probing with common grid labels.
-        
-        Parameters
-        ----------
-        member_id : str
-            The member_id to check
-            
-        Returns
-        -------
-        str or None
-            Grid label (e.g., 'gn', 'gr') or None if not found
+        """Get grid label by probing with common grid labels.
+
+        Args:
+            member_id (str): The member_id to check
+
+        Returns:
+            str or None: Grid label (e.g., 'gn', 'gr') or None if not found
         """
         # Use the first available variable
         if not self.cfg.variables:
@@ -369,70 +380,51 @@ class NEXGDDP:
         return None
     
     def get_experiment_ids(self) -> List[str]:
-        """
-        Get available NEX-GDDP-CMIP6 experiment IDs.
-        
-        Returns
-        -------
-        List[str]
-            List of available experiment IDs
+        """Get available NEX-GDDP-CMIP6 experiment IDs.
+
+        Returns:
+            List[str]: List of available experiment IDs
         """
         return self.AVAILABLE_EXPERIMENTS.copy()
     
     def get_source_ids(self, experiment_id: Optional[str] = None) -> List[str]:
-        """
-        Get available NEX-GDDP-CMIP6 model (source) IDs.
-        
-        Parameters
-        ----------
-        experiment_id : str, optional
-            Experiment ID (not used for NEX-GDDP as models are consistent across experiments)
-            
-        Returns
-        -------
-        List[str]
-            List of available model IDs
+        """Get available NEX-GDDP-CMIP6 model (source) IDs.
+
+        Args:
+            experiment_id (str, optional): Experiment ID (not used for NEX-GDDP as
+                models are consistent across experiments)
+
+        Returns:
+            List[str]: List of available model IDs
         """
         return self.AVAILABLE_MODELS.copy()
     
     def get_variables(self) -> Dict[str, str]:
-        """
-        Get available variables with descriptions.
-        
-        Returns
-        -------
-        Dict[str, str]
-            Dictionary mapping variable names to descriptions
+        """Get available variables with descriptions.
+
+        Returns:
+            Dict[str, str]: Dictionary mapping variable names to descriptions
         """
         return self.AVAILABLE_VARIABLES.copy()
     
     def get_member_ids(self) -> List[str]:
-        """
-        Get available member IDs (realizations) for the current model and experiment
+        """Get available member IDs (realizations) for the current model and experiment
         by querying the THREDDS server.
-        
-        Returns
-        -------
-        List[str]
-            List of available member_ids (e.g., ['r1i1p1f1', 'r2i1p1f1'])
+
+        Returns:
+            List[str]: List of available member_ids (e.g., ['r1i1p1f1', 'r2i1p1f1'])
         """
         return self._get_available_member_ids()
     
     def _construct_download_url(self, variable: str, year: int) -> str:
-        """
-        Construct THREDDS HTTP file server URL for downloading NEX-GDDP data.
-        
-        Parameters
-        ----------
-        variable : str
-            Variable name (e.g., 'tasmax', 'pr')
-        year : int
-            Year to download
-            
-        Returns
-        -------
-        tuple
-            (url, filename) - Complete HTTP URL and filename
+        """Construct THREDDS HTTP file server URL for downloading NEX-GDDP data.
+
+        Args:
+            variable (str): Variable name (e.g., 'tasmax', 'pr')
+            year (int): Year to download
+
+        Returns:
+            tuple: (url, filename) - Complete HTTP URL and filename
         """
         # Filename format: {var}_day_{model}_{experiment}_{member}_{grid}_{year}_v2.0.nc
         filename = f"{variable}_day_{self.source_id}_{self.experiment_id}_{self.member_id}_{self.grid_label}_{year}_v2.0.nc"
@@ -444,19 +436,17 @@ class NEXGDDP:
     
 
     def fetch(self, max_download_workers: int = 8):
-        """
-        Download NEX-GDDP-CMIP6 files from NASA THREDDS server using
+        """Download NEX-GDDP-CMIP6 files from NASA THREDDS server using
         ``dask.delayed`` for fully parallel file-existence checks and downloads.
 
         Both phases (check + download) use the ``"threads"`` scheduler so that
         the GIL is released during I/O and multiple HTTP connections run
         concurrently without spawning heavyweight processes.
 
-        Parameters
-        ----------
-        max_download_workers : int, default 8
-            Maximum concurrent HTTP download connections.  Keep this ≤ 8 to
-            avoid triggering NASA THREDDS rate-limiting / 503 errors.
+        Args:
+            max_download_workers (int, default 8): Maximum concurrent HTTP download
+                connections.  Keep this ≤ 8 to avoid triggering NASA THREDDS rate-
+                limiting / 503 errors.
         """
         print(f"🔍 Downloading NEX-GDDP-CMIP6 data from NASA THREDDS...")
         print(f"   Model: {self.source_id}, Experiment: {self.experiment_id}")
@@ -551,20 +541,14 @@ class NEXGDDP:
                 print(f"     • {fn}")
     
     def _verify_file_complete(self, local_path: Path, url: str) -> bool:
-        """
-        Verify if a local file is complete by comparing size with server.
-        
-        Parameters
-        ----------
-        local_path : Path
-            Path to local file
-        url : str
-            URL of the file on server
-            
-        Returns
-        -------
-        bool
-            True if file is complete, False otherwise
+        """Verify if a local file is complete by comparing size with server.
+
+        Args:
+            local_path (Path): Path to local file
+            url (str): URL of the file on server
+
+        Returns:
+            bool: True if file is complete, False otherwise
         """
         try:
             local_size = local_path.stat().st_size
@@ -581,22 +565,15 @@ class NEXGDDP:
             return False
     
     def _download_with_retry(self, url: str, local_path: Path, max_retries: int = 5) -> bool:
-        """
-        Download a file with retry logic and resume capability.
-        
-        Parameters
-        ----------
-        url : str
-            URL to download from
-        local_path : Path
-            Local path to save to
-        max_retries : int
-            Maximum number of retry attempts
-            
-        Returns
-        -------
-        bool
-            True if download succeeded, False otherwise
+        """Download a file with retry logic and resume capability.
+
+        Args:
+            url (str): URL to download from
+            local_path (Path): Local path to save to
+            max_retries (int): Maximum number of retry attempts
+
+        Returns:
+            bool: True if download succeeded, False otherwise
         """
         for attempt in range(max_retries):
             try:
@@ -673,14 +650,22 @@ class NEXGDDP:
         return False
     
     def _extract_preprocess(self, ds: xr.Dataset, var: str) -> xr.Dataset:
-        """
-        Apply spatial extraction to a single-file dataset during open_mfdataset
-        preprocessing — identical in spirit to MSWXmirror._extract_preprocess.
+        """Clip one annual file to the region of interest as it is opened.
 
-        Calling this inside ``preprocess`` means each annual file is clipped to
-        the target region *before* its data is concatenated with other files.
-        For a global NEX-GDDP file (~1440×600 cells) clipped to Germany
-        (~36×32 cells) this reduces data read per file by ~750×.
+        Applied per file during loading, so each global frame is cut down before
+        it joins the concatenation. For a global file of roughly 1440x600 cells
+        reduced to a German box of about 36x32, that is around 750 times less
+        data read per file.
+
+        Everything but the target variable is dropped first, for the same reason.
+
+        Args:
+            ds (xr.Dataset): One year of global data, as just opened.
+            var (str): CF variable name to keep.
+
+        Returns:
+            xr.Dataset: The clipped single-variable dataset, or ``ds`` reduced to
+            ``var`` if no extraction mode was set.
         """
         # Drop all variables except the target to avoid memory bloat
         drop = [v for v in ds.data_vars if v != var]
@@ -729,11 +714,22 @@ class NEXGDDP:
         with ``xr.concat`` and merged across variables.  The result is a fully
         in-memory xarray Dataset — no dask, no lazy evaluation, no scheduler.
 
-        Benefits over open_mfdataset:
-          - No dask graph construction or scheduler overhead
-          - ThreadPoolExecutor workers are truly parallel (h5netcdf releases GIL)
-          - Each file is clipped + loaded to numpy immediately — concat is O(n)
-          - No unify_chunks() needed — arrays are already numpy
+        This is deliberately not ``open_mfdataset``. Because each file is clipped
+        to a small region and read immediately into NumPy, there is nothing for a
+        Dask graph to defer, and building one costs more than it saves:
+        ``h5netcdf`` releases the GIL during reads, so plain threads already run
+        in parallel, the concatenation is a straight O(n) copy, and no chunk
+        unification is needed.
+
+        The consequence is that the returned dataset is fully in memory. Clip
+        before loading — see :meth:`extract` — or a multi-decade global request
+        will not fit.
+
+        Returns:
+            xr.Dataset: The merged dataset, also stored on :attr:`ds`.
+
+        Raises:
+            ValueError: If :meth:`fetch` has not run, or produced no files.
         """
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -812,19 +808,17 @@ class NEXGDDP:
                 box: Optional[Dict] = None, 
                 shapefile: Optional[str] = None, 
                 buffer_km: float = 0.0):
-        """
-        Store extraction instructions to be applied during or after load.
-        
-        Parameters
-        ----------
-        point : tuple of (lon, lat), optional
-            Extract data for a specific point location
-        box : dict, optional
-            Extract data for a bounding box with keys: lon_min, lon_max, lat_min, lat_max
-        shapefile : str or GeoDataFrame, optional
-            Extract data for a shapefile region
-        buffer_km : float, default=0.0
-            Buffer distance in kilometers around point (converted to degrees)
+        """Store extraction instructions to be applied during or after load.
+
+        Args:
+            point (tuple of (lon, lat), optional): Extract data for a specific point
+                location
+            box (dict, optional): Extract data for a bounding box with keys: lon_min,
+                lon_max, lat_min, lat_max
+            shapefile (str or GeoDataFrame, optional): Extract data for a shapefile
+                region
+            buffer_km (float, default=0.0): Buffer distance in kilometers around point
+                (converted to degrees)
         """
         if point is not None:
             lon, lat = point
@@ -857,7 +851,16 @@ class NEXGDDP:
                 self._apply_extraction()
     
     def _apply_extraction(self):
-        """Apply the stored extraction instructions to the dataset."""
+        """Run the subset recorded by :meth:`extract` against :attr:`ds`.
+
+        The fallback path for an :meth:`extract` call made after :meth:`load`; the
+        efficient path is :meth:`_extract_preprocess`, which runs per file during
+        loading. Coordinate names are detected rather than assumed, since
+        NEX-GDDP files use ``lat``/``lon`` and the clipped output may not.
+
+        Returns:
+            None: :attr:`ds` is replaced in place.
+        """
         if self._extract_mode == "point":
             lon, lat, buffer_deg = self._extract_params
             
@@ -937,13 +940,10 @@ class NEXGDDP:
             self.ds = xr.concat(clipped_list, dim="geom_id")
     
     def save_netcdf(self, filename: str):
-        """
-        Save the dataset to a NetCDF file.
-        
-        Parameters
-        ----------
-        filename : str
-            Output filename or path
+        """Save the dataset to a NetCDF file.
+
+        Args:
+            filename (str): Output filename or path
         """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")
@@ -955,13 +955,10 @@ class NEXGDDP:
         print(f"💾 Saved to: {output_path}")
     
     def save_csv(self, filename: str):
-        """
-        Save the dataset to a CSV file.
-        
-        Parameters
-        ----------
-        filename : str
-            Output filename or path
+        """Save the dataset to a CSV file.
+
+        Args:
+            filename (str): Output filename or path
         """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")
@@ -974,13 +971,10 @@ class NEXGDDP:
         print(f"💾 Saved to: {output_path}")
     
     def to_dataframe(self) -> pd.DataFrame:
-        """
-        Convert the dataset to a pandas DataFrame.
-        
-        Returns
-        -------
-        pd.DataFrame
-            Dataset as DataFrame
+        """Convert the dataset to a pandas DataFrame.
+
+        Returns:
+            pd.DataFrame: Dataset as DataFrame
         """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")

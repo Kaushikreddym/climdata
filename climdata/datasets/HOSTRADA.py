@@ -1,15 +1,26 @@
-"""
-HOSTRADA – Hourly Station-based and Raster-based Terrestrial Atmospheric Dataset
-DWD Open Data server:
-  https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/hostrada/
+"""HOSTRADA hourly gridded data for Germany, from the DWD Open Data server.
 
-File naming convention (monthly files):
-  {var}_1hr_HOSTRADA-v1-0_BE_gn_{YYYYMMDDHH}-{YYYYMMDDHH}.nc
+HOSTRADA (Hourly Station-based and Raster-based Terrestrial Atmospheric Dataset)
+is published as one NetCDF per variable per month at
+https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/hostrada/,
+named ``{var}_1hr_HOSTRADA-v1-0_BE_gn_{YYYYMMDDHH}-{YYYYMMDDHH}.nc``.
 
-Currently implemented variables
---------------------------------
-  rsds  – Surface downwelling shortwave radiation (W m⁻²)
-          subfolder: radiation_downwelling/
+The grid is Lambert Conformal Conic (EPSG:3034) with projected-metre ``Y``/``X``
+dimensions and two-dimensional ``lat(Y, X)`` / ``lon(Y, X)`` auxiliary
+coordinates. Geographic subsetting therefore cannot be a coordinate slice; it
+goes through a mask over those 2-D arrays, reduced to an integer ``isel``
+rectangle (see :meth:`HOSTRADAmirror._compute_yx_slices`). The rectangle is the
+bounding box of the mask, so a request that is not axis-aligned in the
+projection returns somewhat more area than asked for.
+
+Which variables are available depends on ``cfg.dsinfo.HOSTRADA.variables``;
+``rsds`` (surface downwelling shortwave radiation) is the reference entry.
+
+Example:
+    >>> mirror = HOSTRADAmirror(cfg)                             # doctest: +SKIP
+    >>> mirror.extract(box={"lat_min": 47, "lat_max": 55,        # doctest: +SKIP
+    ...                     "lon_min": 6, "lon_max": 15})
+    >>> ds = mirror.load("rsds")                                 # doctest: +SKIP
 """
 
 from __future__ import annotations
@@ -30,20 +41,53 @@ from omegaconf import DictConfig
 # ---------------------------------------------------------------------------
 
 def _last_hour_of_month(year: int, month: int) -> str:
-    """Return the last time-stamp string (YYYYMMDDHH) for a monthly file."""
+    """Build the closing timestamp of a monthly HOSTRADA filename.
+
+    Args:
+        year (int): Calendar year.
+        month (int): Calendar month, 1-12.
+
+    Returns:
+        str: ``YYYYMMDDHH`` for hour 23 of the month's last day, e.g.
+        ``"2020013123"``.
+    """
     last_day = calendar.monthrange(year, month)[1]
     return f"{year}{month:02d}{last_day:02d}23"
 
 
 def _first_hour_of_month(year: int, month: int) -> str:
+    """Build the opening timestamp of a monthly HOSTRADA filename.
+
+    Args:
+        year (int): Calendar year.
+        month (int): Calendar month, 1-12.
+
+    Returns:
+        str: ``YYYYMMDDHH`` for hour 00 of the first day, e.g. ``"2020010100"``.
+    """
     return f"{year}{month:02d}0100"
 
 
 def fetch_hostrada(cfg: DictConfig, variable: str) -> None:
-    """Download HOSTRADA NetCDF files for *variable* over the configured time range.
+    """Download the monthly HOSTRADA files covering the configured period.
 
-    Files are stored as::
-        <data_dir>/hostrada/<VARIABLE>/<filename>.nc
+    Walks the range one month at a time, storing each file under
+    ``<data_dir>/HOSTRADA/<VARIABLE>/``. Files already on disk are skipped, so an
+    interrupted run resumes. A month the server does not have is reported and
+    skipped rather than raised — the caller finds out from the shorter file list
+    that :meth:`HOSTRADAmirror.fetch` returns.
+
+    Args:
+        cfg (DictConfig): Configuration with ``dataset``, ``data_dir``,
+            ``time_range`` and ``dsinfo.HOSTRADA.variables``.
+        variable (str): CF variable name, e.g. ``"rsds"``.
+
+    Returns:
+        None: Files are written to disk.
+
+    Raises:
+        KeyError: If ``variable`` is not declared in
+            ``cfg.dsinfo.HOSTRADA.variables``.
     """
     provider = cfg.dataset.upper()          # "HOSTRADA"
     param_info = cfg.dsinfo[provider]["variables"][variable]
@@ -98,29 +142,36 @@ def fetch_hostrada(cfg: DictConfig, variable: str) -> None:
 # ---------------------------------------------------------------------------
 
 class HOSTRADAmirror:
-    """Load and subset HOSTRADA gridded hourly data.
+    """Download, open and subset HOSTRADA hourly grids.
 
-    The data uses a regular lat/lon grid (EPSG:4326) so spatial subsetting is
-    straightforward index slicing.
+    Follows the same call order as :class:`~climdata.datasets.MSWX.MSWXmirror`:
+    :meth:`extract` records the region of interest, then :meth:`load` downloads
+    what is missing and applies the subset per file as it opens.
 
-    Parameters
-    ----------
-    cfg : DictConfig
-        Hydra/OmegaConf config produced by ``load_config``.
+    The grid is projected with 2-D latitude/longitude coordinates, so the subset
+    is an integer ``Y``/``X`` rectangle rather than a coordinate slice — see the
+    module docstring for what that implies. Output keeps the projected ``Y``/``X``
+    dimensions; pass it through :func:`climdata.reproject` for a geographic grid.
 
-    Usage
-    -----
-    ::
+    Attributes:
+        cfg (DictConfig): Hydra configuration.
+        variables (list[str]): ``cfg.variables``.
+        dataset (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
 
-        from climdata.datasets.HOSTRADA import HOSTRADAmirror
-
-        mirror = HOSTRADAmirror(cfg)
-        mirror.extract(box={"lat_min": 47, "lat_max": 55,
-                             "lon_min": 6, "lon_max": 15})
-        ds = mirror.load("rsds")
+    Example:
+        >>> mirror = HOSTRADAmirror(cfg)                          # doctest: +SKIP
+        >>> mirror.extract(box={"lat_min": 47, "lat_max": 55,     # doctest: +SKIP
+        ...                     "lon_min": 6, "lon_max": 15})
+        >>> ds = mirror.load("rsds", chunking={"time": "auto"})   # doctest: +SKIP
     """
 
     def __init__(self, cfg: DictConfig) -> None:
+        """Bind a configuration.
+
+        Args:
+            cfg (DictConfig): Configuration with ``dataset``, ``data_dir``,
+                ``variables``, ``time_range`` and ``dsinfo.HOSTRADA``.
+        """
         self.cfg = cfg
         self.dataset: Optional[xr.Dataset] = None
         self.variables: List[str] = list(cfg.variables)
@@ -133,12 +184,30 @@ class HOSTRADAmirror:
     # ------------------------------------------------------------------
 
     def fetch(self, variable: str) -> List[str]:
-        """Download files for *variable* and return list of local paths."""
+        """Download the files for a variable and list what is now on disk.
+
+        Args:
+            variable (str): CF variable name, e.g. ``"rsds"``.
+
+        Returns:
+            list[str]: Sorted local paths covering the configured period. Shorter
+            than the period if the server was missing months.
+        """
         fetch_hostrada(self.cfg, variable)
         return self._find_files(variable)
 
     def _find_files(self, variable: str) -> List[str]:
-        """Return sorted list of existing local NetCDF files for *variable*."""
+        """List the local files for a variable across the configured period.
+
+        Globs one month at a time so the result is in chronological order, which
+        matters because :meth:`load` concatenates along ``time`` positionally.
+
+        Args:
+            variable (str): CF variable name.
+
+        Returns:
+            list[str]: Existing local paths, in month order.
+        """
         import glob
 
         provider = self.cfg.dataset.upper()
@@ -178,6 +247,29 @@ class HOSTRADAmirror:
         shapefile=None,
         buffer_km: float = 0.0,
     ) -> "HOSTRADAmirror":
+        """Record the region of interest for :meth:`load` to apply.
+
+        Nothing is read here. The three modes are mutually exclusive; the first
+        supplied wins, in the order ``point``, ``box``, ``shapefile``. Calling
+        with no geometry clears any previous request, so the next :meth:`load`
+        returns the full German domain.
+
+        A ``shapefile`` is reduced to its bounding box, not clipped to the
+        polygon — cells outside the geometry but inside its envelope are kept.
+
+        Args:
+            point (tuple[float, float], optional): ``(lon, lat)`` in degrees,
+                longitude first. Selects the single nearest grid cell.
+            box (dict, optional): Bounding box with keys ``lat_min``, ``lat_max``,
+                ``lon_min``, ``lon_max``.
+            shapefile (str | geopandas.GeoDataFrame, optional): Geometry whose
+                bounding box is used.
+            buffer_km (float): Accepted for signature compatibility with the
+                other providers; ignored.
+
+        Returns:
+            HOSTRADAmirror: ``self``, so the call can be chained into :meth:`load`.
+        """
         if point is not None:
             self._extract_mode = "point"
             self._extract_params = point          # (lon, lat)
@@ -202,26 +294,28 @@ class HOSTRADAmirror:
         chunking: Optional[Dict] = None,
         use_dask: bool = True,
     ) -> xr.Dataset:
-        """Fetch (if needed) and open the dataset for *variable*.
+        """Download what is missing, then open every monthly file as one dataset.
 
-        HOSTRADA files use a Lambert Conformal Conic projection (EPSG:3034)
-        with projected-metre dimensions ``Y`` / ``X`` and 2-D auxiliary
-        coordinates ``lat(Y, X)`` / ``lon(Y, X)``.  Spatial subsetting is
-        therefore done via a boolean mask over those 2-D arrays and then
-        converting to a tight rectangular ``isel`` slice.
+        The ``Y``/``X`` index rectangle is computed once from the first file and
+        reused for all of them, so the per-file ``preprocess`` hook is a cheap
+        ``isel`` rather than a repeated mask evaluation. Files are opened
+        serially (``parallel=False``): HOSTRADA's NetCDF-4 files are not reliably
+        thread-safe to open concurrently. Finally the result is clipped to the
+        configured time range.
 
-        Parameters
-        ----------
-        variable : str
-            CF variable name, e.g. ``"rsds"``.
-        chunking : dict, optional
-            Chunk specification passed to ``dset.chunk()``.
-        use_dask : bool
-            Whether to use dask-backed lazy loading.
+        Args:
+            variable (str): CF variable name, e.g. ``"rsds"``.
+            chunking (dict, optional): Chunk sizes applied after opening, e.g.
+                ``{"time": "auto"}``. Only used when ``use_dask`` is true.
+            use_dask (bool): Whether ``chunking`` is applied. Defaults to ``True``.
 
-        Returns
-        -------
-        xr.Dataset
+        Returns:
+            xr.Dataset: The concatenated, subset dataset, also stored on
+            :attr:`dataset`. Dimensions are ``(time, Y, X)``.
+
+        Raises:
+            FileNotFoundError: If no files exist for the variable and period.
+            ValueError: If the requested box does not intersect the German domain.
         """
         files = self.fetch(variable)
 
@@ -266,14 +360,27 @@ class HOSTRADAmirror:
     # ------------------------------------------------------------------
 
     def _compute_yx_slices(self, sample_file: str, mode: Optional[str]):
-        """Return (y_slice, x_slice) integer index slices for the requested
-        spatial subset, computed from the 2-D ``lat``/``lon`` auxiliary
-        coordinates in *sample_file*.
+        """Reduce the requested geometry to integer ``Y``/``X`` index slices.
 
-        Returns ``(None, None)`` when no spatial subsetting is requested.
+        Reads the 2-D ``lat``/``lon`` auxiliary coordinates from one file and
+        masks them against the request. For ``point`` this is the cell minimising
+        squared distance in degrees — an approximation, since a degree of
+        longitude is shorter than one of latitude, but harmless at HOSTRADA's
+        1 km spacing. For ``box`` and ``shapefile`` it is the bounding rectangle
+        of every matching cell, so the result is a superset of the request.
+
+        Args:
+            sample_file (str): Path to one HOSTRADA file, used for its grid.
+            mode (str | None): ``"point"``, ``"box"``, ``"shapefile"``, or
+                ``None`` for no subsetting.
+
+        Returns:
+            tuple[slice, slice] | tuple[None, None]: Index slices for ``Y`` and
+            ``X``, or ``(None, None)`` when ``mode`` is ``None``.
+
+        Raises:
+            ValueError: If the requested area does not intersect the grid.
         """
-        import numpy as np
-
         if mode is None:
             return None, None
 
@@ -318,6 +425,18 @@ class HOSTRADAmirror:
         return None, None
 
     def _apply_time_subset(self, ds: xr.Dataset) -> xr.Dataset:
+        """Clip a dataset to the configured time range.
+
+        Monthly files always overrun the requested range at both ends. A failure
+        here is reported and swallowed, returning the unclipped dataset, so a
+        surprising time encoding costs extra timesteps rather than the whole load.
+
+        Args:
+            ds (xr.Dataset): Dataset with a ``time`` dimension.
+
+        Returns:
+            xr.Dataset: The clipped dataset, or ``ds`` unchanged on failure.
+        """
         start = getattr(self.cfg.time_range, "start_date", None)
         end = getattr(self.cfg.time_range, "end_date", None)
         if start or end:

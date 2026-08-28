@@ -67,7 +67,9 @@ full = [
 
 [tool.setuptools.packages.find]
 include = ["climdata*"]
-exclude = ["docs*"]
+# sdba_usecase holds the research scripts, notebooks and geopackage behind the
+# BCSD example. Kept in the repository for provenance, kept out of the wheel.
+exclude = ["docs*", "climdata.sdba_usecase*"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

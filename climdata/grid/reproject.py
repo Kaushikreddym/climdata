@@ -11,7 +11,7 @@ CRS/dimension inference, and metadata preservation across the warp.
 from __future__ import annotations
 
 import warnings
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Mapping, Optional, Sequence, Union
 
 import numpy as np
 import xarray as xr

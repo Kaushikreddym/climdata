@@ -1,17 +1,21 @@
+"""CMIP6 projections bias-adjusted to W5E5, via the ISIMIP client.
+
+ISIMIP3b publishes CMIP6 model output already bias-adjusted and downscaled to
+the W5E5 0.5 degree grid. That makes it directly comparable to the W5E5
+reference - see :class:`~climdata.datasets.W5E5.W5E5` - without a
+bias-correction step of your own, which is the main reason to prefer it over raw
+CMIP6 from :class:`~climdata.datasets.CMIPCloud.CMIPCloud`.
+
+ISIMIP names models in lowercase (``gfdl-esm4``), unlike the CMIP6 catalogue's
+uppercase (``GFDL-ESM4``).
+
+Example:
+    >>> cmip = CMIPW5E5(cfg)                                  # doctest: +SKIP
+    >>> cmip.fetch(); cmip.load()                             # doctest: +SKIP
+    >>> cmip.extract(point=(13.4, 52.5))                      # doctest: +SKIP
 """
-CMIP-W5E5 dataset access combining CMIP6 data with W5E5 format
 
-This module provides access to CMIP6 climate projection data stored in W5E5-like format,
-available through ISIMIP (Inter-Sectoral Impact Model Intercomparison Project).
-It provides daily climate data at 0.5° resolution for various CMIP6 models and scenarios.
-
-This module uses the isimip-client library to search and download CMIP6 data from the 
-ISIMIP data repository with W5E5 format compatibility.
-"""
-
-import os
 import xarray as xr
-import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from omegaconf import DictConfig
@@ -22,27 +26,42 @@ import re
 warnings.filterwarnings("ignore", category=Warning)
 
 class CMIPW5E5:
+    """Download and assemble ISIMIP3b bias-adjusted CMIP6 projections.
+
+    The lifecycle is ``fetch`` -> ``load`` -> ``extract``. :meth:`extract` may be
+    called before :meth:`load`, in which case the subset is stored and applied as
+    soon as data arrives.
+
+    Attributes:
+        cfg (DictConfig): Configuration supplying ``variables``, ``time_range``,
+            ``data_dir`` and ``dataset``.
+        ds (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+        client (ISIMIPClient): ISIMIP API client, created in :meth:`__init__`.
+        experiment_id (str): Experiment, e.g. ``"historical"``, ``"ssp585"``.
+        source_id (str): Model, lowercase, e.g. ``"gfdl-esm4"``.
+        member_id (str): Realisation, e.g. ``"r1i1p1f1"``.
+        downloaded_files (list[str]): Local paths accumulated by :meth:`fetch`.
+
+    Example:
+        >>> cmip = CMIPW5E5(cfg)                                  # doctest: +SKIP
+        >>> cmip.get_source_ids("ssp585")                         # doctest: +SKIP
+        ['gfdl-esm4', 'ipsl-cm6a-lr', 'mpi-esm1-2-hr', ...]
     """
-    A class to download and process CMIP6 climate data in W5E5 format from ISIMIP repository.
-    
-    CMIP6 data is available through ISIMIP3b (climate projections) and can be used for 
-    future climate impact assessments. The data follows W5E5 spatial resolution and format.
-    
-    Attributes
-    ----------
-    cfg : DictConfig
-        Configuration containing lat, lon, variables, time_range, experiment_id, source_id, etc.
-    ds : xr.Dataset
-        Loaded xarray dataset
-    client : ISIMIPClient
-        ISIMIP API client for data access
-    experiment_id : str
-        CMIP6 experiment identifier (e.g., 'historical', 'ssp126', 'ssp585')
-    source_id : str
-        CMIP6 model identifier (e.g., 'gfdl-esm4', 'ukesm1-0-ll')
-    """
-    
+
     def __init__(self, cfg: DictConfig):
+        """Bind a configuration, open an ISIMIP client and validate the period.
+
+        Args:
+            cfg (DictConfig): Configuration with ``variables``, ``time_range``,
+                ``data_dir``, ``dataset``, and optionally ``experiment_id``
+                (default ``"historical"``), ``source_id`` (default
+                ``"gfdl-esm4"``) and ``member_id`` (default ``"r1i1p1f1"``).
+
+        Raises:
+            ImportError: If ``isimip-client`` is not installed.
+            ValueError: If the time range cannot belong to the experiment - see
+                :meth:`_validate_time_range`.
+        """
         self.cfg = cfg
         self.ds = None
         self.client = None
@@ -68,24 +87,29 @@ class CMIPW5E5:
         # Validate time range for experiment
         self._validate_time_range()
     
-    def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
-        """Ensure latitude is ascending and longitude is in the range [0, 360]."""
+    def _fix_coords(self, ds):
+        """Put latitude in ascending order and longitude on the 0-360 convention.
+
+        Args:
+            ds (xr.Dataset | xr.DataArray): Object with CF-identifiable latitude
+                and longitude coordinates.
+
+        Returns:
+            xr.Dataset | xr.DataArray: Same type as the input, reoriented.
+        """
         ds = ds.cf.sortby("latitude")
         lon_name = ds.cf["longitude"].name
         ds = ds.assign_coords({lon_name: ds.cf["longitude"] % 360})
         return ds.sortby(lon_name)
     
     def _validate_time_range(self):
-        """
-        Validate that the requested time range is appropriate for the experiment.
-        
+        """Validate that the requested time range is appropriate for the experiment.
+
         Historical runs: 1850-2014
         SSP scenarios: 2015-2100
-        
-        Raises
-        ------
-        ValueError
-            If the time range doesn't match the experiment period
+
+        Raises:
+            ValueError: If the time range doesn't match the experiment period
         """
         start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
         end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
@@ -126,13 +150,11 @@ class CMIPW5E5:
             print(f"   Data availability may be limited.")
     
     def get_experiment_ids(self) -> List[str]:
-        """
-        Get available CMIP6 experiment IDs from ISIMIP repository.
-        
-        Returns
-        -------
-        List[str]
-            List of available experiment IDs (e.g., ['historical', 'ssp126', 'ssp245', 'ssp370', 'ssp585'])
+        """Get available CMIP6 experiment IDs from ISIMIP repository.
+
+        Returns:
+            List[str]: List of available experiment IDs (e.g., ['historical', 'ssp126',
+                'ssp245', 'ssp370', 'ssp585'])
         """
         print("🔍 Fetching available experiment IDs from ISIMIP...")
         
@@ -169,18 +191,15 @@ class CMIPW5E5:
             return ['historical', 'ssp126', 'ssp370', 'ssp585']
     
     def get_source_ids(self, experiment_id: Optional[str] = None) -> List[str]:
-        """
-        Get available CMIP6 model (source) IDs for a given experiment from ISIMIP repository.
-        
-        Parameters
-        ----------
-        experiment_id : str, optional
-            CMIP6 experiment ID. If None, uses self.experiment_id
-            
-        Returns
-        -------
-        List[str]
-            List of available model IDs (e.g., ['gfdl-esm4', 'ipsl-cm6a-lr', 'mpi-esm1-2-hr', 'mri-esm2-0', 'ukesm1-0-ll'])
+        """Get available CMIP6 model (source) IDs for a given experiment from ISIMIP repository.
+
+        Args:
+            experiment_id (str, optional): CMIP6 experiment ID. If None, uses
+                self.experiment_id
+
+        Returns:
+            List[str]: List of available model IDs (e.g., ['gfdl-esm4', 'ipsl-cm6a-lr',
+                'mpi-esm1-2-hr', 'mri-esm2-0', 'ukesm1-0-ll'])
         """
         if experiment_id is None:
             experiment_id = self.experiment_id
@@ -232,18 +251,13 @@ class CMIPW5E5:
             return ['gfdl-esm4', 'ipsl-cm6a-lr', 'mpi-esm1-2-hr', 'mri-esm2-0', 'ukesm1-0-ll']
     
     def _map_experiment_to_scenario(self, experiment_id: str) -> str:
-        """
-        Map CMIP6 experiment ID to ISIMIP climate scenario name.
-        
-        Parameters
-        ----------
-        experiment_id : str
-            CMIP6 experiment ID
-            
-        Returns
-        -------
-        str
-            ISIMIP climate scenario name
+        """Map CMIP6 experiment ID to ISIMIP climate scenario name.
+
+        Args:
+            experiment_id (str): CMIP6 experiment ID
+
+        Returns:
+            str: ISIMIP climate scenario name
         """
         scenario_map = {
             'historical': 'historical',
@@ -259,11 +273,19 @@ class CMIPW5E5:
         return scenario_map.get(experiment_id, experiment_id)
     
     def fetch(self):
-        """
-        Search and download CMIP6 files in W5E5 format from ISIMIP repository 
-        for the requested variables, time range, experiment, and model.
-        
-        Uses ISIMIP3b simulation round for CMIP6 climate projection data.
+        """Search ISIMIP3b and download the files covering the request.
+
+        Queries once per configured variable for the configured model and
+        experiment, keeps the files whose filename year-range overlaps the period
+        (see :meth:`_is_file_in_date_range`), and downloads any not already under
+        ``<data_dir>/<DATASET>/<variable>/``.
+
+        Per-variable failures are reported and skipped rather than raised, so one
+        unavailable variable does not abort a multi-variable request - check
+        :attr:`downloaded_files` to see what actually arrived.
+
+        Returns:
+            None: Paths are appended to :attr:`downloaded_files`.
         """
         print(f"🔍 Searching for CMIP6 datasets in ISIMIP repository...")
         print(f"   Model: {self.source_id}, Experiment: {self.experiment_id}")
@@ -307,7 +329,6 @@ class CMIPW5E5:
                 
                 # Filter files by date range
                 for file_info in self._extract_files_list(dataset):
-                    file_path = file_info['path']
                     file_name = file_info['name']
                     
                     # Parse date from filename
@@ -338,7 +359,17 @@ class CMIPW5E5:
         print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
 
     def _normalize_dataset_results(self, response) -> List[Dict]:
-        """Normalize isimip-client dataset responses to a list of dataset dicts."""
+        """Coerce an isimip-client response into a list of dataset records.
+
+        The client returns a bare list from some endpoints and a paginated
+        ``{"results": [...]}`` envelope from others.
+
+        Args:
+            response: The value returned by ``client.datasets(...)``.
+
+        Returns:
+            list[dict]: Dataset records, empty if the response has neither shape.
+        """
         if response is None:
             return []
         if isinstance(response, list):
@@ -350,7 +381,16 @@ class CMIPW5E5:
         return []
 
     def _extract_files_list(self, dataset: Dict) -> List[Dict]:
-        """Extract file list from a dataset record, handling multiple response shapes."""
+        """Pull the file records out of one ISIMIP dataset record.
+
+        Args:
+            dataset (dict): A single dataset record.
+
+        Returns:
+            list[dict]: File records, each with ``path``, ``name`` and
+            ``file_url``. Empty if the record carries neither ``files`` nor a
+            single ``file``.
+        """
         files = dataset.get('files')
         if isinstance(files, list):
             return files
@@ -360,9 +400,17 @@ class CMIPW5E5:
         return []
     
     def load(self):
-        """
-        Load the downloaded CMIP6 netCDF files into an xarray Dataset.
-        Combines multiple files if necessary and selects the requested time range.
+        """Open the downloaded files and merge them into one dataset.
+
+        Files are grouped by variable, concatenated along time where a variable
+        spans several decades, merged across variables, and clipped to the
+        configured time range.
+
+        Returns:
+            None: The dataset is stored on :attr:`ds`.
+
+        Raises:
+            ValueError: If :meth:`fetch` has not run, or produced no files.
         """
         if not self.downloaded_files:
             raise ValueError("No files to load. Run fetch() first.")
@@ -423,19 +471,17 @@ class CMIPW5E5:
                 box: Optional[Dict] = None, 
                 shapefile: Optional[str] = None, 
                 buffer_km: float = 0.0):
-        """
-        Store extraction instructions to be applied during or after load.
-        
-        Parameters
-        ----------
-        point : tuple of (lon, lat), optional
-            Extract data for a specific point location
-        box : dict, optional
-            Extract data for a bounding box with keys: lon_min, lon_max, lat_min, lat_max
-        shapefile : str or GeoDataFrame, optional
-            Extract data for a shapefile region
-        buffer_km : float, default=0.0
-            Buffer distance in kilometers around point (converted to degrees)
+        """Store extraction instructions to be applied during or after load.
+
+        Args:
+            point (tuple of (lon, lat), optional): Extract data for a specific point
+                location
+            box (dict, optional): Extract data for a bounding box with keys: lon_min,
+                lon_max, lat_min, lat_max
+            shapefile (str or GeoDataFrame, optional): Extract data for a shapefile
+                region
+            buffer_km (float, default=0.0): Buffer distance in kilometers around point
+                (converted to degrees)
         """
         if point is not None:
             lon, lat = point
@@ -468,7 +514,15 @@ class CMIPW5E5:
                 self._apply_extraction()
     
     def _apply_extraction(self):
-        """Apply the stored extraction instructions to the dataset."""
+        """Run the subset recorded by :meth:`extract` against :attr:`ds`.
+
+        Point requests either take the nearest cell or area-average a buffered
+        box; box requests slice; shapefile requests clip each geometry through
+        rioxarray and stack the results along a new ``geom_id`` dimension.
+
+        Returns:
+            None: :attr:`ds` is replaced in place.
+        """
         if self._extract_mode == "point":
             lon, lat, buffer_deg = self._extract_params
             
@@ -488,7 +542,7 @@ class CMIPW5E5:
             )
         
         elif self._extract_mode == "shapefile":
-            import rioxarray
+            import rioxarray  # noqa: F401 — registers the .rio accessor
             from shapely.geometry import mapping
             
             gdf = self._extract_params
@@ -503,7 +557,17 @@ class CMIPW5E5:
             self.ds = xr.concat(clipped_list, dim="geom_id")
     
     def save_netcdf(self, filename: str):
-        """Save the dataset to a NetCDF file."""
+        """Write the dataset to NetCDF, creating parent directories.
+
+        Args:
+            filename (str): Destination path.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no dataset has been loaded.
+        """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")
         
@@ -514,7 +578,21 @@ class CMIPW5E5:
         print(f"💾 Saved to: {output_path}")
     
     def save_csv(self, filename: str):
-        """Save the dataset to a CSV file."""
+        """Write the dataset to CSV, creating parent directories.
+
+        The frame is written in xarray's wide form - one column per variable,
+        indexed by the dataset's dimensions - not the long form produced by
+        :meth:`~climdata.utils.wrapper_workflow.ClimateExtractor.to_dataframe`.
+
+        Args:
+            filename (str): Destination path.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no dataset has been loaded.
+        """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")
         
@@ -526,10 +604,16 @@ class CMIPW5E5:
         print(f"💾 Saved to: {output_path}")
     
     def _map_variable_name(self, var: str) -> str:
-        """
-        Map standard variable names to CMIP6 variable names.
-        
-        CMIP6 uses standard CMIP variable names similar to W5E5.
+        """Translate a CF variable name to the name ISIMIP3b files use.
+
+        ISIMIP follows CMIP naming, so nearly all names pass through unchanged;
+        ``sfcWind`` is the exception, stored lowercase as ``sfcwind``.
+
+        Args:
+            var (str): CF variable name, e.g. ``"tasmax"``.
+
+        Returns:
+            str: The ISIMIP name, or ``var`` unchanged if it is not in the table.
         """
         # CMIP6 uses standard names
         variable_map = {
@@ -548,11 +632,22 @@ class CMIPW5E5:
         return variable_map.get(var, var)
     
     def _is_file_in_date_range(self, filename: str, start_date: datetime, end_date: datetime) -> bool:
-        """
-        Check if a file covers the requested date range.
-        
-        CMIP6 files in ISIMIP typically have year ranges in their names like:
-        gfdl-esm4_r1i1p1f1_ssp585_tas_global_daily_2015_2024.nc
+        """Test whether a file's year range overlaps the requested period.
+
+        ISIMIP encodes coverage in the filename, e.g.
+        ``gfdl-esm4_r1i1p1f1_ssp585_tas_global_daily_2015_2024.nc``. Comparison
+        is at year granularity, so a file may be kept for a request that only
+        touches part of it.
+
+        Args:
+            filename (str): Basename of the candidate file.
+            start_date (datetime): Start of the requested period.
+            end_date (datetime): End of the requested period.
+
+        Returns:
+            bool: ``True`` if the ranges overlap. Also ``True`` when the filename
+            carries no parseable year range - an unrecognised name is downloaded
+            rather than silently dropped.
         """
         import re
         
@@ -567,10 +662,3 @@ class CMIPW5E5:
         
         # If we can't parse the date, include the file to be safe
         return True
-
-
-class CMIPW5E5Mirror(CMIPW5E5):
-    """
-    Alias for CMIPW5E5 class to maintain consistent naming with other datasets.
-    """
-    pass

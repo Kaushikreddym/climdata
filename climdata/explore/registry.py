@@ -1,5 +1,12 @@
-"""
-Dynamic dataset registry loaded from Hydra configuration.
+"""The dataset registry, built from the Hydra configuration at import time.
+
+Providers are discovered from ``conf/mappings/parameters.yaml`` rather than
+listed in code, so adding a dataset to the configuration is enough to make it
+appear in :func:`climdata.explore.list_available_data` and friends.
+
+The registry is a snapshot: :data:`REGISTRY` is built once when this module is
+first imported. Editing ``parameters.yaml`` in a live session has no effect
+until the interpreter is restarted.
 """
 
 from __future__ import annotations
@@ -9,14 +16,24 @@ import yaml
 
 
 def _load_parameters_yaml() -> dict:
-    """Load parameters.yaml from climdata/conf/mappings/."""
+    """Read ``conf/mappings/parameters.yaml`` from the installed package.
+
+    Reads the packaged copy next to this module, not the working copy that
+    :func:`climdata.utils.config._ensure_local_conf` drops into the current
+    directory — registry metadata should not change with the caller's cwd.
+
+    Returns:
+        dict: Parsed YAML, or an empty dict if the file is missing, empty or
+        unreadable. Never raises: a broken config degrades the catalogue to
+        empty rather than breaking ``import climdata``.
+    """
     try:
         conf_dir = Path(__file__).parent.parent / "conf" / "mappings"
         params_file = conf_dir / "parameters.yaml"
-        
+
         if not params_file.exists():
             return {}
-        
+
         with open(params_file, "r") as f:
             return yaml.safe_load(f) or {}
     except Exception:
@@ -24,17 +41,23 @@ def _load_parameters_yaml() -> dict:
 
 
 def _load_registry() -> dict[str, dict]:
-    """
-    Load dataset registry directly from YAML configuration files,
-    then add static/hardcoded datasets.
+    """Build the dataset registry from configuration plus static entries.
 
-    Every top-level entry in parameters.yaml is treated as a dataset and
-    registered under its UPPER-CASED key (e.g. ``dwd`` → ``DWD``,
-    ``cmip_w5e5`` → ``CMIP_W5E5``). This auto-detects all providers regardless
-    of the case used in the YAML, so newly added datasets appear without code
-    changes.
+    Every top-level mapping in ``parameters.yaml`` is treated as a dataset and
+    registered under its upper-cased key (``dwd`` → ``DWD``, ``cmip_w5e5`` →
+    ``CMIP_W5E5``), so newly configured providers appear without code changes.
+    Descriptive fields come from each entry's optional ``explore`` block and fall
+    back to ``"Unknown"``; variables come from its ``variables`` mapping.
 
-    Returns a dictionary mapping dataset abbreviations to metadata dictionaries.
+    ERA5 is appended afterwards as a static entry: it is reached through the
+    Copernicus CDS API rather than through ``parameters.yaml``, so it has no
+    configuration block to discover.
+
+    Returns:
+        dict[str, dict]: Mapping of dataset abbreviation to a metadata dict with
+        keys ``full_name``, ``type``, ``coverage``, ``resolution``,
+        ``frequency``, ``time_range``, ``source``, ``notes``, ``variables``,
+        ``experiments`` and ``models``.
     """
     params = _load_parameters_yaml()
     registry = {}
@@ -72,7 +95,7 @@ def _load_registry() -> dict[str, dict]:
             "experiments": experiments,
             "models": [],
         }
-    
+
     # Add static datasets not in config files (ERA5)
     static_datasets = {
         "ERA5": {
@@ -89,22 +112,49 @@ def _load_registry() -> dict[str, dict]:
             "notes": "Requires a valid ~/.cdsapirc key.",
         },
     }
-    
+
     registry.update(static_datasets)
     return registry
 
 
-# Load registry once at module import time
+#: Dataset catalogue, built once at import time by :func:`_load_registry`.
 REGISTRY = _load_registry()
 
 
 def get_registry() -> dict[str, dict]:
-    """Get the loaded dataset registry."""
+    """Return the dataset registry for programmatic use.
+
+    Returns:
+        dict[str, dict]: A shallow copy of :data:`REGISTRY`, keyed by dataset
+        abbreviation. The copy protects the top level only — the per-dataset
+        metadata dicts are shared, so do not mutate them.
+
+    Example:
+        >>> from climdata.explore import get_registry
+        >>> sorted(get_registry())[:3]                     # doctest: +SKIP
+        ['AGRI_ISIMIP', 'CMIP', 'CMIP_W5E5']
+    """
     return REGISTRY.copy()
 
 
 def resolve_dataset_key(name: str) -> Optional[str]:
-    """Case-insensitive lookup; returns canonical key or None."""
+    """Resolve a dataset name to its canonical registry key, case-insensitively.
+
+    Args:
+        name (str): Dataset name in any casing, e.g. ``"era5"`` or ``"ERA5"``.
+
+    Returns:
+        str | None: The canonical key (``"ERA5"``), or ``None`` if no dataset
+        matches. Callers report the miss themselves rather than catching an
+        exception.
+
+    Example:
+        >>> from climdata.explore import resolve_dataset_key
+        >>> resolve_dataset_key("nexgddp")
+        'NEXGDDP'
+        >>> resolve_dataset_key("not-a-dataset") is None
+        True
+    """
     name_up = name.upper()
     for k in REGISTRY:
         if k.upper() == name_up:

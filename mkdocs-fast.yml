@@ -6,16 +6,6 @@ repo_url: https://github.com/Kaushikreddym/climdata
 
 copyright: "Copyright &copy; 2024 - 2024 Kaushik Muduchuru"
 
-# Running the example notebooks leaves working artifacts beside them: a conf/
-# copy dropped by _ensure_local_conf(), and data/ holding the downloads (HYRAS
-# alone is several GB). Both are gitignored, but mkdocs copies anything under
-# docs/ into the site verbatim — which fills the build disk and takes minutes.
-# Excluding them here is what keeps `mkdocs build` fast and small.
-exclude_docs: |
-  examples/**/data/
-  examples/**/conf/
-  examples/climdata_cli.py
-
 theme:
     palette:
         - scheme: default
@@ -54,17 +44,6 @@ plugins:
                 docstring_style: google
                 options:
                     show_root_heading: true
-    - git-revision-date
-    - git-revision-date-localized:
-          enable_creation_date: true
-          type: timeago
-    - mkdocs-jupyter:
-          include_source: true
-          ignore_h1_titles: true
-          execute: false
-          allow_errors: false
-          ignore: ["conf.py"]
-          execute_ignore: ["*ignore.ipynb"]
 
 markdown_extensions:
     - admonition
@@ -93,17 +72,6 @@ nav:
         - MSWX Guide: MSWX_guide.md
         - DWD Export Format: dwd_format_guide.md
     - Bias Correction: bcsd_guide.md
-    - Examples:
-        - Workflow Tutorial: examples/wrapper_workflow.ipynb
-        - Datasets:
-            - MSWX: examples/datasets/mswx_example.ipynb
-            - CMIP6 bias-adjusted (0.5 deg): examples/datasets/cmip_w5e5_example.ipynb
-        - Grids:
-            - Resolution & Projection Transformation: examples/grid/reprojection.ipynb
-        - Advanced:
-            - Multi-Dataset Comparison: examples/datasets/multi_dataset_comparison.ipynb
-            - CMIP vs Observations: examples/advanced/cmip_obs_comparison.ipynb
-            - Bias Correction & Downscaling: examples/sdba/sdba.ipynb
     - Reference:
         - API: api.md
         - Concepts: common.md

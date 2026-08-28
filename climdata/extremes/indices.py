@@ -1,30 +1,83 @@
-import os
+"""Configuration-driven computation of climate extreme indices.
+
+Indices are declared in ``conf/mappings/indices.yaml`` rather than in code. Each
+entry names the callable to invoke (usually an :mod:`xclim` indicator), the
+dataset variables to feed it, and any literal keyword arguments. Optional
+``link`` blocks build intermediate inputs — a day-of-year percentile, say —
+before the index itself is evaluated.
+
+Example:
+    >>> from climdata.extremes.indices import extreme_index
+    >>> indices = extreme_index(cfg, ds)          # doctest: +SKIP
+    >>> tn10p = indices.calculate("tn10p")        # doctest: +SKIP
+"""
+
 import importlib
-from copy import deepcopy
-from pathlib import Path
+
 import xarray as xr
-from xclim.core.calendar import percentile_doy
+
 
 class extreme_index:
+    """Evaluate a configured extreme index against a loaded dataset.
+
+    Attributes:
+        cfg (DictConfig): Hydra configuration; ``cfg.extinfo.indices`` holds the
+            index definitions.
+        climate_data (xr.Dataset): Dataset supplying the input variables. Linked
+            intermediate variables are written back into it as they are built.
+
+    Example:
+        >>> indices = extreme_index(cfg, ds)              # doctest: +SKIP
+        >>> da = indices.calculate("tx90p")               # doctest: +SKIP
+    """
+
     def __init__(self, cfg, climate_data):
+        """Bind a configuration and a dataset.
+
+        Args:
+            cfg (DictConfig): Hydra configuration containing ``extinfo.indices``.
+            climate_data (xr.Dataset): Dataset holding the required input variables.
+        """
         self.cfg = cfg
         self.climate_data = climate_data
-        self.successful_indices = []
-        self.failed_indices = []
-        self.tasks = []
-
-    def zarr_output_path(self, index):
-        zarr_filename = self.cfg.output.filename.format(
-            index=index,
-            dataset=self.cfg.dataset,
-            region=self.cfg.region,
-            start=self.cfg.time_range.start_date,
-            end=self.cfg.time_range.end_date,
-            freq='YS',
-        )
-        return Path('data/10km/' + zarr_filename)
 
     def calculate(self, index):
+        """Compute a single index by name.
+
+        Resolution proceeds in three steps:
+
+        1. **Linked variables** — each entry under ``index_cfg.link`` produces an
+           intermediate DataArray, either by calling an importable function
+           (``function_call``) or by invoking a method on one input variable
+           (``operation``). An optional ``postprocess`` block may then subset the
+           result. Each is stored back into :attr:`climate_data` under its key so
+           later links and the index itself can reference it.
+        2. **Argument resolution** — any argument written as an OmegaConf-style
+           reference (``"${...}"``) is replaced by the matching entry of
+           :attr:`climate_data`.
+        3. **Evaluation** — ``index_cfg.function`` is imported and called with the
+           variables listed in ``index_cfg.variables`` (falling back to ``pr``).
+
+        Args:
+            index (str): Index name, matching a key of ``cfg.extinfo.indices``
+                (e.g. ``"tn10p"``, ``"tx90p"``, ``"rx1day"``).
+
+        Returns:
+            xr.DataArray: The computed index, renamed to ``index``. The result is
+            lazy if the inputs are lazy — call ``.compute()`` to materialise it.
+
+        Raises:
+            KeyError: If ``index`` is not defined in ``cfg.extinfo.indices``, or a
+                referenced input variable is absent from :attr:`climate_data`.
+            ValueError: If a ``link`` entry defines neither ``function_call`` nor
+                ``operation``.
+            NotImplementedError: If a ``postprocess`` block names an unsupported
+                operation.
+
+        Example:
+            >>> indices = extreme_index(cfg, ds)          # doctest: +SKIP
+            >>> indices.calculate("tn10p").compute()      # doctest: +SKIP
+        """
         index_cfg = self.cfg.extinfo.indices[index]
         args = dict(index_cfg.args)
 
@@ -33,7 +86,7 @@ class extreme_index:
             for var_name, link_cfg in index_cfg.link.items():
                 # --- External function call ---
                 if "function_call" in link_cfg:
-                    
+
                     inputs = [self.climate_data[name] for name in link_cfg["inputs"]]
                     module_path, func_name = link_cfg["function_call"].rsplit(".", 1)
                     func = getattr(importlib.import_module(module_path), func_name)
@@ -74,28 +127,7 @@ class extreme_index:
         else:
             result = func(self.climate_data["pr"], **args)
 
-        # ✅ Rename output DataArray
         if isinstance(result, xr.DataArray):
             result.name = index
 
-        # result = result.chunk({'time':12,'lat':-1,'lon':-1})  # trigger chunking if needed
-        
-        # Save result
-        # zarr_path = self.zarr_output_path(index)
-        # os.makedirs(zarr_path.parent, exist_ok=True)
-        # result.to_zarr(str(zarr_path), mode="w")
         return result
-
-    def run(self):
-        for index in list(self.cfg.mappings.indices.keys()):
-            zarr_path = self.zarr_output_path(index)
-            if zarr_path.exists():
-                print(f"Skipping {index}: Zarr already exists at {zarr_path}")
-                continue
-            try:
-                print(f"Processing index: {index}")
-                self.calculate(index)
-                self.successful_indices.append(index)
-            except Exception as e:
-                print(f"Error processing {index}: {e}")
-                self.failed_indices.append(index)

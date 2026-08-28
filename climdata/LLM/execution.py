@@ -87,24 +87,75 @@ _CLIMDATA_NATIVE_INTENTS = {AnalysisIntent.EXTREMES.value, AnalysisIntent.ETCCDI
 # ===========================================================================
 
 class ExecutionStatus(str, Enum):
+    """Whether an :class:`ExecutionPlan` can actually be run.
+
+    Attributes:
+        READY: Every capability the plan needs was found.
+        ERROR: At least one was not; see ``ExecutionPlan.missing``.
+    """
+
     READY = "ready"
     ERROR = "error"
 
 
 class MissingCapability(BaseModel):
+    """One capability the plan asked for that climdata cannot provide.
+
+    Attributes:
+        kind (str): What was missing — ``"dataset"``, ``"variable"``,
+            ``"index"`` or ``"intent"``.
+        name (str): The name that was requested.
+        detail (str): Human-readable explanation, usually naming the valid
+            alternatives.
+    """
+
     kind: str                    # "dataset" | "variable" | "index" | "intent"
     name: str
     detail: str
 
 
 class WorkflowStep(BaseModel):
-    """One ordered action in the ClimData pipeline."""
+    """One ordered action in the climdata pipeline.
+
+    Attributes:
+        action (str): Action name — ``"extract"``, ``"calc_index"`` or
+            ``"analyze"``.
+        params (dict): Keyword arguments for the action.
+        provided_by (str): Which subsystem executes it — ``"climdata"`` or
+            ``"analytics"``.
+    """
+
     action: str                  # extract | calc_index | analyze
     params: Dict = Field(default_factory=dict)
     provided_by: str             # "climdata" | "analytics"
 
 
 class ExecutionPlan(BaseModel):
+    """A validated, reproducible recipe for one climdata run.
+
+    Produced by :func:`build_execution_plan` from a planner's :class:`ReadyPlan`.
+    Everything the LLM proposed has been checked against the live capability
+    registry by this point, so a ``READY`` plan names only datasets, variables
+    and indices that exist.
+
+    ``overrides`` is the reproducibility record: the exact Hydra override list
+    that recreates the extraction outside the pipeline, which
+    :meth:`climdata_call` renders as a one-liner.
+
+    Attributes:
+        status (ExecutionStatus): Whether the plan is runnable.
+        dataset (str | None): Resolved provider name.
+        variables (list[str]): Validated CF variable names.
+        spatial (dict): Region of interest — ``{"mode": "point"|"box", ...}``.
+        time_range (dict | None): ``{"start": ..., "end": ...}``.
+        overrides (list[str]): Hydra overrides recreating the extraction.
+        steps (list[WorkflowStep]): Ordered actions to run.
+        config (dict): Full resolved configuration snapshot.
+        missing (list[MissingCapability]): Why the plan is not runnable, if it
+            is not.
+        provenance (dict): What produced this plan.
+    """
+
     status: ExecutionStatus
     dataset: Optional[str] = None
     variables: List[str] = Field(default_factory=list)
@@ -119,7 +170,16 @@ class ExecutionPlan(BaseModel):
     model_config = {"use_enum_values": True}
 
     def climdata_call(self) -> str:
-        """Reproducible one-liner to recreate the extraction."""
+        """Render the Python one-liner that recreates this extraction.
+
+        Returns:
+            str: A ``ClimData(overrides=[...])`` call, runnable as-is.
+
+        Raises:
+            ValueError: If the plan is in the ``ERROR`` state — refusing rather
+                than emitting a call that cannot work. The message lists every
+                missing capability.
+        """
         if self.status == ExecutionStatus.ERROR.value:
             raise ValueError(
                 "This plan is not executable: "

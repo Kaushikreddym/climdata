@@ -1,3 +1,22 @@
+"""The workflow layer: one class that drives a whole climdata run.
+
+:class:`ClimateExtractor` (exported as ``climdata.ClimData``) composes the
+provider classes, the extreme-index engine, the imputer and the regridder behind
+a single Hydra configuration, so a run is described by overrides rather than by
+code. Individual steps can be called directly, or chained through
+:meth:`ClimateExtractor.run_workflow`.
+
+State is threaded between steps by two decorators, :func:`update_ds` and
+:func:`update_df`, which capture each method's return value into
+``self.current_ds`` / ``self.current_df``. That is what lets ``calc_index()``
+follow ``extract()`` with no argument passing.
+
+Example:
+    >>> import climdata as cd
+    >>> ex = cd.ClimData(overrides=["dataset=mswx", "lat=52.5", "lon=13.4"])   # doctest: +SKIP
+    >>> result = ex.run_workflow(actions=["extract", "calc_index", "to_nc"])   # doctest: +SKIP
+"""
+
 import os
 import json
 import pandas as pd
@@ -47,14 +66,43 @@ CF_TO_DWD_NAMES = {
     'ps': 'SurfPressure',        # Surface pressure
 }
 
-# Reverse mapping for reference
-DWD_TO_CF_NAMES = {v: k for k, v in CF_TO_DWD_NAMES.items()}
+#: Actions ``ClimateExtractor.run_workflow()`` dispatches. Kept in step with
+#: ``conf/mappings/actions.yaml``, which is what ``get_actions()`` reports.
+_WORKFLOW_ACTIONS = (
+    "upload_netcdf", "upload_csv", "extract", "calc_index",
+    "impute", "reproject", "to_csv", "to_nc", "to_fair",
+)
+
+#: Providers ``ClimateExtractor.extract()`` knows how to drive, for error messages.
+_EXTRACTABLE = (
+    "MSWX", "CMIP", "POWER", "DWD", "HYRAS", "HOSTRADA",
+    "W5E5", "CMIP_W5E5", "NEXGDDP", "AGRI_ISIMIP",
+)
 
 # ----------------------------
 # Dataclass for workflow result
 # ----------------------------
 @dataclass
 class WorkflowResult:
+    """What :meth:`ClimateExtractor.run_workflow` produces.
+
+    Every field but ``cfg`` is optional and stays ``None`` unless an action in
+    the sequence populated it, so which attributes are set records which actions
+    ran. :meth:`keys` names them.
+
+    Attributes:
+        cfg (DictConfig): The configuration the workflow ran with.
+        dataset (xr.Dataset | None): Extracted or uploaded data.
+        dataframe (pd.DataFrame | None): Long-form conversion of the dataset.
+        filename (str | None): Path written by the last file-writing action.
+        index_ds (xr.Dataset | None): Computed extreme index.
+        index_filename (str | None): Path of the written index.
+        impute_ds (xr.Dataset | None): Gap-filled dataset.
+        impute_filename (str | None): Path of the written imputed dataset.
+        reprojected_ds (xr.Dataset | None): Regridded dataset.
+        reprojected_filename (str | None): Path of the written regridded dataset.
+    """
+
     cfg: DictConfig
     dataset: Optional[xr.Dataset] = None
     dataframe: Optional[pd.DataFrame] = None
@@ -67,9 +115,34 @@ class WorkflowResult:
     reprojected_filename: Optional[str] = None
 
     def keys(self):
+        """Name the fields that were actually populated.
+
+        Returns:
+            list[str]: Attribute names whose value is not ``None`` — in effect,
+            a record of which workflow actions produced output.
+        """
         return [k for k, v in self.__dict__.items() if v is not None]
 
 def update_ds(attr_name=None):
+    """Capture a method's returned Dataset as the extractor's current state.
+
+    Stores the result on ``self.current_ds`` (and optionally a second attribute),
+    then regenerates the output filenames so they describe what was just
+    produced rather than the previous stage — an index dataset gets an
+    index-shaped filename, not the raw extraction's.
+
+    A method returning ``None`` — as :meth:`ClimateExtractor.calc_index` does
+    when no index is configured — leaves the current state untouched. Filename
+    regeneration is logged and swallowed on failure, so a template that does not
+    fit an unusual dataset costs the filenames, not the data.
+
+    Args:
+        attr_name (str, optional): Second attribute to store the result under,
+            e.g. ``"index_ds"``, giving each stage a stable handle.
+
+    Returns:
+        Callable: A decorator for methods that return an ``xr.Dataset``.
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -92,10 +165,17 @@ def update_ds(attr_name=None):
         return wrapper
     return decorator
 def update_df(attr_name=None):
-    """Decorator to update ``self.current_df`` with the result of a method.
+    """Capture a method's returned DataFrame as the extractor's current state.
+
+    The frame counterpart of :func:`update_ds`; it stores the result on both
+    ``self.current_df`` and ``self.df`` but does not touch filenames.
 
     Args:
-        attr_name (str, optional): If provided, also store the result on ``self`` under this attribute name.
+        attr_name (str, optional): Second attribute to store the result under,
+            e.g. ``"index_df"``.
+
+    Returns:
+        Callable: A decorator for methods that return a ``pd.DataFrame``.
     """
     def decorator(func):
         @wraps(func)
@@ -180,13 +260,24 @@ class ClimateExtractor:
         # instance logger for this extractor
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
     def _gen_fn(self, *, ds: xr.Dataset = None, df: pd.DataFrame = None):
-        """Create filenames (csv, nc, zarr) using config templates and dataset metadata.
+        """Build output filenames from *data* metadata rather than from config.
 
-        Accepts either:
-        - ds : xarray.Dataset
-        - df : pandas.DataFrame (long form with columns: lat, lon, time/date, variable, value, optional source)
+        The counterpart to :meth:`_gen_fn_cfg`, used after uploading a file: the
+        provider, variables and extent are read from the data itself, because an
+        uploaded dataset need not match what the configuration describes.
 
-        Exactly one must be provided (keyword-only).
+        Args:
+            ds (xr.Dataset, optional): Dataset to describe. Keyword-only.
+            df (pd.DataFrame, optional): Long-form frame with ``lat``/``lon``,
+                ``time`` or ``date``, ``variable``, ``value`` and optionally
+                ``source`` columns. Keyword-only.
+
+        Returns:
+            ClimateExtractor: ``self``, with ``filename_csv``, ``filename_nc``
+            and ``filename_zarr`` set.
+
+        Raises:
+            ValueError: If both or neither of ``ds`` and ``df`` are given.
         """
 
         # ------------------------
@@ -309,6 +400,9 @@ class ClimateExtractor:
         outdir = Path(self.cfg.output.out_dir)
         outdir.mkdir(parents=True, exist_ok=True)
         def build(fn_template):
+            # The same placeholder set as _gen_fn_cfg, so one template works for
+            # both the configured and the data-derived path. `lat_or_lat_range`
+            # is what conf/config.yaml actually uses.
             return fn_template.format(
                 provider=provider,
                 parameter=parameter,
@@ -318,6 +412,8 @@ class ClimateExtractor:
                 end=end,
                 lat_range=lat_range,
                 lon_range=lon_range,
+                lat_or_lat_range=lat_range,
+                lon_or_lon_range=lon_range,
             )
 
         self.filename_csv = str(outdir / build(self.cfg.output.filename_csv))
@@ -325,9 +421,17 @@ class ClimateExtractor:
         self.filename_zarr = str(outdir / build(self.cfg.output.filename_zarr))
         return self
     def _gen_fn_cfg(self):
-        """Generate output filenames using configuration and extracted dataset metadata.
+        """Build output filenames from the configuration and the current dataset.
 
-        Uses settings from ``self.cfg`` and ``self.current_ds`` (if available) to build filename templates.
+        The usual path, called automatically by :func:`update_ds` after every
+        stage. The provider name, region and period come from ``cfg``; the
+        variable part comes from ``current_ds`` when one exists, so the filename
+        follows the data through the workflow — after ``calc_index()`` it names
+        the index rather than the input variables.
+
+        Returns:
+            None: ``filename_csv``, ``filename_nc`` and ``filename_zarr`` are set
+            on the instance, and ``cfg.output.out_dir`` is created.
         """
 
         cfg = self.cfg
@@ -487,7 +591,7 @@ class ClimateExtractor:
         if not hasattr(self.cfg, "varinfo") or not self.cfg.varinfo:
             self.cfg.varinfo = {v: {"units": ds[v].attrs.get("units", "unknown")}
                                 for v in ds.data_vars}
-        self._gen_fn(ds)
+        self._gen_fn(ds=ds)
         return ds
 
     # ----------------------------
@@ -519,10 +623,18 @@ class ClimateExtractor:
         df_wide = df.pivot_table(index=id_vars, columns="variable", values="value").reset_index()
         ds = df_wide.set_index(id_vars).to_xarray()
 
-        # Attach units from CSV
+        # Attach units from CSV. A blank cell reads back as NaN, which is not a
+        # units string — it must become "unknown" like an absent column, or
+        # xclim fails downstream on a float where it expects a unit.
         for var in ds.data_vars:
-            units_series = df[df["variable"] == var]["units"]
-            ds[var].attrs["units"] = units_series.iloc[0] if not units_series.empty else "unknown"
+            units_series = (
+                df[df["variable"] == var]["units"].dropna()
+                if "units" in df.columns
+                else pd.Series(dtype=object)
+            )
+            ds[var].attrs["units"] = (
+                str(units_series.iloc[0]) if not units_series.empty else "unknown"
+            )
 
         # Global source attribute
         if "source" in df.columns:
@@ -535,7 +647,7 @@ class ClimateExtractor:
             self.cfg.variables = list(ds.data_vars)
         if not hasattr(self.cfg, "varinfo") or not self.cfg.varinfo:
             self.cfg.varinfo = {v: {"units": ds[v].attrs.get("units", "unknown")} for v in ds.data_vars}
-        self._gen_fn(ds)
+        self._gen_fn(ds=ds)
         return ds
 
     # ----------------------------
@@ -591,7 +703,15 @@ class ClimateExtractor:
         return self._dask_client
 
     def close_dask(self):
-        """Shut down the cluster started by :meth:`_ensure_dask_client`, if any."""
+        """Shut down the Dask cluster this extractor started, if any.
+
+        Safe to call unconditionally: it is a no-op when no cluster was started.
+        A cluster the extractor merely reused, rather than created, is left
+        running for whoever owns it.
+
+        Returns:
+            None
+        """
         client = self._dask_client
         if client is None:
             return
@@ -715,6 +835,17 @@ class ClimateExtractor:
             ds = xr.merge(ds_vars, compat="override")
             agri.extract(**extract_kwargs)
             self.dataset_class = agri
+        else:
+            # Without this the unhandled provider leaves ds as None and fails
+            # below with a bare `TypeError: 'NoneType' is not subscriptable`,
+            # which says nothing about the actual mistake.
+            raise ValueError(
+                f"Dataset provider '{cfg.dataset}' has no extraction path in "
+                f"ClimateExtractor.extract(). Supported: {', '.join(_EXTRACTABLE)}.\n"
+                f"   ERA5 is available as climdata.ERA5, but it mirrors whole "
+                f"months to Zarr rather than extracting, so it is driven directly "
+                f"rather than through this workflow."
+            )
         for var in cfg.variables:
             ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
 
@@ -995,10 +1126,6 @@ class ClimateExtractor:
             loc_df.rename(columns=rename_mapping, inplace=True)
 
             # Generate filename
-            variables_list = df_loc[var_col].unique()
-            variables_named = [CF_TO_DWD_NAMES.get(v, v) for v in variables_list]
-            variables_str = "_".join(variables_named)
-            
             # Get dataset name from config
             dataset_name = getattr(self.cfg, 'dataset', 'unknown')
             
@@ -1021,111 +1148,6 @@ class ClimateExtractor:
 
         return str(base_dir)
 
-    def _convert_to_dwd_format(self, df: pd.DataFrame) -> tuple:
-        """Convert long-form DataFrame to DWD single-station tabular format.
-
-        DWD format characteristics:
-        - One row per date (time series)
-        - Columns: Date, Variables (Precipitation, TempMin, TempMean, TempMax, etc.)
-        - Single location (gridcell identifier from source)
-        - Tab-separated values
-        - Filename: dwd_<n_lat>x<n_lon>_<variables>_<gridcell_id>.csv
-
-        Args:
-            df (pd.DataFrame): Long-form DataFrame with columns: date/time, lat, lon, variable, value
-
-        Returns:
-            tuple: (converted_df, suggested_filename)
-            
-        Raises:
-            ValueError: If DataFrame format is incompatible or has multiple stations.
-        """
-        # Validate input DataFrame structure
-        required_cols = {'date', 'time', 'variable', 'value'}
-        df_cols_lower = {c.lower() for c in df.columns}
-        
-        # Check for time column
-        time_col = None
-        for col in df.columns:
-            if col.lower() in ('date', 'time'):
-                time_col = col
-                break
-        if time_col is None:
-            raise ValueError("DataFrame must contain 'date' or 'time' column")
-
-        # Check for variable column
-        var_col = None
-        for col in df.columns:
-            if col.lower() == 'variable':
-                var_col = col
-                break
-        if var_col is None:
-            raise ValueError("DataFrame must contain 'variable' column")
-
-        # Check for value column
-        val_col = None
-        for col in df.columns:
-            if col.lower() in ('value', 'data'):
-                val_col = col
-                break
-        if val_col is None:
-            raise ValueError("DataFrame must contain 'value' or 'data' column")
-
-        # Get location info (lat, lon, gridcell)
-        lat_col = next((c for c in df.columns if c.lower() in ('lat', 'latitude')), None)
-        lon_col = next((c for c in df.columns if c.lower() in ('lon', 'longitude')), None)
-        
-        # Get unique stations/locations
-        location_cols = [c for c in df.columns if c.lower() in ('lat', 'lon', 'latitude', 'longitude', 'gridcell', 'station_id', 'station')]
-        if location_cols:
-            n_locations = len(df.groupby(location_cols, sort=False))
-            if n_locations > 1:
-                raise ValueError(f"DWD format supports single station only, but found {n_locations} locations")
-
-        # Pivot: time x variables
-        dwd_df = df.pivot_table(
-            index=time_col,
-            columns=var_col,
-            values=val_col,
-            aggfunc='first'
-        ).reset_index()
-        
-        # Rename Date column to match DWD standard
-        dwd_df.rename(columns={time_col: 'Date'}, inplace=True)
-        
-        # Rename variables from CF names to DWD names
-        rename_mapping = {}
-        for col in dwd_df.columns:
-            if col in CF_TO_DWD_NAMES:
-                rename_mapping[col] = CF_TO_DWD_NAMES[col]
-        dwd_df.rename(columns=rename_mapping, inplace=True)
-        
-        # Add gridcell identifier if available (from source data)
-        if 'gridcell' in df.columns:
-            gridcell = df['gridcell'].iloc[0]
-        elif 'station_id' in df.columns:
-            gridcell = df['station_id'].iloc[0]
-        else:
-            gridcell = "unknown"
-
-        # Generate filename: dwd_<n_lat>x<n_lon>_<variables>_<gridcell_id>.csv
-        n_lat = df[lat_col].nunique() if lat_col else 1
-        n_lon = df[lon_col].nunique() if lon_col else 1
-        
-        # Use DWD names in filename for consistency
-        variables_list = df[var_col].unique()
-        variables_dwd = [CF_TO_DWD_NAMES.get(v, v) for v in variables_list]
-        variables = "_".join(variables_dwd)
-        
-        # Clean gridcell identifier for filename (replace : with _)
-        gridcell_safe = str(gridcell).replace(":", "_").replace("/", "_").replace(" ", "_")
-        
-        filename = f"dwd_{n_lat}x{n_lon}_{variables}_{gridcell_safe}.csv"
-        
-        self.logger.debug(f"Converted to DWD format: {n_lat}x{n_lon} grid, {dwd_df.shape[0]} time steps, {dwd_df.shape[1]-1} variables; renamed variables to DWD names: {rename_mapping}")
-
-        return dwd_df, filename
-    
     def to_nc(self, ds: Optional[xr.Dataset] = None, filename: Optional[str] = None) -> str:
         """Save an xarray Dataset to NetCDF.
 
@@ -1336,7 +1358,7 @@ class ClimateExtractor:
             crate.name = title
             crate.description = description
 
-            data_entity = crate.add_file(
+            crate.add_file(
                 str(nc_path),
                 dest_path="data.nc",
                 properties={
@@ -1621,6 +1643,16 @@ class ClimateExtractor:
                     result.dataset = self.current_ds
                     result.impute_ds = getattr(self, "impute_ds", None)
 
+                elif action == "reproject":
+                    if self.current_ds is None:
+                        raise ValueError(
+                            "Action 'reproject' requires a dataset, but no dataset is available. "
+                            "Upload or extract a dataset before regridding."
+                        )
+                    self.reproject()
+                    result.dataset = self.current_ds
+                    result.reprojected_ds = getattr(self, "reprojected_ds", None)
+
                 elif action == "to_fair":
                     if self.current_ds is None:
                         raise ValueError(
@@ -1630,7 +1662,10 @@ class ClimateExtractor:
                     result.filename = self.to_fair()
 
                 else:
-                    raise ValueError(f"Unknown action '{action}'")
+                    raise ValueError(
+                        f"Unknown action '{action}'. Supported: "
+                        + ", ".join(sorted(_WORKFLOW_ACTIONS))
+                    )
                 self.logger.info("Completed action: %s", action)
             except Exception:
                 self.logger.exception("Action '%s' failed", action)

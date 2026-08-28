@@ -22,7 +22,7 @@ rather than emitting hallucinated figures.
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -36,10 +36,31 @@ class ClimateSummary(BaseModel):
     model_config = {"extra": "allow"}
 
     def as_dict(self) -> Dict:
+        """Return the summary as a plain dict.
+
+        Returns:
+            dict: Every field, including the extras this model allows.
+        """
         return self.model_dump()
 
 
 class NarrativeAssessment(BaseModel):
+    """A written assessment together with its grounding audit.
+
+    ``grounded`` is the load-bearing field: it records whether every number in
+    ``text`` traces back to a computed statistic. A narrative that invented a
+    figure is still returned — with ``grounded`` false and the offending values
+    listed — rather than discarded, so the caller decides what to do about it.
+
+    Attributes:
+        text (str): The narrative.
+        grounded (bool): ``True`` if every number in ``text`` came from
+            ``used_statistics``.
+        ungrounded_numbers (list[str]): Numbers appearing in ``text`` with no
+            matching statistic.
+        used_statistics (dict): The statistics the narrator was given.
+    """
+
     text: str
     grounded: bool
     ungrounded_numbers: List[str] = Field(default_factory=list)
@@ -178,6 +199,20 @@ def grounding_check(text: str, summary: Dict, tol: float = 0.0) -> List[str]:
 # ===========================================================================
 
 def build_narrator_prompt(summary: Dict) -> str:
+    """Build the narrator's user prompt from a computed summary.
+
+    Each statistic is rendered with a glossary gloss explaining what it means,
+    so the model interprets the numbers rather than guessing at them. No figures
+    beyond those in ``summary`` enter the prompt — that is what makes the
+    grounding check in :func:`grounding_check` meaningful afterwards.
+
+    Args:
+        summary (dict): Computed statistics, as returned by
+            :func:`climdata.LLM.analytics.analyze`.
+
+    Returns:
+        str: The prompt text.
+    """
     lines = []
     for k, v in summary.items():
         lines.append(f"  - {k} = {v}   # {_describe_key(k)}")
