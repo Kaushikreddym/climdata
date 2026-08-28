@@ -19,9 +19,14 @@ FALLBACK_MODELS: List[str] = [
     "NorESM2-MM", "UKESM1-0-LL",
 ]
 
+# The MIP table the CMIP extraction requests (mirrors ``table_id`` in
+# conf/config.yaml). The model picker must filter on it, or it offers models
+# that only publish monthly data.
+CMIP_TABLE_ID = "day"
+
 # Catalogue queries hit the network and take several seconds; cache per process.
 _experiment_cache: Optional[List[str]] = None
-_model_cache: Dict[str, List[str]] = {}
+_model_cache: Dict[tuple, List[str]] = {}
 
 
 def get_datasets() -> List[str]:
@@ -87,23 +92,42 @@ def get_cmip_experiments() -> tuple[List[str], Optional[str]]:
     return list(experiments), None
 
 
-def get_cmip_models(experiment_id: str) -> tuple[List[str], Optional[str]]:
-    """Return ``(models, failure_reason)`` available for *experiment_id*.
+def get_cmip_models(
+    experiment_id: str,
+    variables: Optional[Sequence[str]] = None,
+) -> tuple[List[str], Optional[str]]:
+    """Return ``(models, failure_reason)`` usable for *experiment_id*.
+
+    Args:
+        experiment_id: CMIP6 experiment, e.g. ``"ssp585"``.
+        variables: Only list models that publish all of these variables at
+            ``CMIP_TABLE_ID`` frequency. ``None`` lists every model for the
+            experiment.
 
     Queries the Pangeo CMIP6 catalogue (network); on failure a static list of
     widely-available models is returned with the reason for the fallback.
+
+    Notes:
+        The variable filter is what keeps the picker honest — roughly a third
+        of the models listed for an experiment do not publish daily
+        tasmin/tasmax/pr, and selecting one of those makes the run fail.
     """
-    cached = _model_cache.get(experiment_id)
+    key = (experiment_id, tuple(variables) if variables else None)
+    cached = _model_cache.get(key)
     if cached is not None:
         return list(cached), None
     try:
         from climdata.datasets.CMIPCloud import CMIPCloud
-        models = list(CMIPCloud.get_source_ids(experiment_id))
+        models = list(CMIPCloud.get_source_ids(
+            experiment_id,
+            table_id=CMIP_TABLE_ID,
+            variables=list(variables) if variables else None,
+        ))
         if not models:
             raise ValueError(f"no models for experiment_id={experiment_id}")
     except Exception as exc:      # noqa: BLE001 — any failure means fall back
         return list(FALLBACK_MODELS), _failure_reason(exc)
-    _model_cache[experiment_id] = models
+    _model_cache[key] = models
     return list(models), None
 
 

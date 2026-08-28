@@ -161,7 +161,13 @@ class MainWindow(QMainWindow):
         self.log("Querying CMIP6 catalogue for models and experiments…")
 
         self._opt_thread = QThread(self)
-        self._opt_worker = CmipOptionsWorker(experiment)
+        # Only the Download tab knows its variables up front, so only its
+        # picker can be narrowed to models that serve all of them. The BASD
+        # and comparison tabs pick a single variable at run time; their lists
+        # stay filtered by frequency alone rather than being over-restricted
+        # to models carrying every Download variable.
+        variables = self._state.variables if slot == "download" else None
+        self._opt_worker = CmipOptionsWorker(experiment, variables)
         self._opt_worker.moveToThread(self._opt_thread)
 
         self._opt_thread.started.connect(self._opt_worker.run)
@@ -186,12 +192,14 @@ class MainWindow(QMainWindow):
 
         self._state.set_cmip(slot, experiment_id=experiment, source_id=model or "")
 
-        note = (
-            "Catalogue unreachable — showing common models/scenarios. "
-            + opts.get("reason", "")
-            if opts["fallback"] else
-            f"{len(models)} models available for {experiment}."
-        )
+        if opts["fallback"]:
+            note = ("Catalogue unreachable — showing common models/scenarios. "
+                    + opts.get("reason", ""))
+        elif slot == "download":
+            vars_txt = ", ".join(self._state.variables)
+            note = f"{len(models)} models provide daily {vars_txt} for {experiment}."
+        else:
+            note = f"{len(models)} models provide daily data for {experiment}."
         self._map.set_cmip_options(slot, experiments, experiment, models,
                                    model or "", loading=False, note=note)
         self.log(f"CMIP6 [{slot}]: {note}")
