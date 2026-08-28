@@ -41,44 +41,70 @@ def is_cmip_dataset(dataset: Optional[str]) -> bool:
     return bool(dataset) and dataset.lower() in CMIP_DATASETS
 
 
-def get_cmip_experiments() -> tuple[List[str], bool]:
-    """Return ``(experiments, is_fallback)`` for the CMIP6 catalogue.
+def _failure_reason(exc: Exception) -> str:
+    """A short, actionable description of why a catalogue query failed.
 
-    Queries the Pangeo CMIP6 catalogue (network); on any failure a static list
-    of the common scenarios is returned with ``is_fallback=True``.
+    fsspec re-raises a TLS failure as a bare ``FileNotFoundError`` naming only
+    the URL, so the real cause has to be recovered from the exception chain —
+    otherwise a broken trust store looks like a missing file.
+    """
+    chain, seen, cursor = [], set(), exc
+    while cursor is not None and id(cursor) not in seen:
+        seen.add(id(cursor))
+        chain.append(f"{type(cursor).__name__}: {cursor}")
+        cursor = cursor.__cause__ or cursor.__context__
+
+    joined = " | ".join(chain)
+    if "CERTIFICATE_VERIFY_FAILED" in joined or "SSLCertVerification" in joined:
+        return ("TLS certificate verification failed — check the 'TLS' line "
+                "logged at startup for the CA bundle in use.")
+    if any(part.startswith(("ClientConnectorError", "ConnectionError",
+                            "socket.gaierror", "gaierror")) for part in chain):
+        return "no network connection to the Pangeo catalogue."
+    if isinstance(exc, ImportError):
+        return f"intake / intake-esm unavailable ({exc})."
+    return chain[0][:200]
+
+
+def get_cmip_experiments() -> tuple[List[str], Optional[str]]:
+    """Return ``(experiments, failure_reason)`` for the CMIP6 catalogue.
+
+    Queries the Pangeo CMIP6 catalogue (network). On failure a static list of
+    the common scenarios is returned together with the reason it fell back —
+    a silent fallback would hide real problems such as a broken trust store.
     """
     global _experiment_cache
     if _experiment_cache is not None:
-        return list(_experiment_cache), False
+        return list(_experiment_cache), None
     try:
         from climdata.datasets.CMIPCloud import CMIPCloud
         experiments = list(CMIPCloud.get_experiment_ids())
         if not experiments:
-            raise ValueError("empty experiment list")
-    except Exception:
-        return list(FALLBACK_EXPERIMENTS), True
+            raise ValueError("the catalogue returned no experiments")
+    except Exception as exc:      # noqa: BLE001 — any failure means fall back
+        return list(FALLBACK_EXPERIMENTS), _failure_reason(exc)
     _experiment_cache = experiments
-    return list(experiments), False
+    return list(experiments), None
 
 
-def get_cmip_models(experiment_id: str) -> tuple[List[str], bool]:
-    """Return ``(models, is_fallback)`` available for *experiment_id*.
+def get_cmip_models(experiment_id: str) -> tuple[List[str], Optional[str]]:
+    """Return ``(models, failure_reason)`` available for *experiment_id*.
 
-    Queries the Pangeo CMIP6 catalogue (network); on any failure a static list
-    of widely-available models is returned with ``is_fallback=True``.
+    Queries the Pangeo CMIP6 catalogue (network); on failure a static list of
+    widely-available models is returned with the reason for the fallback.
     """
     cached = _model_cache.get(experiment_id)
     if cached is not None:
-        return list(cached), False
+        return list(cached), None
     try:
         from climdata.datasets.CMIPCloud import CMIPCloud
         models = list(CMIPCloud.get_source_ids(experiment_id))
         if not models:
             raise ValueError(f"no models for experiment_id={experiment_id}")
-    except Exception:
-        return list(FALLBACK_MODELS), True
+    except Exception as exc:      # noqa: BLE001 — any failure means fall back
+        return list(FALLBACK_MODELS), _failure_reason(exc)
     _model_cache[experiment_id] = models
-    return list(models), False
+    return list(models), None
 
 
 def run_pipeline(overrides: Sequence[str], seq: Optional[Sequence[str]] = None) -> Any:

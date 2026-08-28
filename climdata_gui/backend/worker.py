@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import traceback
-from typing import List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 from PySide6.QtCore import QObject, Signal, Slot
 
+from .basd import run_basd
+from .comparison import run_comparison
 from .runner import get_cmip_experiments, get_cmip_models, run_pipeline
 
 
@@ -48,6 +50,60 @@ class PipelineWorker(QObject):
         self.finished.emit(result)
 
 
+class BasdWorker(QObject):
+    """Run a bias-adjustment job off the GUI thread.
+
+    Signals:
+        finished(object): emitted with the :class:`~backend.basd.BasdResult`.
+        error(str): emitted with a traceback string on failure.
+        log(str): emitted for human-readable progress messages.
+    """
+
+    finished = Signal(object)
+    error = Signal(str)
+    log = Signal(str)
+
+    def __init__(self, params: Dict, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+        self._params = dict(params)
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            result = run_basd(log=self.log.emit, **self._params)
+        except Exception:
+            self.error.emit(traceback.format_exc())
+            return
+        self.finished.emit(result)
+
+
+class ComparisonWorker(QObject):
+    """Run a two-dataset comparison off the GUI thread.
+
+    Signals:
+        finished(object): emitted with the comparison result dict.
+        error(str): emitted with a traceback string on failure.
+        log(str): emitted for human-readable progress messages.
+    """
+
+    finished = Signal(object)
+    error = Signal(str)
+    log = Signal(str)
+
+    def __init__(self, params: Dict, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+        self._params = dict(params)
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            result = run_comparison(log=self.log.emit, **self._params)
+        except Exception:
+            self.error.emit(traceback.format_exc())
+            return
+        self.finished.emit(result)
+
+
 class CmipOptionsWorker(QObject):
     """Fetch CMIP6 experiment / model lists off the GUI thread.
 
@@ -78,17 +134,21 @@ class CmipOptionsWorker(QObject):
     @Slot()
     def run(self) -> None:
         try:
-            experiments, exp_fallback = get_cmip_experiments()
+            experiments, exp_reason = get_cmip_experiments()
             experiment = self._experiment
             if experiment not in experiments:
                 experiment = experiments[0] if experiments else "historical"
-            models, mod_fallback = get_cmip_models(experiment)
+            models, mod_reason = get_cmip_models(experiment)
         except Exception:
             self.error.emit(traceback.format_exc())
             return
+        reason = exp_reason or mod_reason
+        if reason:
+            self.log.emit(f"CMIP6 catalogue unreachable — {reason}")
         self.finished.emit({
             "experiments": experiments,
             "experiment":  experiment,
             "models":      models,
-            "fallback":    exp_fallback or mod_fallback,
+            "fallback":    bool(reason),
+            "reason":      reason or "",
         })

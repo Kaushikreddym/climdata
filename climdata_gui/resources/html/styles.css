@@ -31,6 +31,7 @@
   --logbar-h:         34px;
   --logbar-h-open:    200px;
   --dl-panel-w:       360px;
+  --wide-panel-w:     430px;
   --radius:           8px;
   --radius-sm:        6px;
   --tr:               180ms ease;
@@ -567,6 +568,19 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.6) bright
 .tb-icon-btn:hover { background: var(--bg-input-hover); color: var(--text-primary); }
 .tb-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Restart — always available, on every tab */
+.tb-restart {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 11px;
+  margin-right: 6px;
+}
+.tb-restart:hover {
+  background: rgba(252,129,129,0.14);
+  border-color: rgba(252,129,129,0.45);
+  color: #fc8181;
+}
+
 .tb-action-btn {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -725,12 +739,12 @@ body.log-open .log-panel { height: var(--logbar-h-open); }
 body.log-open .tab-panel { bottom: var(--logbar-h-open); }
 
 /* Show panels per active tab */
-body.tab-home       #panel-home,
-body.tab-basd       #panel-basd,
-body.tab-comparison #panel-comparison { display: flex; flex-direction: column; }
+body.tab-home #panel-home { display: flex; flex-direction: column; }
 
-/* Download tab: right-side drawer alongside the map */
-body.tab-download #panel-download {
+/* Map-backed tabs: right-side drawer alongside the map */
+body.tab-download   #panel-download,
+body.tab-basd       #panel-basd,
+body.tab-comparison #panel-comparison {
   display: flex;
   flex-direction: column;
   right: 0;
@@ -742,32 +756,91 @@ body.tab-download #panel-download {
   border-left: 1px solid var(--border);
   z-index: 700;
 }
-body.log-open.tab-download #panel-download { bottom: var(--logbar-h-open); }
+/* BASD & Comparison carry denser forms — give them a wider drawer */
+body.tab-basd       #panel-basd,
+body.tab-comparison #panel-comparison { width: var(--wide-panel-w); }
 
-/* Shrink inner layout to fit narrow drawer */
-body.tab-download #panel-download .panel-content {
+/* Shrink inner layout to fit the narrow drawer */
+body.map-tab .tab-panel .panel-content {
   max-width: 100%;
   padding: 0 16px;
 }
-body.tab-download #panel-download .panel-body {
+body.map-tab .tab-panel .panel-body {
   flex-direction: column;
   gap: 14px;
 }
-body.tab-download #panel-download .panel-info-box {
+body.map-tab .tab-panel .panel-info-box {
   width: 100%;
   position: static;
 }
+.panel-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
 /* Offset map so it doesn't go under the drawer */
-body.tab-download #map { right: var(--dl-panel-w); }
-body.log-open.tab-download #map { bottom: var(--logbar-h-open); }
+body.map-tab #map { right: var(--dl-panel-w); }
+body.tab-basd #map,
+body.tab-comparison #map { right: var(--wide-panel-w); }
 
-/* Hide map elements on non-download tabs */
-body:not(.tab-download) #map,
+/* The layers sidebar drives the download overlay only */
 body:not(.tab-download) .sidebar,
-body:not(.tab-download) .sidebar-toggle,
-body:not(.tab-download) .map-controls,
-body:not(.tab-download) .coord-pill { display: none; }
+body:not(.tab-download) .sidebar-toggle { display: none; }
+body.map-tab:not(.tab-download) .coord-pill { left: 12px; }
+
+/* Hide map elements on tabs that have no map */
+body:not(.map-tab) #map,
+body:not(.map-tab) .map-controls,
+body:not(.map-tab) .coord-pill { display: none; }
+
+/* ── Result blocks (BASD / Comparison) ──────────────────────────────── */
+.result-plot {
+  width: 100%;
+  display: block;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+}
+.result-body { font-size: 12px; color: var(--text-secondary); }
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+.result-table caption {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding-bottom: 5px;
+}
+.result-table th,
+.result-table td {
+  text-align: right;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.result-table th { color: var(--text-muted); font-weight: 600; }
+.result-table td:first-child,
+.result-table th:first-child { text-align: left; }
+.result-table td { color: var(--text-primary); }
+.result-file {
+  word-break: break-all;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.result-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.result-good { color: #68d391; }
+.result-bad  { color: #fc8181; }
 
 /* ── Panel shared layout ────────────────────────────────────────────── */
 .panel-content {
@@ -934,31 +1007,6 @@ body:not(.tab-download) .coord-pill { display: none; }
   color: var(--text-muted);
 }
 .aoi-status.ready { background: rgba(104,211,145,0.12); color: #68d391; }
-
-/* ── Comparison preview panel ───────────────────────────────────────── */
-.panel-preview {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-}
-.panel-preview-placeholder {
-  flex: 1;
-  background: var(--bg-card-body);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 280px;
-}
-.preview-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.preview-icon  { font-size: 36px; }
-.preview-label { font-size: 12.5px; color: var(--text-muted); text-align: center; max-width: 260px; line-height: 1.5; }
 
 /* dark date inputs in panels use same style as field-input */
 .tab-panel input[type=date] { color-scheme: dark; }

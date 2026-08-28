@@ -24,6 +24,8 @@
       <button class="tab-btn" data-tab="comparison">⚖ Comparison</button>
     </nav>
     <div class="tb-flex-gap"></div>
+    <button id="restartBtn" class="tb-icon-btn tb-restart"
+            title="Interrupt running jobs and restart">⟳ Restart</button>
     <button id="themeToggle" class="tb-icon-btn" title="Toggle theme">🌓</button>
   </div>
 
@@ -372,6 +374,19 @@ extractor.to_csv(df)</pre>
                 <select id="basd-target-dataset" class="field-select"></select>
               </div>
             </div>
+            <div id="cmip-options-basd-target" style="display:none">
+              <div class="form-row">
+                <div class="form-field form-field-wide">
+                  <label class="form-label">Model (source_id)</label>
+                  <select id="basd-target-model" class="field-select"></select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Scenario</label>
+                  <select id="basd-target-experiment" class="field-select"></select>
+                </div>
+              </div>
+              <div id="cmip-note-basd-target" class="form-note"></div>
+            </div>
             <div class="form-row">
               <div class="form-field">
                 <label class="form-label">Start</label>
@@ -390,10 +405,10 @@ extractor.to_csv(df)</pre>
               <div class="form-field form-field-wide">
                 <label class="form-label">Bias correction method</label>
                 <select id="basd-method" class="field-select">
-                  <option value="bcsd">BCSD — Bias Correction &amp; Spatial Disaggregation</option>
-                  <option value="qdm">QDM — Quantile Delta Mapping</option>
+                  <option value="qdm" selected>QDM — Quantile Delta Mapping</option>
                   <option value="dqm">DQM — Detrended Quantile Mapping</option>
-                  <option value="qm">QM — Quantile Mapping</option>
+                  <option value="qm">QM — Empirical Quantile Mapping</option>
+                  <option value="bcsd">BCSD — ISIMIP3BASD (needs scitools-iris)</option>
                 </select>
               </div>
               <div class="form-field">
@@ -433,15 +448,30 @@ extractor.to_csv(df)</pre>
             </div>
           </div>
 
+          <!-- Results (populated after a run) -->
+          <div class="form-section" id="basd-results" style="display:none">
+            <div class="form-section-title">Result</div>
+            <div id="basd-result-body" class="result-body"></div>
+          </div>
+
         </div><!-- /panel-form -->
 
-        <div class="panel-info-box">
-          <div class="info-box-icon">ℹ️</div>
-          <div class="info-box-title">About BASD</div>
-          <div class="info-box-body">
-            Bias Adjustment &amp; Statistical Downscaling corrects systematic errors in climate model projections by comparing them to a historical observational reference.
-            <br><br>
-            Output is bias-corrected data at the spatial resolution of the reference dataset.
+        <div class="panel-side">
+          <div class="panel-info-box">
+            <div class="info-box-icon">📍</div>
+            <div class="info-box-title">Area of Interest</div>
+            <div class="info-box-body">Select a <strong>point</strong> or <strong>bounding box</strong> on the map. Both the reference and the model series are extracted for that area.</div>
+            <div id="basd-aoi-status" class="aoi-status">No AOI selected</div>
+          </div>
+
+          <div class="panel-info-box">
+            <div class="info-box-icon">ℹ️</div>
+            <div class="info-box-title">About BASD</div>
+            <div class="info-box-body">
+              Bias Adjustment &amp; Statistical Downscaling corrects systematic errors in climate model projections by comparing them to a historical observational reference.
+              <br><br>
+              The model is extracted twice — over the reference period (to train the correction) and over the target period (the series being corrected).
+            </div>
           </div>
         </div>
 
@@ -474,6 +504,19 @@ extractor.to_csv(df)</pre>
                 </select>
               </div>
             </div>
+            <div id="cmip-options-cmp-a" style="display:none">
+              <div class="form-row">
+                <div class="form-field form-field-wide">
+                  <label class="form-label">Model</label>
+                  <select id="cmp-a-model" class="field-select"></select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Scenario</label>
+                  <select id="cmp-a-experiment" class="field-select"></select>
+                </div>
+              </div>
+              <div id="cmip-note-cmp-a" class="form-note"></div>
+            </div>
             <div class="form-row">
               <div class="form-field">
                 <label class="form-label">Start</label>
@@ -500,6 +543,19 @@ extractor.to_csv(df)</pre>
                 </select>
               </div>
             </div>
+            <div id="cmip-options-cmp-b" style="display:none">
+              <div class="form-row">
+                <div class="form-field form-field-wide">
+                  <label class="form-label">Model</label>
+                  <select id="cmp-b-model" class="field-select"></select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Scenario</label>
+                  <select id="cmp-b-experiment" class="field-select"></select>
+                </div>
+              </div>
+              <div id="cmip-note-cmp-b" class="form-note"></div>
+            </div>
             <div class="form-row">
               <div class="form-field">
                 <label class="form-label">Start</label>
@@ -518,12 +574,31 @@ extractor.to_csv(df)</pre>
             </div>
           </div>
 
+          <!-- Results (populated after a comparison) -->
+          <div class="form-section" id="cmp-results" style="display:none">
+            <div class="form-section-title">Result</div>
+            <img id="cmp-plot" class="result-plot" src="" alt="" style="display:none">
+            <div id="cmp-result-body" class="result-body"></div>
+          </div>
+
         </div><!-- /panel-form -->
 
-        <div class="panel-preview panel-preview-placeholder">
-          <div class="preview-placeholder">
-            <div class="preview-icon">⚖️</div>
-            <div class="preview-label">Configure both datasets and click Compare to view results.</div>
+        <div class="panel-side">
+          <div class="panel-info-box">
+            <div class="info-box-icon">📍</div>
+            <div class="info-box-title">Area of Interest</div>
+            <div class="info-box-body">Select a <strong>point</strong> or <strong>bounding box</strong> on the map. Both datasets are extracted for that area and reduced to a spatial mean.</div>
+            <div id="cmp-aoi-status" class="aoi-status">No AOI selected</div>
+          </div>
+
+          <div class="panel-info-box">
+            <div class="info-box-icon">⚖️</div>
+            <div class="info-box-title">About Comparison</div>
+            <div class="info-box-body">
+              Each selection is summarised (mean, spread, trend) and plotted as annual means and a monthly climatology.
+              <br><br>
+              When the two periods overlap, bias, RMSE, MAE and correlation are reported for the overlapping days.
+            </div>
           </div>
         </div>
 

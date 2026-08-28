@@ -33,6 +33,9 @@ class _Bridge(QObject):
     run_state_changed = Signal(bool)   # True = running
     plot_enabled      = Signal(bool)   # True = result ready
     data_dir_chosen   = Signal(str)    # path from QFileDialog
+    basd_run_state_changed       = Signal(bool)
+    comparison_run_state_changed = Signal(bool)
+    restarting                   = Signal(bool)
 
     # ── Relay signals (bubble up through MapWidget to MainWindow) ─────
     point_selected            = Signal(float, float)
@@ -41,8 +44,12 @@ class _Bridge(QObject):
     dataset_changed           = Signal(str)
     dates_changed             = Signal(str, str)   # ISO-date strings
     format_changed            = Signal(str)
-    experiment_changed        = Signal(str)        # CMIP6 experiment_id
-    model_changed             = Signal(str)        # CMIP6 source_id
+    slot_dataset_changed      = Signal(str, str)   # slot, dataset
+    experiment_changed        = Signal(str, str)   # slot, CMIP6 experiment_id
+    model_changed             = Signal(str, str)   # slot, CMIP6 source_id
+    basd_run_requested        = Signal(str)        # JSON form payload
+    comparison_run_requested  = Signal(str)        # JSON form payload
+    restart_requested         = Signal()
     run_clicked               = Signal()
     plot_clicked              = Signal()
     advanced_clicked          = Signal()
@@ -76,13 +83,29 @@ class _Bridge(QObject):
     def on_format_changed(self, fmt: str) -> None:
         self.format_changed.emit(fmt)
 
-    @Slot(str)
-    def on_experiment_changed(self, experiment_id: str) -> None:
-        self.experiment_changed.emit(experiment_id)
+    @Slot(str, str)
+    def on_slot_dataset_changed(self, slot: str, dataset: str) -> None:
+        self.slot_dataset_changed.emit(slot, dataset)
+
+    @Slot(str, str)
+    def on_experiment_changed(self, slot: str, experiment_id: str) -> None:
+        self.experiment_changed.emit(slot, experiment_id)
+
+    @Slot(str, str)
+    def on_model_changed(self, slot: str, source_id: str) -> None:
+        self.model_changed.emit(slot, source_id)
 
     @Slot(str)
-    def on_model_changed(self, source_id: str) -> None:
-        self.model_changed.emit(source_id)
+    def on_basd_run(self, payload_json: str) -> None:
+        self.basd_run_requested.emit(payload_json)
+
+    @Slot(str)
+    def on_comparison_run(self, payload_json: str) -> None:
+        self.comparison_run_requested.emit(payload_json)
+
+    @Slot()
+    def on_restart_requested(self) -> None:
+        self.restart_requested.emit()
 
     @Slot()
     def on_run_clicked(self) -> None:
@@ -116,8 +139,12 @@ class MapWidget(QWidget):
     dataset_changed           = Signal(str)
     dates_changed             = Signal(str, str)
     format_changed            = Signal(str)
-    experiment_changed        = Signal(str)
-    model_changed             = Signal(str)
+    slot_dataset_changed      = Signal(str, str)
+    experiment_changed        = Signal(str, str)
+    model_changed             = Signal(str, str)
+    basd_run_requested        = Signal(str)
+    comparison_run_requested  = Signal(str)
+    restart_requested         = Signal()
     run_clicked               = Signal()
     plot_clicked              = Signal()
     advanced_clicked          = Signal()
@@ -141,7 +168,8 @@ class MapWidget(QWidget):
         for sig_name in (
             "point_selected", "box_selected", "render_requested",
             "dataset_changed", "dates_changed", "format_changed",
-            "experiment_changed", "model_changed",
+            "slot_dataset_changed", "experiment_changed", "model_changed",
+            "basd_run_requested", "comparison_run_requested", "restart_requested",
             "run_clicked", "plot_clicked", "advanced_clicked",
             "data_dir_browse_requested", "page_ready",
         ):
@@ -208,11 +236,27 @@ class MapWidget(QWidget):
             payload["model"] = model
         self._page.runJavaScript(f"syncToolbar({json.dumps(payload)});")
 
-    def set_cmip_options(self, experiments: list, experiment: str,
+    def send_basd_run_state(self, running: bool) -> None:
+        self._bridge.basd_run_state_changed.emit(running)
+
+    def send_comparison_run_state(self, running: bool) -> None:
+        self._bridge.comparison_run_state_changed.emit(running)
+
+    def send_restarting(self, pending: bool) -> None:
+        self._bridge.restarting.emit(pending)
+
+    def set_basd_result(self, payload: dict) -> None:
+        self._page.runJavaScript(f"setBasdResult({json.dumps(payload)});")
+
+    def set_comparison_result(self, payload: dict) -> None:
+        self._page.runJavaScript(f"setComparisonResult({json.dumps(payload)});")
+
+    def set_cmip_options(self, slot: str, experiments: list, experiment: str,
                          models: list, model: str,
                          loading: bool = False, note: str = "") -> None:
-        """Fill (or put in a loading state) the CMIP6 experiment/model pickers."""
+        """Fill (or put in a loading state) one slot's CMIP6 pickers."""
         payload = {
+            "slot":        slot,
             "experiments": list(experiments),
             "experiment":  experiment or "",
             "models":      list(models),

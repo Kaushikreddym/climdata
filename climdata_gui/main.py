@@ -22,6 +22,11 @@ def _ensure_on_path() -> None:
 def main() -> int:
     _ensure_on_path()
 
+    # Before anything can open an HTTPS connection: a frozen build's OpenSSL
+    # looks for CA certificates where it was built, not where it now runs.
+    from utils.certs import configure_ca_bundle
+    configure_ca_bundle()
+
     from app import create_app
     from gui.main_window import MainWindow
 

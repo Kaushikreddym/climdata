@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import os
+import sys
 from datetime import date
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
-from PySide6.QtCore import QThread, QTimer
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QStatusBar
+from PySide6.QtCore import QProcess, QThread, QTimer
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStatusBar
 
 from backend.config_builder import build_overrides
 from backend.runner import (
@@ -16,9 +19,16 @@ from backend.runner import (
     is_cmip_dataset,
     render_variable,
 )
-from backend.worker import CmipOptionsWorker, PipelineWorker
+from backend.worker import (
+    BasdWorker,
+    CmipOptionsWorker,
+    ComparisonWorker,
+    PipelineWorker,
+)
 from gui.controls.dataset_selector import DEFAULT_DATASETS
 from models.app_state import AppState
+
+from utils.certs import ca_bundle_status
 
 from .controls.yaml_editor import YamlEditorDialog
 from .map_widget import MapWidget
@@ -39,10 +49,18 @@ class MainWindow(QMainWindow):
         self._worker: Optional[PipelineWorker] = None
         self._last_result = None
 
-        # CMIP6 catalogue lookup (model / experiment pickers)
+        # CMIP6 catalogue lookup (model / experiment pickers, one slot at a time)
         self._opt_thread: Optional[QThread] = None
         self._opt_worker: Optional[CmipOptionsWorker] = None
-        self._pending_experiment: Optional[str] = None
+        self._opt_slot: str = "download"
+        self._opt_queue: List[Tuple[str, Optional[str]]] = []
+        self._slot_datasets: Dict[str, str] = {}
+
+        # BASD / Comparison jobs
+        self._basd_thread: Optional[QThread] = None
+        self._basd_worker: Optional[BasdWorker] = None
+        self._cmp_thread: Optional[QThread] = None
+        self._cmp_worker: Optional[ComparisonWorker] = None
 
         self._map = MapWidget()
         self.setCentralWidget(self._map)
@@ -58,8 +76,12 @@ class MainWindow(QMainWindow):
         self._map.dataset_changed.connect(self._on_dataset_changed)
         self._map.dates_changed.connect(self._on_dates_changed)
         self._map.format_changed.connect(self._on_format_changed)
+        self._map.slot_dataset_changed.connect(self._on_slot_dataset_changed)
         self._map.experiment_changed.connect(self._on_experiment_changed)
         self._map.model_changed.connect(self._on_model_changed)
+        self._map.basd_run_requested.connect(self._on_basd_run)
+        self._map.comparison_run_requested.connect(self._on_comparison_run)
+        self._map.restart_requested.connect(self._on_restart_requested)
         self._map.run_clicked.connect(self._on_run_clicked)
         self._map.plot_clicked.connect(self._on_plot_clicked)
         self._map.advanced_clicked.connect(self._on_advanced_clicked)
@@ -86,40 +108,55 @@ class MainWindow(QMainWindow):
         )
         self._map.send_plot_enabled(False)
         self.log("climdata dashboard ready.")
+        self.log(f"TLS {ca_bundle_status()}")
 
     # ── Toolbar slots (JS → Python) ───────────────────────────────────
     def _on_dataset_changed(self, dataset: str) -> None:
         previous = self._state.dataset
         self._state.dataset = dataset
+        self._sync_slot_dataset("download", dataset, previous)
+
+    def _on_slot_dataset_changed(self, slot: str, dataset: str) -> None:
+        """A CMIP-capable dataset select outside the Download tab changed."""
+        previous = self._slot_datasets.get(slot)
+        self._slot_datasets[slot] = dataset
+        self._sync_slot_dataset(slot, dataset, previous)
+
+    def _sync_slot_dataset(self, slot: str, dataset: str,
+                           previous: Optional[str]) -> None:
         if is_cmip_dataset(dataset):
             # Only (re)query when switching in — avoids a catalogue hit on every
             # echo of the current selection from the web frontend.
-            if not is_cmip_dataset(previous) or not self._state.source_id:
-                self._load_cmip_options(self._state.experiment_id)
+            _, model = self._state.get_cmip(slot)
+            if not is_cmip_dataset(previous) or not model:
+                experiment, _ = self._state.get_cmip(slot)
+                self._load_cmip_options(slot, experiment)
         else:
-            self._state.experiment_id = None
-            self._state.source_id = None
+            self._state.clear_cmip(slot)
 
-    def _on_experiment_changed(self, experiment_id: str) -> None:
-        if not experiment_id or experiment_id == self._state.experiment_id:
+    def _on_experiment_changed(self, slot: str, experiment_id: str) -> None:
+        current, _ = self._state.get_cmip(slot)
+        if not experiment_id or experiment_id == current:
             return
-        self._state.experiment_id = experiment_id
+        self._state.set_cmip(slot, experiment_id=experiment_id)
         # The model list is experiment-dependent — refresh it.
-        self._load_cmip_options(experiment_id)
+        self._load_cmip_options(slot, experiment_id)
 
-    def _on_model_changed(self, source_id: str) -> None:
+    def _on_model_changed(self, slot: str, source_id: str) -> None:
         if source_id:
-            self._state.source_id = source_id
+            self._state.set_cmip(slot, source_id=source_id)
 
     # ── CMIP6 catalogue lookup ────────────────────────────────────────
-    def _load_cmip_options(self, experiment: Optional[str] = None) -> None:
-        """Fetch experiment/model lists for CMIP on a background thread."""
+    def _load_cmip_options(self, slot: str,
+                           experiment: Optional[str] = None) -> None:
+        """Fetch experiment/model lists for one slot on a background thread."""
         if self._opt_thread is not None:
-            # A lookup is in flight — remember the newest request and run it next.
-            self._pending_experiment = experiment
+            # A lookup is in flight — queue this one behind it.
+            self._opt_queue = [q for q in self._opt_queue if q[0] != slot]
+            self._opt_queue.append((slot, experiment))
             return
-        self._pending_experiment = None
-        self._map.set_cmip_options([], experiment or "", [], "",
+        self._opt_slot = slot
+        self._map.set_cmip_options(slot, [], experiment or "", [], "",
                                    loading=True, note="Loading CMIP6 catalogue…")
         self.log("Querying CMIP6 catalogue for models and experiments…")
 
@@ -137,30 +174,34 @@ class MainWindow(QMainWindow):
         self._opt_thread.start()
 
     def _on_cmip_options_ready(self, opts: dict) -> None:
+        slot        = self._opt_slot
         experiments = opts["experiments"]
         models      = opts["models"]
         experiment  = opts["experiment"]
 
-        model = self._state.source_id if self._state.source_id in models else None
+        _, current_model = self._state.get_cmip(slot)
+        model = current_model if current_model in models else None
         if model is None:
             model = models[0] if models else None
 
-        self._state.experiment_id = experiment
-        self._state.source_id = model
+        self._state.set_cmip(slot, experiment_id=experiment, source_id=model or "")
 
         note = (
-            "Catalogue unavailable — showing common models/scenarios."
+            "Catalogue unreachable — showing common models/scenarios. "
+            + opts.get("reason", "")
             if opts["fallback"] else
             f"{len(models)} models available for {experiment}."
         )
-        self._map.set_cmip_options(experiments, experiment, models, model or "",
-                                   loading=False, note=note)
-        self.log(f"CMIP6: {note}")
+        self._map.set_cmip_options(slot, experiments, experiment, models,
+                                   model or "", loading=False, note=note)
+        self.log(f"CMIP6 [{slot}]: {note}")
 
     def _on_cmip_options_error(self, tb: str) -> None:
+        slot = self._opt_slot
+        experiment, _ = self._state.get_cmip(slot)
         self.log("✗ Could not load the CMIP6 catalogue:")
         self.log(tb)
-        self._map.set_cmip_options([], self._state.experiment_id or "", [], "",
+        self._map.set_cmip_options(slot, [], experiment or "", [], "",
                                    loading=False,
                                    note="Catalogue lookup failed — see log.")
 
@@ -171,9 +212,10 @@ class MainWindow(QMainWindow):
         if self._opt_thread is not None:
             self._opt_thread.deleteLater()
             self._opt_thread = None
-        if self._pending_experiment is not None:
-            pending, self._pending_experiment = self._pending_experiment, None
-            QTimer.singleShot(0, lambda e=pending: self._load_cmip_options(e))
+        if self._opt_queue:
+            slot, experiment = self._opt_queue.pop(0)
+            QTimer.singleShot(
+                0, lambda s=slot, e=experiment: self._load_cmip_options(s, e))
 
     def _on_dates_changed(self, start_str: str, end_str: str) -> None:
         try:
@@ -337,16 +379,239 @@ class MainWindow(QMainWindow):
                 model=self._state.source_id or "",
             )
             if is_cmip_dataset(self._state.dataset):
-                self._load_cmip_options(self._state.experiment_id)
+                self._load_cmip_options("download", self._state.experiment_id)
             self.log(f"Advanced config saved ({len(self._state.extra_overrides)} extra overrides).")
+
+    # ── BASD tab ──────────────────────────────────────────────────────
+    def _on_basd_run(self, payload_json: str) -> None:
+        if self._basd_thread is not None:
+            self.log("BASD run already in progress.")
+            return
+        try:
+            form = json.loads(payload_json)
+        except ValueError as exc:
+            self.log(f"✗ Could not read the BASD form: {exc}")
+            return
+
+        aoi = self._aoi_or_warning("BASD")
+        if aoi is None:
+            return
+        try:
+            params = dict(
+                ref_dataset=form["ref_dataset"],
+                ref_start=date.fromisoformat(form["ref_start"]),
+                ref_end=date.fromisoformat(form["ref_end"]),
+                target_dataset=form["target_dataset"],
+                target_start=date.fromisoformat(form["target_start"]),
+                target_end=date.fromisoformat(form["target_end"]),
+                method=form["method"],
+                variable=form["variable"],
+                out_format=form.get("out_format", "NetCDF"),
+                experiment_id=form.get("experiment_id") or None,
+                source_id=form.get("source_id") or None,
+                data_dir=self._state.data_dir,
+                out_dir=self._state.data_dir,
+                **aoi,
+            )
+        except (KeyError, ValueError) as exc:
+            self.log(f"✗ Invalid BASD settings: {exc}")
+            return
+
+        self._basd_thread = QThread(self)
+        self._basd_worker = BasdWorker(params)
+        self._basd_worker.moveToThread(self._basd_thread)
+
+        self._basd_thread.started.connect(self._basd_worker.run)
+        self._basd_worker.log.connect(self.log)
+        self._basd_worker.finished.connect(self._on_basd_finished)
+        self._basd_worker.error.connect(self._on_basd_error)
+        self._basd_worker.finished.connect(self._basd_thread.quit)
+        self._basd_worker.error.connect(self._basd_thread.quit)
+        self._basd_thread.finished.connect(self._cleanup_basd_worker)
+
+        self._map.send_basd_run_state(True)
+        self.log("▶ Starting bias adjustment…")
+        self._basd_thread.start()
+
+    def _on_basd_finished(self, result) -> None:
+        self.log("✓ BASD completed.")
+        if result.filename:
+            self.log(f"Output: {result.filename}")
+        self._last_result = result           # enables the Plot button's overlay
+        self._map.send_plot_enabled(result.dataset is not None)
+        self._map.set_basd_result({
+            "method":   result.method,
+            "variable": result.variable,
+            "filename": result.filename,
+            "metrics":  result.metrics,
+            "notes":    result.notes,
+        })
+
+    def _on_basd_error(self, tb: str) -> None:
+        self.log("✗ BASD failed:")
+        self.log(tb)
+
+    def _cleanup_basd_worker(self) -> None:
+        if self._basd_worker is not None:
+            self._basd_worker.deleteLater()
+            self._basd_worker = None
+        if self._basd_thread is not None:
+            self._basd_thread.deleteLater()
+            self._basd_thread = None
+        self._map.send_basd_run_state(False)
+
+    # ── Comparison tab ────────────────────────────────────────────────
+    def _on_comparison_run(self, payload_json: str) -> None:
+        if self._cmp_thread is not None:
+            self.log("Comparison already in progress.")
+            return
+        try:
+            form = json.loads(payload_json)
+        except ValueError as exc:
+            self.log(f"✗ Could not read the comparison form: {exc}")
+            return
+
+        aoi = self._aoi_or_warning("Comparison")
+        if aoi is None:
+            return
+        try:
+            params = dict(
+                a_dataset=form["a_dataset"], a_variable=form["a_variable"],
+                a_start=date.fromisoformat(form["a_start"]),
+                a_end=date.fromisoformat(form["a_end"]),
+                b_dataset=form["b_dataset"], b_variable=form["b_variable"],
+                b_start=date.fromisoformat(form["b_start"]),
+                b_end=date.fromisoformat(form["b_end"]),
+                a_experiment=form.get("a_experiment") or None,
+                a_source=form.get("a_source") or None,
+                b_experiment=form.get("b_experiment") or None,
+                b_source=form.get("b_source") or None,
+                data_dir=self._state.data_dir,
+                **aoi,
+            )
+        except (KeyError, ValueError) as exc:
+            self.log(f"✗ Invalid comparison settings: {exc}")
+            return
+
+        self._cmp_thread = QThread(self)
+        self._cmp_worker = ComparisonWorker(params)
+        self._cmp_worker.moveToThread(self._cmp_thread)
+
+        self._cmp_thread.started.connect(self._cmp_worker.run)
+        self._cmp_worker.log.connect(self.log)
+        self._cmp_worker.finished.connect(self._on_comparison_finished)
+        self._cmp_worker.error.connect(self._on_comparison_error)
+        self._cmp_worker.finished.connect(self._cmp_thread.quit)
+        self._cmp_worker.error.connect(self._cmp_thread.quit)
+        self._cmp_thread.finished.connect(self._cleanup_cmp_worker)
+
+        self._map.send_comparison_run_state(True)
+        self.log("▶ Starting comparison…")
+        self._cmp_thread.start()
+
+    def _on_comparison_finished(self, result: dict) -> None:
+        self.log("✓ Comparison completed.")
+        self._map.set_comparison_result(result)
+
+    def _on_comparison_error(self, tb: str) -> None:
+        self.log("✗ Comparison failed:")
+        self.log(tb)
+
+    def _cleanup_cmp_worker(self) -> None:
+        if self._cmp_worker is not None:
+            self._cmp_worker.deleteLater()
+            self._cmp_worker = None
+        if self._cmp_thread is not None:
+            self._cmp_thread.deleteLater()
+            self._cmp_thread = None
+        self._map.send_comparison_run_state(False)
+
+    # ── Shared helpers ────────────────────────────────────────────────
+    def _aoi_or_warning(self, what: str) -> Optional[dict]:
+        """Return the current AOI as kwargs, or None (with a log line) if unset."""
+        if self._state.box is not None:
+            return {"lat": None, "lon": None, "box": self._state.box}
+        if self._state.lat is not None and self._state.lon is not None:
+            return {"lat": self._state.lat, "lon": self._state.lon, "box": None}
+        self.log(f"Cannot run {what}: select a point or bounding box on the map first.")
+        return None
+
+    # ── Restart ───────────────────────────────────────────────────────
+    def _on_restart_requested(self) -> None:
+        # Defer out of the QWebChannel callback before opening a modal dialog
+        QTimer.singleShot(0, self._confirm_restart)
+
+    def _busy_jobs(self) -> List[str]:
+        """Names of the background jobs currently running."""
+        running = []
+        if self._thread is not None:
+            running.append("download pipeline")
+        if self._basd_thread is not None:
+            running.append("BASD run")
+        if self._cmp_thread is not None:
+            running.append("comparison")
+        if self._opt_thread is not None:
+            running.append("CMIP6 catalogue lookup")
+        return running
+
+    def _confirm_restart(self) -> None:
+        busy = self._busy_jobs()
+        detail = (f"This will interrupt: {', '.join(busy)}.\n\n"
+                  if busy else "")
+        answer = QMessageBox.question(
+            self,
+            "Restart climdata",
+            f"Restart the application?\n\n{detail}"
+            "Loaded datasets, results and the log are discarded. "
+            "Files already written to disk are kept.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            self.log("Restart cancelled.")
+            return
+        self._restart_application()
+
+    def _restart_application(self) -> None:
+        """Start a fresh instance and kill this one — jobs and all.
+
+        A climdata extraction blocks inside network/IO calls that no Qt thread
+        can be asked to abandon, so an in-process "interrupt" cannot be honest.
+        Replacing the process is the only way to guarantee the running work
+        actually stops — the same bargain a Jupyter kernel restart makes.
+        """
+        self._map.send_restarting(True)
+        self.log("⟳ Restarting — interrupting all running jobs…")
+
+        if getattr(sys, "frozen", False):     # PyInstaller bundle
+            program, args = sys.executable, sys.argv[1:]
+        else:
+            program, args = sys.executable, list(sys.argv)
+
+        started = QProcess.startDetached(program, args, os.getcwd())
+        if not started:
+            self.log("✗ Could not start a new instance — staying open.")
+            self._map.send_restarting(False)
+            return
+
+        # Give the frontend a moment to paint the "Restarting…" state, then go.
+        QTimer.singleShot(150, self._exit_now)
+
+    def _exit_now(self) -> None:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # os._exit skips interpreter teardown on purpose: a worker thread parked
+        # in a socket read would otherwise keep this process alive.
+        os._exit(0)
 
     # ── Shutdown ──────────────────────────────────────────────────────
     def closeEvent(self, event) -> None:
-        """Let an in-flight catalogue lookup unwind before the window dies."""
-        if self._opt_thread is not None:
-            self._pending_experiment = None
-            self._opt_thread.quit()
-            self._opt_thread.wait(3000)
+        """Let in-flight background jobs unwind before the window dies."""
+        self._opt_queue.clear()
+        for thread in (self._opt_thread, self._basd_thread, self._cmp_thread):
+            if thread is not None:
+                thread.quit()
+                thread.wait(3000)
         super().closeEvent(event)
 
     # ── Data directory ────────────────────────────────────────────────

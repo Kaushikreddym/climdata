@@ -117,6 +117,9 @@ function initSidebar() {
 /* ================================================================== */
 /*  Tab navigation                                                     */
 /* ================================================================== */
+/* Tabs that show the map and share the area-of-interest selection. */
+const MAP_TABS = ['download', 'basd', 'comparison'];
+
 function initTabs() {
   document.body.classList.add('tab-home');
 
@@ -128,11 +131,14 @@ function initTabs() {
       btn.classList.add('active');
       // Swap body tab class
       document.body.className = document.body.className
-        .replace(/\btab-\S+/g, '').replace(/\s+/g, ' ').trim();
+        .replace(/\btab-\S+/g, '').replace(/\bmap-tab\b/g, '')
+        .replace(/\s+/g, ' ').trim();
       document.body.classList.add('tab-' + tab);
-      // Re-render map when switching back to Home (it may have been hidden)
-      if (tab === 'download' && state.map) {
-        setTimeout(() => state.map.invalidateSize(), 50);
+      // The map-backed tabs share one map, AOI and coordinate readout
+      if (MAP_TABS.includes(tab)) {
+        document.body.classList.add('map-tab');
+        // The map was hidden (or a different width) — recompute its size
+        if (state.map) setTimeout(() => state.map.invalidateSize(), 50);
       }
     });
   });
@@ -146,6 +152,23 @@ function initTheme() {
     const html = document.documentElement;
     html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
   });
+}
+
+/* ================================================================== */
+/*  Restart — interrupt every running job and start a fresh process    */
+/* ================================================================== */
+function initRestart() {
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    if (state.bridge) state.bridge.on_restart_requested();
+  });
+}
+
+/** Called by Python once the user confirms — the window is about to go. */
+function setRestarting(pending) {
+  const btn = document.getElementById('restartBtn');
+  if (!btn) return;
+  btn.disabled    = pending;
+  btn.textContent = pending ? '⟳ Restarting…' : '⟳ Restart';
 }
 
 /* ================================================================== */
@@ -184,6 +207,7 @@ function initControls() {
     if (state.boxRect) { state.map.removeLayer(state.boxRect); state.boxRect = null; }
     if (state.marker)  { state.map.removeLayer(state.marker);  state.marker  = null; }
     setCoordText('Click map to select a point');
+    updateAoiStatus('No AOI selected');
   });
 }
 
@@ -382,11 +406,14 @@ function setCoordText(text) {
   document.getElementById('coord-display').textContent = text;
 }
 
+/** Mirror the current AOI into every tab that consumes it. */
 function updateAoiStatus(text) {
-  const el = document.getElementById('dl-aoi-status');
-  if (!el) return;
-  el.textContent = text;
-  el.classList.toggle('ready', !!text && text !== 'No AOI selected');
+  ['dl-aoi-status', 'basd-aoi-status', 'cmp-aoi-status'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('ready', !!text && text !== 'No AOI selected');
+  });
 }
 
 function setRenderLoading(isLoading) {
@@ -403,16 +430,8 @@ function setRenderLoading(isLoading) {
 /* ================================================================== */
 function initToolbar() {
   document.getElementById('tb-dataset').addEventListener('change', e => {
-    updateCmipVisibility(e.target.value);
+    updateCmipVisibility('download', e.target.value);
     if (state.bridge) state.bridge.on_dataset_changed(e.target.value);
-  });
-
-  document.getElementById('tb-experiment').addEventListener('change', e => {
-    if (state.bridge) state.bridge.on_experiment_changed(e.target.value);
-  });
-
-  document.getElementById('tb-model').addEventListener('change', e => {
-    if (state.bridge) state.bridge.on_model_changed(e.target.value);
   });
 
   function sendDates() {
@@ -442,6 +461,229 @@ function initToolbar() {
   document.getElementById('tb-plot-btn').addEventListener('click', () => {
     if (state.bridge) state.bridge.on_plot_clicked();
   });
+}
+
+/* ================================================================== */
+/*  BASD panel                                                         */
+/* ================================================================== */
+function initBasd() {
+  document.getElementById('basd-out-dir-btn').addEventListener('click', () => {
+    if (state.bridge) state.bridge.on_data_dir_browse();
+  });
+
+  document.getElementById('basd-run-btn').addEventListener('click', () => {
+    if (!state.bridge) return;
+    const cmip = cmipSelection('basd-target');
+    state.bridge.on_basd_run(JSON.stringify({
+      ref_dataset:    document.getElementById('basd-ref-dataset').value,
+      ref_start:      document.getElementById('basd-ref-start').value,
+      ref_end:        document.getElementById('basd-ref-end').value,
+      target_dataset: document.getElementById('basd-target-dataset').value,
+      target_start:   document.getElementById('basd-target-start').value,
+      target_end:     document.getElementById('basd-target-end').value,
+      method:         document.getElementById('basd-method').value,
+      variable:       document.getElementById('basd-variable').value,
+      out_format:     document.getElementById('basd-format').value,
+      experiment_id:  cmip.experiment,
+      source_id:      cmip.model,
+    }));
+  });
+}
+
+function setBasdRunState(running) {
+  const btn = document.getElementById('basd-run-btn');
+  if (!btn) return;
+  btn.disabled    = running;
+  btn.textContent = running ? '⏳ Running…' : '▶ Run BASD';
+  btn.classList.toggle('running', running);
+}
+
+/**
+ * Show a finished BASD run  ← called by Python.
+ * payload = { method, variable, filename, metrics:{before,after}, notes:[] }
+ */
+function setBasdResult(payload) {
+  const box  = document.getElementById('basd-results');
+  const body = document.getElementById('basd-result-body');
+  if (!box || !body) return;
+  body.innerHTML = '';
+
+  const m = payload.metrics || {};
+  if (m.before && m.after) {
+    body.appendChild(metricsTable(
+      'Validation over the reference period',
+      ['Metric', 'Raw model', 'Corrected'],
+      [
+        ['Bias',        m.before.model_bias, m.after.model_bias, 'abs'],
+        ['RMSE',        m.before.rmse,       m.after.rmse,       'abs'],
+        ['MAE',         m.before.mae,        m.after.mae,        'abs'],
+        ['Correlation', m.before.correlation, m.after.correlation, 'high'],
+      ]));
+  }
+
+  const summary = document.createElement('div');
+  summary.innerHTML =
+    `<strong>${escapeHtml(String(payload.method || '').toUpperCase())}</strong> ` +
+    `applied to <strong>${escapeHtml(payload.variable || '')}</strong>.`;
+  body.appendChild(summary);
+
+  if (payload.filename) {
+    const f = document.createElement('div');
+    f.className = 'result-file';
+    f.textContent = '💾 ' + payload.filename;
+    body.appendChild(f);
+  }
+  (payload.notes || []).forEach(text => {
+    const n = document.createElement('div');
+    n.className = 'result-note';
+    n.textContent = '• ' + text;
+    body.appendChild(n);
+  });
+
+  box.style.display = '';
+}
+
+/* ================================================================== */
+/*  Comparison panel                                                   */
+/* ================================================================== */
+function initComparison() {
+  document.getElementById('cmp-run-btn').addEventListener('click', () => {
+    if (!state.bridge) return;
+    const a = cmipSelection('cmp-a');
+    const b = cmipSelection('cmp-b');
+    state.bridge.on_comparison_run(JSON.stringify({
+      a_dataset:  document.getElementById('cmp-a-dataset').value,
+      a_variable: document.getElementById('cmp-a-var').value,
+      a_start:    document.getElementById('cmp-a-start').value,
+      a_end:      document.getElementById('cmp-a-end').value,
+      b_dataset:  document.getElementById('cmp-b-dataset').value,
+      b_variable: document.getElementById('cmp-b-var').value,
+      b_start:    document.getElementById('cmp-b-start').value,
+      b_end:      document.getElementById('cmp-b-end').value,
+      a_experiment: a.experiment, a_source: a.model,
+      b_experiment: b.experiment, b_source: b.model,
+    }));
+  });
+}
+
+function setComparisonRunState(running) {
+  const btn = document.getElementById('cmp-run-btn');
+  if (!btn) return;
+  btn.disabled    = running;
+  btn.textContent = running ? '⏳ Comparing…' : '📊 Compare';
+  btn.classList.toggle('running', running);
+}
+
+/**
+ * Show a finished comparison  ← called by Python.
+ * payload = { a:{label,stats}, b:{label,stats}, overlap, difference, units, plot_b64 }
+ */
+function setComparisonResult(payload) {
+  const box  = document.getElementById('cmp-results');
+  const body = document.getElementById('cmp-result-body');
+  const img  = document.getElementById('cmp-plot');
+  if (!box || !body) return;
+  body.innerHTML = '';
+
+  if (img) {
+    if (payload.plot_b64) {
+      img.src = 'data:image/png;base64,' + payload.plot_b64;
+      img.style.display = 'block';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+    }
+  }
+
+  const a = payload.a || {}, b = payload.b || {};
+  const sa = a.stats || {}, sb = b.stats || {};
+  body.appendChild(metricsTable(
+    'Summary  [' + (payload.units || '—') + ']',
+    ['', a.label || 'A', b.label || 'B'],
+    [
+      ['Mean',           sa.mean, sb.mean],
+      ['Std dev',        sa.std,  sb.std],
+      ['Min',            sa.min,  sb.min],
+      ['Max',            sa.max,  sb.max],
+      ['Trend / decade', sa.trend_per_decade, sb.trend_per_decade],
+      ['Period',         sa.start + ' → ' + sa.end, sb.start + ' → ' + sb.end],
+    ]));
+
+  if (payload.difference !== null && payload.difference !== undefined) {
+    const d = document.createElement('div');
+    d.innerHTML = `Mean difference (A − B): <strong>${payload.difference}` +
+                  `${payload.units ? ' ' + escapeHtml(payload.units) : ''}</strong>`;
+    body.appendChild(d);
+  }
+
+  if (payload.overlap) {
+    const o = payload.overlap;
+    body.appendChild(metricsTable(
+      `Overlap  ${o.start} → ${o.end}  (${o.n_days} steps)`,
+      ['Metric', 'A vs B'],
+      [['Bias', o.bias], ['RMSE', o.rmse], ['MAE', o.mae],
+       ['Correlation', o.correlation]]));
+  } else {
+    const n = document.createElement('div');
+    n.className = 'result-note';
+    n.textContent = 'The two periods do not overlap — no paired metrics.';
+    body.appendChild(n);
+  }
+
+  box.style.display = '';
+}
+
+/* ── Small result helpers ────────────────────────────────────────── */
+
+/**
+ * Build a table. Each row is [label, ...values]; a trailing 'abs' or 'high'
+ * marks which of two numeric columns is the better one, so an improvement is
+ * visible at a glance.
+ */
+function metricsTable(caption, headers, rows) {
+  const table = document.createElement('table');
+  table.className = 'result-table';
+
+  const cap = document.createElement('caption');
+  cap.textContent = caption;
+  table.appendChild(cap);
+
+  const thead = document.createElement('tr');
+  headers.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    thead.appendChild(th);
+  });
+  table.appendChild(thead);
+
+  rows.forEach(row => {
+    const better = (row.length === headers.length + 1) ? row[row.length - 1] : null;
+    const cells  = better ? row.slice(0, -1) : row;
+    const tr = document.createElement('tr');
+    cells.forEach((value, i) => {
+      const td = document.createElement('td');
+      td.textContent = (value === null || value === undefined || value === '')
+        ? '—' : value;
+      if (better && i === 2) {
+        const prev = Number(cells[1]), cur = Number(value);
+        // Identical values are neither an improvement nor a regression
+        if (isFinite(prev) && isFinite(cur) && prev !== cur) {
+          const improved = better === 'high' ? cur > prev
+                                             : Math.abs(cur) < Math.abs(prev);
+          td.classList.add(improved ? 'result-good' : 'result-bad');
+        }
+      }
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  });
+  return table;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 /* ================================================================== */
@@ -504,11 +746,22 @@ function setPlotEnabled(enabled) {
 }
 
 function setDataDir(path) {
-  const el = document.getElementById('tb-data-dir-display');
-  if (!el) return;
-  el.textContent = path || 'default';
-  el.title = path || 'Default from config';
+  ['tb-data-dir-display', 'basd-out-dir-display'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = path || 'default';
+    el.title = path || 'Default from config';
+  });
 }
+
+/* Opening defaults: an observational reference against a model, so both the
+   BASD and Comparison tabs start on a combination that makes sense. */
+const DATASET_DEFAULTS = {
+  'basd-ref-dataset':    'mswx',
+  'basd-target-dataset': 'cmip',
+  'cmp-a-dataset':       'mswx',
+  'cmp-b-dataset':       'cmip',
+};
 
 function populateDatasets(datasets) {
   const selIds = ['tb-dataset', 'basd-ref-dataset', 'basd-target-dataset', 'cmp-a-dataset', 'cmp-b-dataset'];
@@ -522,21 +775,51 @@ function populateDatasets(datasets) {
       opt.value = name; opt.textContent = name;
       sel.appendChild(opt);
     });
-    if (cur && datasets.includes(cur)) sel.value = cur;
+    const preferred = DATASET_DEFAULTS[id];
+    if (cur && datasets.includes(cur))            sel.value = cur;
+    else if (preferred && datasets.includes(preferred)) sel.value = preferred;
   });
 }
 
 /* ── CMIP6 model / experiment pickers ───────────────────────────── */
+
+/* Every place a CMIP-driven dataset can be chosen. Python addresses these by
+   slot name, so the same catalogue plumbing serves all four. */
+const CMIP_SLOTS = {
+  'download':    { dataset: 'tb-dataset',          section: 'cmip-options',
+                   experiment: 'tb-experiment',    model: 'tb-model',
+                   note: 'cmip-options-note' },
+  'basd-target': { dataset: 'basd-target-dataset', section: 'cmip-options-basd-target',
+                   experiment: 'basd-target-experiment', model: 'basd-target-model',
+                   note: 'cmip-note-basd-target' },
+  'cmp-a':       { dataset: 'cmp-a-dataset',       section: 'cmip-options-cmp-a',
+                   experiment: 'cmp-a-experiment', model: 'cmp-a-model',
+                   note: 'cmip-note-cmp-a' },
+  'cmp-b':       { dataset: 'cmp-b-dataset',       section: 'cmip-options-cmp-b',
+                   experiment: 'cmp-b-experiment', model: 'cmp-b-model',
+                   note: 'cmip-note-cmp-b' },
+};
 
 /** True when *name* is a dataset configured by a CMIP6 model + experiment. */
 function isCmipDataset(name) {
   return !!name && state.cmipDatasets.includes(String(name).toLowerCase());
 }
 
-/** Show the model/experiment section only for CMIP-driven datasets. */
-function updateCmipVisibility(dataset) {
-  const section = document.getElementById('cmip-options');
+/** Show one slot's model/experiment section only for CMIP-driven datasets. */
+function updateCmipVisibility(slot, dataset) {
+  const spec = CMIP_SLOTS[slot];
+  if (!spec) return;
+  if (dataset === undefined) {
+    const ds = document.getElementById(spec.dataset);
+    dataset = ds ? ds.value : '';
+  }
+  const section = document.getElementById(spec.section);
   if (section) section.style.display = isCmipDataset(dataset) ? '' : 'none';
+}
+
+/** Refresh visibility for every slot (after datasets are populated). */
+function updateAllCmipVisibility() {
+  Object.keys(CMIP_SLOTS).forEach(slot => updateCmipVisibility(slot));
 }
 
 /** Fill a <select> with *values*, keeping *selected* if present. */
@@ -554,19 +837,21 @@ function fillSelect(id, values, selected) {
 }
 
 /**
- * Populate the CMIP6 pickers  ← called by Python.
- * payload = { experiments, experiment, models, model, loading, note }
+ * Populate one slot's CMIP6 pickers  ← called by Python.
+ * payload = { slot, experiments, experiment, models, model, loading, note }
  */
 function setCmipOptions(payload) {
-  const note = document.getElementById('cmip-options-note');
+  const spec = CMIP_SLOTS[payload.slot || 'download'];
+  if (!spec) return;
+  const note = document.getElementById(spec.note);
   if (payload.loading) {
-    ['tb-experiment', 'tb-model'].forEach(id => {
+    [spec.experiment, spec.model].forEach(id => {
       const sel = document.getElementById(id);
       if (sel) sel.disabled = true;
     });
   } else {
-    fillSelect('tb-experiment', payload.experiments || [], payload.experiment);
-    fillSelect('tb-model',      payload.models      || [], payload.model);
+    fillSelect(spec.experiment, payload.experiments || [], payload.experiment);
+    fillSelect(spec.model,      payload.models      || [], payload.model);
   }
   if (note) {
     note.textContent = payload.note || '';
@@ -574,11 +859,44 @@ function setCmipOptions(payload) {
   }
 }
 
+/** Current model/experiment for a slot, or empty strings when hidden. */
+function cmipSelection(slot) {
+  const spec = CMIP_SLOTS[slot];
+  const ds   = document.getElementById(spec.dataset);
+  if (!ds || !isCmipDataset(ds.value)) return { experiment: '', model: '' };
+  const exp = document.getElementById(spec.experiment);
+  const mod = document.getElementById(spec.model);
+  return { experiment: exp ? exp.value : '', model: mod ? mod.value : '' };
+}
+
+/** Wire the dataset / experiment / model selects of every slot. */
+function initCmipSlots() {
+  Object.entries(CMIP_SLOTS).forEach(([slot, spec]) => {
+    const ds = document.getElementById(spec.dataset);
+    if (ds && slot !== 'download') {
+      // The download dataset select is handled in initToolbar (it also drives
+      // the pipeline's dataset), the rest only steer their own pickers.
+      ds.addEventListener('change', e => {
+        updateCmipVisibility(slot, e.target.value);
+        if (state.bridge) state.bridge.on_slot_dataset_changed(slot, e.target.value);
+      });
+    }
+    const exp = document.getElementById(spec.experiment);
+    if (exp) exp.addEventListener('change', e => {
+      if (state.bridge) state.bridge.on_experiment_changed(slot, e.target.value);
+    });
+    const mod = document.getElementById(spec.model);
+    if (mod) mod.addEventListener('change', e => {
+      if (state.bridge) state.bridge.on_model_changed(slot, e.target.value);
+    });
+  });
+}
+
 function syncToolbar(payload) {
   if (payload.dataset) {
     const sel = document.getElementById('tb-dataset');
     if (sel && sel.querySelector(`option[value="${payload.dataset}"]`)) sel.value = payload.dataset;
-    updateCmipVisibility(payload.dataset);
+    updateCmipVisibility('download', payload.dataset);
   }
   if (payload.start) document.getElementById('tb-start').value = payload.start;
   if (payload.end)   document.getElementById('tb-end').value   = payload.end;
@@ -599,11 +917,18 @@ function onDashboardReady(payload) {
   }
   populateDatasets(payload.datasets || []);
   syncToolbar(payload);
-  updateCmipVisibility(document.getElementById('tb-dataset').value);
-  // Confirm the actual displayed value back to Python so AppState stays in sync
-  // even if this call races with an in-flight on_dataset_changed message.
+  updateAllCmipVisibility();
+  // Confirm the actual displayed values back to Python so AppState stays in
+  // sync even if this call races with an in-flight change message.
   const sel = document.getElementById('tb-dataset');
   if (sel && state.bridge) state.bridge.on_dataset_changed(sel.value);
+  if (state.bridge) {
+    Object.entries(CMIP_SLOTS).forEach(([slot, spec]) => {
+      if (slot === 'download') return;
+      const ds = document.getElementById(spec.dataset);
+      if (ds) state.bridge.on_slot_dataset_changed(slot, ds.value);
+    });
+  }
 }
 
 /* ================================================================== */
@@ -620,6 +945,9 @@ function initBridge() {
       state.bridge.run_state_changed.connect(setRunState);
       state.bridge.plot_enabled.connect(setPlotEnabled);
       state.bridge.data_dir_chosen.connect(setDataDir);
+      state.bridge.basd_run_state_changed.connect(setBasdRunState);
+      state.bridge.comparison_run_state_changed.connect(setComparisonRunState);
+      state.bridge.restarting.connect(setRestarting);
 
       /* Notify Python that the page is ready (deferred on Python side) */
       state.bridge.on_page_ready();
@@ -637,11 +965,15 @@ function initBridge() {
   initTabs();
   initSidebar();
   initTheme();
+  initRestart();
   initBasemap();
   initControls();
   initOverlayControls();
   initMapEvents();
   initToolbar();
+  initCmipSlots();
+  initBasd();
+  initComparison();
   initLog();
   initBridge();
 })();

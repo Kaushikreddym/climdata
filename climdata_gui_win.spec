@@ -13,7 +13,7 @@
 
 import os
 
-from PyInstaller.utils.hooks import collect_all, collect_submodules
+from PyInstaller.utils.hooks import collect_all, collect_data_files, collect_submodules
 
 block_cipher = None
 
@@ -91,7 +91,8 @@ a = Analysis(
 
         # QSS theme loaded by app.py via resource_path("gui/styles/theme.qss")
         ('climdata_gui/gui/styles',  'gui/styles'),
-    ] + hydra_datas + omegaconf_datas + mpl_datas
+    ] + collect_data_files('certifi')   # CA bundle — see utils/certs.py
+      + hydra_datas + omegaconf_datas + mpl_datas
       + cartopy_datas + pyproj_datas + xclim_datas + climdata_datas
       + google_datas + googleauth_datas + googleoauth_datas
       + intake_datas + intakeesm_datas
@@ -161,6 +162,8 @@ a = Analysis(
         *collect_submodules('seaborn'),
         *collect_submodules('sklearn'),
         *collect_submodules('statsmodels'),
+        *collect_submodules('xsdba'),          # BASD tab: QDM / DQM / QM
+        'certifi',                             # TLS trust store (utils/certs.py)
         *collect_submodules('pyarrow'),
 
     ] + hydra_hidden + omegaconf_hidden + mpl_hidden
