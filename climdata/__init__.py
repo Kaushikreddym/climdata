@@ -29,7 +29,7 @@ exported for direct use when the workflow wrapper is more than you need.
 
 __author__ = """Kaushik Muduchuru"""
 __email__ = "kaushik.reddy.m@gmail.com"
-__version__ = "0.6.5"
+__version__ = "1.0.0"
 
 from .utils.config import load_config
 from .datasets.DWD import DWDmirror as DWD
