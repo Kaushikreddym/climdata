@@ -44,14 +44,53 @@ class CMIPCloud:
         return experiments
 
     @classmethod
-    def get_source_ids(cls, experiment_id):
+    def get_source_ids(cls, experiment_id, table_id=None, variables=None):
+        """List the CMIP6 models available for *experiment_id*.
+
+        Args:
+            experiment_id: CMIP6 experiment, e.g. ``"historical"`` or ``"ssp585"``.
+            table_id: Restrict to a MIP table, e.g. ``"day"``. ``None`` keeps
+                every frequency.
+            variables: Restrict to models that publish **all** of these
+                ``variable_id`` values (within *table_id* when given).
+                ``None`` keeps every model.
+
+        Returns:
+            list[str]: Sorted model names.
+
+        Notes:
+            Filtering matters for callers that go on to extract: a model listed
+            for an experiment does not necessarily publish the requested
+            variables at the requested frequency, and ``fetch()`` would then
+            fail. Passing the ``table_id``/``variables`` that will be used for
+            the extraction yields only models that can actually serve it.
+        """
         col = cls.open_cmip6_catalog()
 
-        subset = col.search(experiment_id=[experiment_id])
-
-        if len(subset.df) == 0:
+        df = col.df[col.df["experiment_id"] == experiment_id]
+        if len(df) == 0:
             raise ValueError(f"No data found for experiment_id={experiment_id}")
-        sources = sorted(subset.df["source_id"].unique())
+
+        if table_id:
+            df = df[df["table_id"] == table_id]
+
+        if variables:
+            # Keep only models that carry every requested variable — the
+            # intersection, not the union, since extract() needs them all.
+            per_var = [
+                set(df[df["variable_id"] == v]["source_id"].unique())
+                for v in variables
+            ]
+            usable = set.intersection(*per_var) if per_var else set()
+            df = df[df["source_id"].isin(usable)]
+
+        sources = sorted(df["source_id"].unique())
+        if not sources:
+            raise ValueError(
+                f"No models found for experiment_id={experiment_id}"
+                + (f", table_id={table_id}" if table_id else "")
+                + (f", variables={list(variables)}" if variables else "")
+            )
         logger.info(f"{len(sources)} models found for experiment '{experiment_id}'")
         return sources
 
@@ -178,11 +217,19 @@ class CMIPCloud:
             print(f"   the typical {period_name} period ({valid_start}-{valid_end}).")
             print(f"   Data availability may be limited.")
     def fetch(self):
-        """Collect intake catalog subsets for each variable."""
-        col = intake.open_esm_datastore(
-            "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
-        )
+        """Collect intake catalog subsets for each variable.
+
+        Raises:
+            ValueError: If the model/experiment/table combination does not
+                publish every requested variable. Partial coverage is treated
+                as an error rather than silently dropped, because downstream
+                extraction indexes the dataset by every name in
+                ``cfg.variables`` and would otherwise fail with a bare
+                ``KeyError`` far from the cause.
+        """
+        col = self.open_cmip6_catalog()
         self.col_subsets = []
+        missing = []
 
         for var in self.variables:
             query = dict(
@@ -194,12 +241,32 @@ class CMIPCloud:
             col_subset = col.search(require_all_on=["source_id"], **query)
 
             if len(col_subset.df) == 0:
+                missing.append(var)
                 continue
 
             self.col_subsets.append(col_subset)
             self.col = col
 
-        # ✔ raise error if nothing found
+        if missing:
+            # Report what this model *does* offer at this frequency so the
+            # caller can pick a workable variable set or a different model.
+            available = sorted(
+                col.df[
+                    (col.df["experiment_id"] == self.experiment_id)
+                    & (col.df["source_id"] == self.source_id)
+                    & (col.df["table_id"] == self.table_id)
+                ]["variable_id"].unique()
+            )
+            raise ValueError(
+                f"CMIP6 model '{self.source_id}' has no "
+                f"{self.table_id}-frequency data for {missing} "
+                f"under experiment '{self.experiment_id}'.\n"
+                f"   Requested variables : {list(self.variables)}\n"
+                f"   Available for this model/table: {available or 'none'}\n"
+                f"   Hint: choose a different model, or reduce the requested "
+                f"variables to the available ones."
+            )
+
         if not self.col_subsets:
             raise ValueError(
                 f"No matching CMIP6 data found for: "

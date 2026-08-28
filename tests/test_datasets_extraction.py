@@ -14,6 +14,7 @@ Run all enabled datasets:
     pytest tests/test_datasets_extraction.py -v
 """
 
+import pytest
 import json
 import os
 import unittest

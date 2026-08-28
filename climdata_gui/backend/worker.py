@@ -109,12 +109,13 @@ class CmipOptionsWorker(QObject):
 
     The Pangeo catalogue is a network resource that takes several seconds on a
     cold cache, so the Download panel's model and experiment pickers are filled
-    asynchronously.
+    asynchronously. When *variables* is given, only models that publish all of
+    them at daily frequency are offered.
 
     Signals:
         finished(object): emitted with
             ``{"experiments": [...], "experiment": str, "models": [...],
-            "fallback": bool}``.
+            "fallback": bool, "reason": str}``.
         error(str): emitted with a traceback string on failure.
         log(str): emitted for human-readable progress messages.
     """
@@ -126,10 +127,14 @@ class CmipOptionsWorker(QObject):
     def __init__(
         self,
         experiment: Optional[str] = None,
+        variables: Optional[Sequence[str]] = None,
         parent: Optional[QObject] = None,
     ) -> None:
         super().__init__(parent)
         self._experiment = experiment
+        # Restricts the model list to models that actually publish these
+        # variables, so a pick from the dropdown cannot fail the run.
+        self._variables: Optional[List[str]] = list(variables) if variables else None
 
     @Slot()
     def run(self) -> None:
@@ -138,7 +143,7 @@ class CmipOptionsWorker(QObject):
             experiment = self._experiment
             if experiment not in experiments:
                 experiment = experiments[0] if experiments else "historical"
-            models, mod_reason = get_cmip_models(experiment)
+            models, mod_reason = get_cmip_models(experiment, self._variables)
         except Exception:
             self.error.emit(traceback.format_exc())
             return
