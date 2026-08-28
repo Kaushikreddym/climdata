@@ -9,8 +9,14 @@ from PySide6.QtCore import QThread, QTimer
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QStatusBar
 
 from backend.config_builder import build_overrides
-from backend.runner import get_datasets, get_overlay_meta, render_variable
-from backend.worker import PipelineWorker
+from backend.runner import (
+    CMIP_DATASETS,
+    get_datasets,
+    get_overlay_meta,
+    is_cmip_dataset,
+    render_variable,
+)
+from backend.worker import CmipOptionsWorker, PipelineWorker
 from gui.controls.dataset_selector import DEFAULT_DATASETS
 from models.app_state import AppState
 
@@ -33,6 +39,11 @@ class MainWindow(QMainWindow):
         self._worker: Optional[PipelineWorker] = None
         self._last_result = None
 
+        # CMIP6 catalogue lookup (model / experiment pickers)
+        self._opt_thread: Optional[QThread] = None
+        self._opt_worker: Optional[CmipOptionsWorker] = None
+        self._pending_experiment: Optional[str] = None
+
         self._map = MapWidget()
         self.setCentralWidget(self._map)
         self.setStatusBar(QStatusBar(self))
@@ -47,6 +58,8 @@ class MainWindow(QMainWindow):
         self._map.dataset_changed.connect(self._on_dataset_changed)
         self._map.dates_changed.connect(self._on_dates_changed)
         self._map.format_changed.connect(self._on_format_changed)
+        self._map.experiment_changed.connect(self._on_experiment_changed)
+        self._map.model_changed.connect(self._on_model_changed)
         self._map.run_clicked.connect(self._on_run_clicked)
         self._map.plot_clicked.connect(self._on_plot_clicked)
         self._map.advanced_clicked.connect(self._on_advanced_clicked)
@@ -69,13 +82,98 @@ class MainWindow(QMainWindow):
             start=self._state.start_date.isoformat(),
             end=self._state.end_date.isoformat(),
             data_dir=self._state.data_dir or "",
+            cmip_datasets=list(CMIP_DATASETS),
         )
         self._map.send_plot_enabled(False)
         self.log("climdata dashboard ready.")
 
     # ── Toolbar slots (JS → Python) ───────────────────────────────────
     def _on_dataset_changed(self, dataset: str) -> None:
+        previous = self._state.dataset
         self._state.dataset = dataset
+        if is_cmip_dataset(dataset):
+            # Only (re)query when switching in — avoids a catalogue hit on every
+            # echo of the current selection from the web frontend.
+            if not is_cmip_dataset(previous) or not self._state.source_id:
+                self._load_cmip_options(self._state.experiment_id)
+        else:
+            self._state.experiment_id = None
+            self._state.source_id = None
+
+    def _on_experiment_changed(self, experiment_id: str) -> None:
+        if not experiment_id or experiment_id == self._state.experiment_id:
+            return
+        self._state.experiment_id = experiment_id
+        # The model list is experiment-dependent — refresh it.
+        self._load_cmip_options(experiment_id)
+
+    def _on_model_changed(self, source_id: str) -> None:
+        if source_id:
+            self._state.source_id = source_id
+
+    # ── CMIP6 catalogue lookup ────────────────────────────────────────
+    def _load_cmip_options(self, experiment: Optional[str] = None) -> None:
+        """Fetch experiment/model lists for CMIP on a background thread."""
+        if self._opt_thread is not None:
+            # A lookup is in flight — remember the newest request and run it next.
+            self._pending_experiment = experiment
+            return
+        self._pending_experiment = None
+        self._map.set_cmip_options([], experiment or "", [], "",
+                                   loading=True, note="Loading CMIP6 catalogue…")
+        self.log("Querying CMIP6 catalogue for models and experiments…")
+
+        self._opt_thread = QThread(self)
+        self._opt_worker = CmipOptionsWorker(experiment)
+        self._opt_worker.moveToThread(self._opt_thread)
+
+        self._opt_thread.started.connect(self._opt_worker.run)
+        self._opt_worker.log.connect(self.log)
+        self._opt_worker.finished.connect(self._on_cmip_options_ready)
+        self._opt_worker.error.connect(self._on_cmip_options_error)
+        self._opt_worker.finished.connect(self._opt_thread.quit)
+        self._opt_worker.error.connect(self._opt_thread.quit)
+        self._opt_thread.finished.connect(self._cleanup_opt_worker)
+        self._opt_thread.start()
+
+    def _on_cmip_options_ready(self, opts: dict) -> None:
+        experiments = opts["experiments"]
+        models      = opts["models"]
+        experiment  = opts["experiment"]
+
+        model = self._state.source_id if self._state.source_id in models else None
+        if model is None:
+            model = models[0] if models else None
+
+        self._state.experiment_id = experiment
+        self._state.source_id = model
+
+        note = (
+            "Catalogue unavailable — showing common models/scenarios."
+            if opts["fallback"] else
+            f"{len(models)} models available for {experiment}."
+        )
+        self._map.set_cmip_options(experiments, experiment, models, model or "",
+                                   loading=False, note=note)
+        self.log(f"CMIP6: {note}")
+
+    def _on_cmip_options_error(self, tb: str) -> None:
+        self.log("✗ Could not load the CMIP6 catalogue:")
+        self.log(tb)
+        self._map.set_cmip_options([], self._state.experiment_id or "", [], "",
+                                   loading=False,
+                                   note="Catalogue lookup failed — see log.")
+
+    def _cleanup_opt_worker(self) -> None:
+        if self._opt_worker is not None:
+            self._opt_worker.deleteLater()
+            self._opt_worker = None
+        if self._opt_thread is not None:
+            self._opt_thread.deleteLater()
+            self._opt_thread = None
+        if self._pending_experiment is not None:
+            pending, self._pending_experiment = self._pending_experiment, None
+            QTimer.singleShot(0, lambda e=pending: self._load_cmip_options(e))
 
     def _on_dates_changed(self, start_str: str, end_str: str) -> None:
         try:
@@ -121,6 +219,8 @@ class MainWindow(QMainWindow):
             extra_overrides=self._state.extra_overrides or None,
             box=self._state.box,
             data_dir=self._state.data_dir,
+            experiment_id=self._state.experiment_id,
+            source_id=self._state.source_id,
         )
         self.log("▶ Starting pipeline — overrides:")
         for o in overrides:
@@ -199,6 +299,8 @@ class MainWindow(QMainWindow):
             start_date=self._state.start_date,
             end_date=self._state.end_date,
             variables=self._state.variables,
+            experiment_id=self._state.experiment_id,
+            source_id=self._state.source_id,
         )
         dlg = YamlEditorDialog(self, overrides=current_overrides)
         if dlg.exec() == YamlEditorDialog.DialogCode.Accepted:
@@ -207,6 +309,10 @@ class MainWindow(QMainWindow):
 
             if "dataset" in fields:
                 self._state.dataset = str(fields["dataset"])
+            if "experiment_id" in fields:
+                self._state.experiment_id = str(fields["experiment_id"])
+            if "source_id" in fields:
+                self._state.source_id = str(fields["source_id"])
             if "lat" in fields and "lon" in fields:
                 self._state.lat = float(fields["lat"])
                 self._state.lon = float(fields["lon"])
@@ -227,8 +333,21 @@ class MainWindow(QMainWindow):
                 start=self._state.start_date.isoformat() if self._state.start_date else "",
                 end=self._state.end_date.isoformat() if self._state.end_date else "",
                 data_dir=self._state.data_dir or "",
+                experiment=self._state.experiment_id or "",
+                model=self._state.source_id or "",
             )
+            if is_cmip_dataset(self._state.dataset):
+                self._load_cmip_options(self._state.experiment_id)
             self.log(f"Advanced config saved ({len(self._state.extra_overrides)} extra overrides).")
+
+    # ── Shutdown ──────────────────────────────────────────────────────
+    def closeEvent(self, event) -> None:
+        """Let an in-flight catalogue lookup unwind before the window dies."""
+        if self._opt_thread is not None:
+            self._pending_experiment = None
+            self._opt_thread.quit()
+            self._opt_thread.wait(3000)
+        super().closeEvent(event)
 
     # ── Data directory ────────────────────────────────────────────────
     def _on_data_dir_browse(self) -> None:

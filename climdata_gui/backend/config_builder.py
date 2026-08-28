@@ -20,6 +20,8 @@ def build_overrides(
     extra_overrides: Optional[Sequence[str]] = None,
     box: Optional[dict] = None,
     data_dir: Optional[str] = None,
+    experiment_id: Optional[str] = None,
+    source_id: Optional[str] = None,
 ) -> List[str]:
     """Construct a list of Hydra overrides for ``ClimData(overrides=...)``.
 
@@ -33,6 +35,9 @@ def build_overrides(
             from ``conf/config.yaml`` are used.
         extra_overrides: Additional Hydra override strings appended last.
         box: Bounding box dict with keys lat_min/lat_max/lon_min/lon_max.
+        experiment_id: CMIP6 experiment/scenario (e.g. ``"ssp585"``); only
+            meaningful for model-driven datasets such as ``"cmip"``.
+        source_id: CMIP6 model / GCM name (e.g. ``"MIROC6"``).
     """
     overrides: List[str] = [f"dataset={dataset}"]
 
@@ -51,6 +56,11 @@ def build_overrides(
         overrides.append(f'time_range.start_date="{_fmt(start_date)}"')
     if end_date is not None:
         overrides.append(f'time_range.end_date="{_fmt(end_date)}"')
+
+    if experiment_id:
+        overrides.append(f"experiment_id={experiment_id}")
+    if source_id:
+        overrides.append(f"source_id={source_id}")
 
     if variables:
         vars_str = "[" + ",".join(variables) + "]"

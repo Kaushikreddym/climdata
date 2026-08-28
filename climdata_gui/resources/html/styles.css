@@ -852,6 +852,25 @@ body:not(.tab-download) .coord-pill { display: none; }
   letter-spacing: 0.04em;
 }
 
+.form-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.form-note.loading::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border: 1.5px solid var(--text-muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
 .form-dir-row {
   display: flex;
   align-items: center;

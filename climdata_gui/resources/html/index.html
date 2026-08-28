@@ -269,6 +269,22 @@ extractor.to_csv(df)</pre>
             </div>
           </div>
 
+          <!-- CMIP6 model / experiment — shown only for model-driven datasets -->
+          <div class="form-section" id="cmip-options" style="display:none">
+            <div class="form-section-title">Climate Model &amp; Experiment</div>
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Model (source_id)</label>
+                <select id="tb-model" class="field-select"></select>
+              </div>
+              <div class="form-field">
+                <label class="form-label">Experiment (scenario)</label>
+                <select id="tb-experiment" class="field-select"></select>
+              </div>
+            </div>
+            <div id="cmip-options-note" class="form-note">Loading CMIP6 catalogue…</div>
+          </div>
+
           <div class="form-section">
             <div class="form-section-title">Date Range</div>
             <div class="form-row">

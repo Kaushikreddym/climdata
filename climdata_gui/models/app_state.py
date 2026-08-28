@@ -21,6 +21,8 @@ class AppState:
     actions: List[str] = field(default_factory=lambda: ["extract", "to_csv"])
     extra_overrides: List[str] = field(default_factory=list)
     data_dir: Optional[str] = None
+    experiment_id: Optional[str] = None   # CMIP6 scenario, e.g. "ssp585"
+    source_id: Optional[str] = None       # CMIP6 model, e.g. "MIROC6"
 
     def is_ready(self) -> bool:
         """True once the minimum inputs for a run are populated."""

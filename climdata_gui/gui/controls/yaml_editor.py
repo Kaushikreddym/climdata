@@ -194,6 +194,10 @@ class YamlEditorDialog(QDialog):
                 fields["lon"] = float(data["lon"])
             except (TypeError, ValueError):
                 pass
+        if "experiment_id" in data and data["experiment_id"] is not None:
+            fields["experiment_id"] = str(data["experiment_id"])
+        if "source_id" in data and data["source_id"] is not None:
+            fields["source_id"] = str(data["source_id"])
         tr = data.get("time_range", {})
         if isinstance(tr, dict):
             if "start_date" in tr:

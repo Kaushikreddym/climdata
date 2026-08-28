@@ -14,31 +14,41 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 class CMIPCloud:
-    def open_cmip6_catalog(self):
-        return intake.open_esm_datastore(
-            "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
-        )
+    # Catalogue lookups are classmethods so callers that only want to browse
+    # the Pangeo catalogue (e.g. the GUI's model/experiment pickers) can query
+    # them without building a full extraction config.
+    _catalog = None   # process-wide cache; the catalogue is a ~10 s download
 
-    def get_experiment_ids(self):
+    @classmethod
+    def open_cmip6_catalog(cls, refresh=False):
+        if cls._catalog is None or refresh:
+            cls._catalog = intake.open_esm_datastore(
+                "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
+            )
+        return cls._catalog
+
+    @classmethod
+    def get_experiment_ids(cls):
         import re
-        col = self.open_cmip6_catalog()
-        
+        col = cls.open_cmip6_catalog()
+
         experiments = sorted(col.df["experiment_id"].unique())
-        
+
         pattern = re.compile(r"^ssp\d{3}$")  # ssp + exactly 3 digits
-        
+
         experiments = [
-            e for e in experiments 
+            e for e in experiments
             if e == "historical" or pattern.match(e)
         ]
-        
+
         return experiments
 
-    def get_source_ids(self, experiment_id):
-        col = self.open_cmip6_catalog()
-        
+    @classmethod
+    def get_source_ids(cls, experiment_id):
+        col = cls.open_cmip6_catalog()
+
         subset = col.search(experiment_id=[experiment_id])
-        
+
         if len(subset.df) == 0:
             raise ValueError(f"No data found for experiment_id={experiment_id}")
         sources = sorted(subset.df["source_id"].unique())

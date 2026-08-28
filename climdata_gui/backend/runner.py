@@ -2,7 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
+
+# Datasets whose configuration is driven by a CMIP6 model (``source_id``) and
+# experiment/scenario (``experiment_id``).  Only these expose the extra
+# model/experiment pickers in the Download panel.
+CMIP_DATASETS = ("cmip",)
+
+# Used when the Pangeo catalogue cannot be reached (offline, intake missing).
+FALLBACK_EXPERIMENTS: List[str] = [
+    "historical", "ssp126", "ssp245", "ssp370", "ssp585",
+]
+FALLBACK_MODELS: List[str] = [
+    "ACCESS-CM2", "CanESM5", "CNRM-CM6-1", "EC-Earth3", "GFDL-ESM4",
+    "INM-CM5-0", "IPSL-CM6A-LR", "MIROC6", "MPI-ESM1-2-HR", "MRI-ESM2-0",
+    "NorESM2-MM", "UKESM1-0-LL",
+]
+
+# Catalogue queries hit the network and take several seconds; cache per process.
+_experiment_cache: Optional[List[str]] = None
+_model_cache: Dict[str, List[str]] = {}
 
 
 def get_datasets() -> List[str]:
@@ -15,6 +34,51 @@ def get_datasets() -> List[str]:
         return ClimData().get_datasets()
     except Exception:
         return []
+
+
+def is_cmip_dataset(dataset: Optional[str]) -> bool:
+    """True when *dataset* is configured by a CMIP6 model + experiment pair."""
+    return bool(dataset) and dataset.lower() in CMIP_DATASETS
+
+
+def get_cmip_experiments() -> tuple[List[str], bool]:
+    """Return ``(experiments, is_fallback)`` for the CMIP6 catalogue.
+
+    Queries the Pangeo CMIP6 catalogue (network); on any failure a static list
+    of the common scenarios is returned with ``is_fallback=True``.
+    """
+    global _experiment_cache
+    if _experiment_cache is not None:
+        return list(_experiment_cache), False
+    try:
+        from climdata.datasets.CMIPCloud import CMIPCloud
+        experiments = list(CMIPCloud.get_experiment_ids())
+        if not experiments:
+            raise ValueError("empty experiment list")
+    except Exception:
+        return list(FALLBACK_EXPERIMENTS), True
+    _experiment_cache = experiments
+    return list(experiments), False
+
+
+def get_cmip_models(experiment_id: str) -> tuple[List[str], bool]:
+    """Return ``(models, is_fallback)`` available for *experiment_id*.
+
+    Queries the Pangeo CMIP6 catalogue (network); on any failure a static list
+    of widely-available models is returned with ``is_fallback=True``.
+    """
+    cached = _model_cache.get(experiment_id)
+    if cached is not None:
+        return list(cached), False
+    try:
+        from climdata.datasets.CMIPCloud import CMIPCloud
+        models = list(CMIPCloud.get_source_ids(experiment_id))
+        if not models:
+            raise ValueError(f"no models for experiment_id={experiment_id}")
+    except Exception:
+        return list(FALLBACK_MODELS), True
+    _model_cache[experiment_id] = models
+    return list(models), False
 
 
 def run_pipeline(overrides: Sequence[str], seq: Optional[Sequence[str]] = None) -> Any:

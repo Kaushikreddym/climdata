@@ -17,6 +17,7 @@ const state = {
   drawing:       false,
   startLL:       null,
   sidebarOpen:   true,
+  cmipDatasets:  ['cmip'],   // datasets driven by a CMIP6 model + experiment
 };
 
 /* ── Basemap catalogue ────────────────────────────────────────────── */
@@ -402,7 +403,16 @@ function setRenderLoading(isLoading) {
 /* ================================================================== */
 function initToolbar() {
   document.getElementById('tb-dataset').addEventListener('change', e => {
+    updateCmipVisibility(e.target.value);
     if (state.bridge) state.bridge.on_dataset_changed(e.target.value);
+  });
+
+  document.getElementById('tb-experiment').addEventListener('change', e => {
+    if (state.bridge) state.bridge.on_experiment_changed(e.target.value);
+  });
+
+  document.getElementById('tb-model').addEventListener('change', e => {
+    if (state.bridge) state.bridge.on_model_changed(e.target.value);
   });
 
   function sendDates() {
@@ -516,19 +526,80 @@ function populateDatasets(datasets) {
   });
 }
 
+/* ── CMIP6 model / experiment pickers ───────────────────────────── */
+
+/** True when *name* is a dataset configured by a CMIP6 model + experiment. */
+function isCmipDataset(name) {
+  return !!name && state.cmipDatasets.includes(String(name).toLowerCase());
+}
+
+/** Show the model/experiment section only for CMIP-driven datasets. */
+function updateCmipVisibility(dataset) {
+  const section = document.getElementById('cmip-options');
+  if (section) section.style.display = isCmipDataset(dataset) ? '' : 'none';
+}
+
+/** Fill a <select> with *values*, keeping *selected* if present. */
+function fillSelect(id, values, selected) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = '';
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+  if (selected && values.includes(selected)) sel.value = selected;
+  sel.disabled = values.length === 0;
+}
+
+/**
+ * Populate the CMIP6 pickers  ← called by Python.
+ * payload = { experiments, experiment, models, model, loading, note }
+ */
+function setCmipOptions(payload) {
+  const note = document.getElementById('cmip-options-note');
+  if (payload.loading) {
+    ['tb-experiment', 'tb-model'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (sel) sel.disabled = true;
+    });
+  } else {
+    fillSelect('tb-experiment', payload.experiments || [], payload.experiment);
+    fillSelect('tb-model',      payload.models      || [], payload.model);
+  }
+  if (note) {
+    note.textContent = payload.note || '';
+    note.classList.toggle('loading', !!payload.loading);
+  }
+}
+
 function syncToolbar(payload) {
   if (payload.dataset) {
     const sel = document.getElementById('tb-dataset');
     if (sel && sel.querySelector(`option[value="${payload.dataset}"]`)) sel.value = payload.dataset;
+    updateCmipVisibility(payload.dataset);
   }
   if (payload.start) document.getElementById('tb-start').value = payload.start;
   if (payload.end)   document.getElementById('tb-end').value   = payload.end;
   if (payload.data_dir !== undefined) setDataDir(payload.data_dir);
+  if (payload.experiment) {
+    const sel = document.getElementById('tb-experiment');
+    if (sel && sel.querySelector(`option[value="${payload.experiment}"]`)) sel.value = payload.experiment;
+  }
+  if (payload.model) {
+    const sel = document.getElementById('tb-model');
+    if (sel && sel.querySelector(`option[value="${payload.model}"]`)) sel.value = payload.model;
+  }
 }
 
 function onDashboardReady(payload) {
+  if (Array.isArray(payload.cmip_datasets) && payload.cmip_datasets.length) {
+    state.cmipDatasets = payload.cmip_datasets.map(d => String(d).toLowerCase());
+  }
   populateDatasets(payload.datasets || []);
   syncToolbar(payload);
+  updateCmipVisibility(document.getElementById('tb-dataset').value);
   // Confirm the actual displayed value back to Python so AppState stays in sync
   // even if this call races with an in-flight on_dataset_changed message.
   const sel = document.getElementById('tb-dataset');

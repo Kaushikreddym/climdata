@@ -41,6 +41,8 @@ class _Bridge(QObject):
     dataset_changed           = Signal(str)
     dates_changed             = Signal(str, str)   # ISO-date strings
     format_changed            = Signal(str)
+    experiment_changed        = Signal(str)        # CMIP6 experiment_id
+    model_changed             = Signal(str)        # CMIP6 source_id
     run_clicked               = Signal()
     plot_clicked              = Signal()
     advanced_clicked          = Signal()
@@ -74,6 +76,14 @@ class _Bridge(QObject):
     def on_format_changed(self, fmt: str) -> None:
         self.format_changed.emit(fmt)
 
+    @Slot(str)
+    def on_experiment_changed(self, experiment_id: str) -> None:
+        self.experiment_changed.emit(experiment_id)
+
+    @Slot(str)
+    def on_model_changed(self, source_id: str) -> None:
+        self.model_changed.emit(source_id)
+
     @Slot()
     def on_run_clicked(self) -> None:
         self.run_clicked.emit()
@@ -106,6 +116,8 @@ class MapWidget(QWidget):
     dataset_changed           = Signal(str)
     dates_changed             = Signal(str, str)
     format_changed            = Signal(str)
+    experiment_changed        = Signal(str)
+    model_changed             = Signal(str)
     run_clicked               = Signal()
     plot_clicked              = Signal()
     advanced_clicked          = Signal()
@@ -129,6 +141,7 @@ class MapWidget(QWidget):
         for sig_name in (
             "point_selected", "box_selected", "render_requested",
             "dataset_changed", "dates_changed", "format_changed",
+            "experiment_changed", "model_changed",
             "run_clicked", "plot_clicked", "advanced_clicked",
             "data_dir_browse_requested", "page_ready",
         ):
@@ -172,7 +185,8 @@ class MapWidget(QWidget):
         self._bridge.data_dir_chosen.emit(path)
 
     def dashboard_ready(self, datasets: list, dataset: str,
-                        start: str, end: str, data_dir: str) -> None:
+                        start: str, end: str, data_dir: str,
+                        cmip_datasets: list = None) -> None:
         """Push initial toolbar state to the web frontend after page_ready."""
         payload = {
             "datasets": datasets,
@@ -180,11 +194,31 @@ class MapWidget(QWidget):
             "start":    start,
             "end":      end,
             "data_dir": data_dir,
+            "cmip_datasets": list(cmip_datasets or []),
         }
         self._page.runJavaScript(f"onDashboardReady({json.dumps(payload)});")
 
-    def sync_toolbar(self, dataset: str, start: str, end: str, data_dir: str) -> None:
+    def sync_toolbar(self, dataset: str, start: str, end: str, data_dir: str,
+                     experiment: str = None, model: str = None) -> None:
         """Sync toolbar controls to current Python state (e.g. after advanced dialog)."""
         payload = {"dataset": dataset, "start": start, "end": end, "data_dir": data_dir}
+        if experiment is not None:
+            payload["experiment"] = experiment
+        if model is not None:
+            payload["model"] = model
         self._page.runJavaScript(f"syncToolbar({json.dumps(payload)});")
+
+    def set_cmip_options(self, experiments: list, experiment: str,
+                         models: list, model: str,
+                         loading: bool = False, note: str = "") -> None:
+        """Fill (or put in a loading state) the CMIP6 experiment/model pickers."""
+        payload = {
+            "experiments": list(experiments),
+            "experiment":  experiment or "",
+            "models":      list(models),
+            "model":       model or "",
+            "loading":     loading,
+            "note":        note,
+        }
+        self._page.runJavaScript(f"setCmipOptions({json.dumps(payload)});")
 

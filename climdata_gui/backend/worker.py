@@ -7,7 +7,7 @@ from typing import List, Optional, Sequence
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from .runner import run_pipeline
+from .runner import get_cmip_experiments, get_cmip_models, run_pipeline
 
 
 class PipelineWorker(QObject):
@@ -46,3 +46,49 @@ class PipelineWorker(QObject):
             return
         self.log.emit("Pipeline finished.")
         self.finished.emit(result)
+
+
+class CmipOptionsWorker(QObject):
+    """Fetch CMIP6 experiment / model lists off the GUI thread.
+
+    The Pangeo catalogue is a network resource that takes several seconds on a
+    cold cache, so the Download panel's model and experiment pickers are filled
+    asynchronously.
+
+    Signals:
+        finished(object): emitted with
+            ``{"experiments": [...], "experiment": str, "models": [...],
+            "fallback": bool}``.
+        error(str): emitted with a traceback string on failure.
+        log(str): emitted for human-readable progress messages.
+    """
+
+    finished = Signal(object)
+    error = Signal(str)
+    log = Signal(str)
+
+    def __init__(
+        self,
+        experiment: Optional[str] = None,
+        parent: Optional[QObject] = None,
+    ) -> None:
+        super().__init__(parent)
+        self._experiment = experiment
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            experiments, exp_fallback = get_cmip_experiments()
+            experiment = self._experiment
+            if experiment not in experiments:
+                experiment = experiments[0] if experiments else "historical"
+            models, mod_fallback = get_cmip_models(experiment)
+        except Exception:
+            self.error.emit(traceback.format_exc())
+            return
+        self.finished.emit({
+            "experiments": experiments,
+            "experiment":  experiment,
+            "models":      models,
+            "fallback":    exp_fallback or mod_fallback,
+        })
