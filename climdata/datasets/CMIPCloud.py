@@ -9,11 +9,42 @@ import xarray as xr
 import pandas as pd
 from omegaconf import DictConfig
 import logging
-import cftime
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+
 class CMIPCloud:
+    """Stream CMIP6 model output from the Pangeo cloud catalogue.
+
+    Reads analysis-ready Zarr stores from Google Cloud through ``intake-esm``,
+    so nothing is downloaded up front — only the requested subset is transferred
+    when the data is finally computed.
+
+    The lifecycle is ``fetch`` → ``load`` → ``extract``, and unlike the
+    file-based providers the order is strict: :meth:`extract` needs a loaded
+    dataset and raises without one.
+
+    The catalogue lookups (:meth:`open_cmip6_catalog`, :meth:`get_experiment_ids`,
+    :meth:`get_source_ids`) are classmethods, so a caller browsing what is
+    available — a model picker, say — can query them without building an
+    extraction config first.
+
+    Attributes:
+        experiment_id (str): CMIP6 experiment, e.g. ``"historical"``, ``"ssp585"``.
+        source_id (str): Model name, e.g. ``"GFDL-ESM4"``.
+        table_id (str): MIP table setting the frequency, e.g. ``"day"``.
+        variables (list[str]): Requested CF variable names.
+        ds (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+        col_subsets (list): Per-variable catalogue subsets, set by :meth:`fetch`.
+
+    Example:
+        >>> cmip = CMIPCloud(cfg)                             # doctest: +SKIP
+        >>> cmip.fetch()                                      # doctest: +SKIP
+        >>> cmip.load()                                       # doctest: +SKIP
+        >>> ds = cmip.extract(point=(13.4, 52.5))             # doctest: +SKIP
+    """
+
     # Catalogue lookups are classmethods so callers that only want to browse
     # the Pangeo catalogue (e.g. the GUI's model/experiment pickers) can query
     # them without building a full extraction config.
@@ -21,6 +52,19 @@ class CMIPCloud:
 
     @classmethod
     def open_cmip6_catalog(cls, refresh=False):
+        """Open the Pangeo CMIP6 ESM datastore, caching it for the process.
+
+        The catalogue is a multi-megabyte download taking roughly ten seconds,
+        so the first call pays for it and every later call reuses the result.
+
+        Args:
+            refresh (bool): Re-download even if a cached catalogue exists. Use
+                this to pick up newly published models within a long session.
+
+        Returns:
+            intake_esm.esm_datastore: The catalogue, whose ``.df`` is a pandas
+            frame with one row per published Zarr store.
+        """
         if cls._catalog is None or refresh:
             cls._catalog = intake.open_esm_datastore(
                 "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
@@ -29,6 +73,17 @@ class CMIPCloud:
 
     @classmethod
     def get_experiment_ids(cls):
+        """List the experiments climdata supports, from the live catalogue.
+
+        Filtered deliberately to ``historical`` plus the canonical ``sspNNN``
+        scenarios. The raw catalogue carries hundreds of DECK, CFMIP and
+        diagnostic experiments whose time axes and forcings do not fit the
+        historical/projection workflow this class is built for.
+
+        Returns:
+            list[str]: Sorted experiment IDs, e.g.
+            ``["historical", "ssp119", "ssp126", ...]``.
+        """
         import re
         col = cls.open_cmip6_catalog()
 
@@ -98,6 +153,33 @@ class CMIPCloud:
     
 
     def get_variables(self, *, experiment_id, source_id, table_id="day"):
+        """List the climdata variables common to every requested model and experiment.
+
+        Returns the *intersection*, not the union: only variables that every
+        combination of ``experiment_id`` and ``source_id`` publishes. That is
+        what a multi-model extraction needs, since one model missing one variable
+        breaks the merge. The result is further narrowed to the six variables
+        climdata's downstream index and bias-correction code understands
+        (``tas``, ``tasmin``, ``tasmax``, ``pr``, ``hurs``, ``sfcWind``).
+
+        Args:
+            experiment_id (str | list[str]): One experiment or several.
+            source_id (str | list[str]): One model or several.
+            table_id (str | None): MIP table, e.g. ``"day"``. ``None`` searches
+                every frequency. Defaults to ``"day"``.
+
+        Returns:
+            list[str]: Sorted CF variable names available across all combinations.
+
+        Raises:
+            ValueError: If no variable is common to every combination — including
+                the case where a model/experiment pair publishes nothing at all.
+
+        Example:
+            >>> CMIPCloud(cfg).get_variables(                      # doctest: +SKIP
+            ...     experiment_id="historical", source_id="GFDL-ESM4")
+            ['hurs', 'pr', 'sfcWind', 'tas', 'tasmax', 'tasmin']
+        """
         TARGET_VARS = {"tas", "tasmin", "tasmax", "pr", "hurs", "sfcWind"}
         
         col = self.open_cmip6_catalog()
@@ -150,6 +232,18 @@ class CMIPCloud:
 
 
     def __init__(self, cfg: DictConfig):
+        """Bind a configuration and validate the requested period.
+
+        Args:
+            cfg (DictConfig): Configuration with ``experiment_id``, ``source_id``,
+                ``table_id``, ``variables`` and ``time_range.start_date`` /
+                ``.end_date``.
+
+        Raises:
+            ImportError: If ``intake`` and ``intake-esm`` are not installed.
+            ValueError: If the time range cannot belong to the experiment — see
+                :meth:`_validate_time_range`.
+        """
         if not _INTAKE_AVAILABLE:
             raise ImportError(
                 "CMIPCloud requires intake and intake-esm. "
@@ -168,16 +262,20 @@ class CMIPCloud:
         self.col = None
         self._validate_time_range()
     def _validate_time_range(self):
-        """
-        Validate that the requested time range is appropriate for the experiment.
-        
-        Historical runs: 1850-2014
-        SSP scenarios: 2015-2100
-        
-        Raises
-        ------
-        ValueError
-            If the time range doesn't match the experiment period
+        """Check the requested period against the experiment's simulated period.
+
+        CMIP6 historical runs cover 1850-2014 and SSP scenarios 2015-2100, so
+        asking an SSP for 1990 returns nothing — a failure worth catching at
+        construction rather than after a catalogue query. A range that merely
+        overruns the period at one end warns and proceeds; one that misses it
+        entirely raises. ``picontrol`` and unrecognised experiments are skipped.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If the requested range lies wholly outside the
+                experiment's period.
         """
         start_date = datetime.fromisoformat(self.cfg.time_range.start_date)
         end_date = datetime.fromisoformat(self.cfg.time_range.end_date)
@@ -278,7 +376,26 @@ class CMIPCloud:
 
         return self.col_subsets
     def convert_to_noleap(self, ds):
-        """Convert any CMIP dataset time to pandas Timestamp and floor to day."""
+        """Rewrite a CMIP time axis as day-floored pandas timestamps.
+
+        CMIP6 models use whichever calendar their modelling centre chose —
+        ``noleap``, ``360_day``, ``proleptic_gregorian`` — and stamp daily data
+        at 12:00. Both properties block merging across models and joining against
+        observations. Converting to ``pandas.Timestamp`` at midnight makes the
+        axes comparable.
+
+        This is lossy where the source calendar is not Gregorian: 360-day
+        timestamps become real dates, which can produce duplicate or missing days
+        across a long record. It is applied at the end of :meth:`extract`, once
+        the data has been subset.
+
+        Args:
+            ds (xr.Dataset): Dataset with a CMIP time coordinate.
+
+        Returns:
+            xr.Dataset: The dataset with a ``pandas``-backed daily time axis, or
+            unchanged if it has no ``time`` coordinate.
+        """
         if "time" not in ds.coords:
             return ds
         
@@ -296,7 +413,20 @@ class CMIPCloud:
         return ds
 
     def load(self):
-        """Load and merge datasets from collected col_subsets."""
+        """Open the Zarr store behind each catalogue subset and merge them.
+
+        Stores are opened lazily over HTTPS, so this is fast and transfers almost
+        nothing; the data moves when the result is computed. The merge uses
+        ``compat="override"``, taking coordinate values from the first dataset
+        where models disagree in the last bits of their grid coordinates.
+
+        Only the first store per variable is opened, so a variable split across
+        several ensemble members contributes one member.
+
+        Returns:
+            xr.Dataset | None: The merged dataset, also stored on :attr:`ds`.
+            ``None`` if :meth:`fetch` collected nothing.
+        """
         datasets = []
         for col_subset in self.col_subsets:
             zstore_path = col_subset.df.zstore.values[0].replace(
@@ -312,8 +442,34 @@ class CMIPCloud:
         return self.ds
 
     def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
-        """
-        Extract a subset of the dataset by point, bounding box (dict), or shapefile.
+        """Subset the loaded dataset in time and space.
+
+        Always clips to the configured time range first, then applies exactly one
+        spatial selector. Afterwards the model name is added as a ``source_id``
+        dimension — so several models can be concatenated — and the time axis is
+        normalised by :meth:`convert_to_noleap`.
+
+        CMIP6 longitudes run 0-360, so ``point`` and ``box`` coordinates must be
+        given in that convention, not as negative western longitudes.
+
+        Args:
+            point (tuple[float, float], optional): ``(lon, lat)`` in degrees,
+                longitude first.
+            box (dict, optional): Bounding box with keys ``lon_min``, ``lon_max``,
+                ``lat_min``, ``lat_max``.
+            shapefile (str | geopandas.GeoDataFrame, optional): Polygon(s) to clip
+                to, as a path or an in-memory frame.
+            buffer_km (float): For ``point``, half-width of a box selected around
+                it instead of the nearest cell; for ``shapefile``, a dilation
+                applied to each geometry. Converted at a flat 111 km per degree.
+                Defaults to ``0.0``.
+
+        Returns:
+            xr.Dataset: The subset, also stored on :attr:`ds`.
+
+        Raises:
+            ValueError: If :meth:`load` has not run, or if none of ``point``,
+                ``box`` or ``shapefile`` was given.
         """
         import geopandas as gpd
         from shapely.geometry import mapping
@@ -351,7 +507,7 @@ class CMIPCloud:
                 gdf["geometry"] = gdf.buffer(buffer_km * 1000)
                 gdf = gdf.to_crs(epsg=4326)
             geom = [mapping(g) for g in gdf.geometry]
-            import rioxarray
+            import rioxarray  # noqa: F401 — registers the .rio accessor
 
             ds = ds.rio.write_crs("EPSG:4326", inplace=False)
             ds_subset = ds.rio.clip(geom, gdf.crs, drop=True)
@@ -365,7 +521,15 @@ class CMIPCloud:
         return ds_subset
 
     def _subset_time(self, start_date, end_date):
-        """Subset the dataset by time range."""
+        """Clip :attr:`ds` to a time range, in place.
+
+        Args:
+            start_date (str): Inclusive start, ISO format.
+            end_date (str): Inclusive end, ISO format.
+
+        Returns:
+            xr.Dataset | None: The clipped dataset, or ``None`` if nothing is loaded.
+        """
         if self.ds is None:
             return None
         ds_time = self.ds.sel(time=slice(start_date, end_date))
@@ -373,6 +537,19 @@ class CMIPCloud:
         return ds_time
 
     def save_netcdf(self, filename):
+        """Write the dataset to NetCDF, doing nothing if none is loaded.
+
+        Clears the time encoding inherited from the Zarr store first: it names a
+        calendar that no longer matches the axis rewritten by
+        :meth:`convert_to_noleap`, and the NetCDF writer would otherwise fail on
+        the contradiction.
+
+        Args:
+            filename (str): Destination path. The parent directory must exist.
+
+        Returns:
+            None
+        """
         if self.ds is not None:
             if "time" in self.ds.variables:
                 self.ds["time"].encoding.clear()
@@ -380,12 +557,33 @@ class CMIPCloud:
             # print(f"Saved NetCDF to {filename}")
 
     def save_zarr(self, store_path):
+        """Write the dataset to a Zarr store, overwriting any existing one.
+
+        Args:
+            store_path (str): Destination store path.
+
+        Returns:
+            None
+        """
         if self.ds is not None:
             self.ds.to_zarr(store_path, mode="w")
             print(f"Saved Zarr to {store_path}")
 
     def _format(self, df):
-        """Format dataframe for standardized output."""
+        """Reshape a wide frame into climdata's long output form.
+
+        Melts the variable columns into ``variable``/``value`` pairs, attaches
+        each variable's units, and stamps the model, experiment and MIP table so
+        rows stay identifiable once several models are concatenated.
+
+        Args:
+            df (pd.DataFrame): Wide frame from ``ds.to_dataframe().reset_index()``.
+
+        Returns:
+            pd.DataFrame: Long frame with columns ``source``, ``experiment``,
+            ``table``, ``time``, ``lat``, ``lon``, ``variable``, ``value``,
+            ``units`` — those of them that are present.
+        """
         value_vars = [v for v in self.variables if v in df.columns]
         id_vars = [c for c in df.columns if c not in value_vars]
 
@@ -422,6 +620,14 @@ class CMIPCloud:
         return df_long
 
     def save_csv(self, filename):
+        """Write the dataset to CSV in long form, doing nothing if none is loaded.
+
+        Args:
+            filename (str): Destination path. The parent directory must exist.
+
+        Returns:
+            None
+        """
         if self.ds is not None:
             df = self.ds.to_dataframe().reset_index()
             df = self._format(df)

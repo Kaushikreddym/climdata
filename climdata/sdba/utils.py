@@ -1,83 +1,79 @@
-import os
-import xarray as xr
+"""Smoothing helpers shared by the bias-adjustment and downscaling routines.
+
+The day-of-year climatology used throughout :mod:`climdata.sdba` is smoothed in
+the frequency domain: keeping only the first few Fourier harmonics removes the
+sampling noise that a short record leaves in a raw day-of-year mean, without the
+phase shift a running window introduces.
+"""
+
 import numpy as np
-from xsdba.adjustment import DetrendedQuantileMapping as DQM
-from xsdba.processing import adapt_freq 
-from scipy.fft import fft, ifft
-import xesmf as xe
-# from dask.distributed import Client, LocalCluster
-from glob import glob
-import ipdb
 import xarray as xr
+from scipy.fft import fft, ifft
 
-import warnings
-warnings.filterwarnings("ignore")
+__all__ = ["compute_daily_climatology", "smooth_fft"]
 
-import argparse
-from multiprocessing import Pool
-from functools import partial
 
-import re
-import xclim.core.units as xunits
-parser = argparse.ArgumentParser()
-parser.add_argument('--variable', required=True, help='Climate variable to process (e.g. tasmax, pr)')
-args = parser.parse_args()
-variable = args.variable
+def smooth_fft(x, n_harmonics: int = 3):
+    """Smooth a periodic series by truncating its Fourier spectrum.
 
-def compute_daily_climatology(data):
-    doy_clim = data.groupby("time.dayofyear").mean("time")
-    smoothed = xr.apply_ufunc(
-        smooth_fft, doy_clim,
-        input_core_dims=[["dayofyear"]],
-        output_core_dims=[["dayofyear"]],
-        vectorize=True, dask="parallelized", output_dtypes=[float],
-        dask_gufunc_kwargs={"allow_rechunk": True},
-    )
-    return smoothed
+    All harmonics above ``n_harmonics`` are zeroed and the series transformed
+    back, leaving the annual cycle and its first overtones. The input is treated
+    as exactly one period, so it is meant for a full day-of-year axis (365 or 366
+    values), not for an arbitrary time slice.
 
-def smooth_fft(x, n_harmonics=3):
-    N = x.size
+    Args:
+        x (numpy.ndarray): One-dimensional periodic series, e.g. a day-of-year
+            climatology.
+        n_harmonics (int): Number of harmonics to retain. ``1`` keeps only the
+            annual cycle; larger values follow the seasonal shape more closely.
+            Defaults to ``3``.
+
+    Returns:
+        numpy.ndarray: Smoothed series, the same shape and dtype-kind as ``x``.
+
+    Example:
+        >>> import numpy as np
+        >>> doy = np.arange(365)
+        >>> raw = 10 * np.sin(2 * np.pi * doy / 365) + np.random.default_rng(0).normal(size=365)
+        >>> smooth = smooth_fft(raw, n_harmonics=2)
+        >>> smooth.std() < raw.std()
+        np.True_
+    """
     f = fft(x)
-    f[n_harmonics+1:-n_harmonics] = 0
+    f[n_harmonics + 1: -n_harmonics] = 0
     return np.real(ifft(f))
 
-def preserve_attrs(source, target):
-    target.attrs = source.attrs
-    return target
 
-def get_realization_path(base_path, variable, gcm, scenario, year):
-    search_pattern = os.path.join(
-        base_path, gcm, scenario, variable,
-        f'{variable}_day_{gcm}_{scenario}_*_gn_{year}.nc'
+def compute_daily_climatology(data: xr.DataArray, n_harmonics: int = 3) -> xr.DataArray:
+    """Build a smoothed day-of-year climatology.
+
+    Groups ``data`` by day of year, averages over all years, then applies
+    :func:`smooth_fft` along the ``dayofyear`` axis. The computation is lazy and
+    Dask-friendly: chunked inputs stay chunked.
+
+    Args:
+        data (xr.DataArray): Input with a ``time`` dimension spanning at least one
+            full year. Any additional dimensions (``lat``, ``lon``, …) are
+            broadcast over.
+        n_harmonics (int): Harmonics retained by :func:`smooth_fft`. Defaults to ``3``.
+
+    Returns:
+        xr.DataArray: The climatology, with ``time`` replaced by ``dayofyear``.
+
+    Example:
+        >>> clim = compute_daily_climatology(ds.tasmax)     # doctest: +SKIP
+        >>> clim.dims                                       # doctest: +SKIP
+        ('dayofyear', 'lat', 'lon')
+    """
+    doy_clim = data.groupby("time.dayofyear").mean("time")
+    return xr.apply_ufunc(
+        smooth_fft,
+        doy_clim,
+        kwargs={"n_harmonics": n_harmonics},
+        input_core_dims=[["dayofyear"]],
+        output_core_dims=[["dayofyear"]],
+        vectorize=True,
+        dask="parallelized",
+        output_dtypes=[float],
+        dask_gufunc_kwargs={"allow_rechunk": True},
     )
-    files = glob(search_pattern)
-    if not files:
-        raise FileNotFoundError(f"No file found for {gcm} {scenario} {year}")
-    
-    return files[0]  # or choose the first match, or apply filtering
-def process_future_year(variable, gcm, year, scenario, data_paths):
-    dqm = GLOBALS['dqm']
-    regridder = GLOBALS['regridder']
-    try:
-        fut_file = get_realization_path(data_paths["NEX"], variable, gcm, scenario, year)
-        print(f"  Processing {scenario} {year} from {fut_file}...")
-
-        fut_raw = xr.open_dataset(fut_file)[variable]
-        fut_regr = preserve_attrs(fut_raw, regridder(fut_raw)).chunk({'time': -1, 'x': 50, 'y': 50})
-        fut_bc = dqm.adjust(fut_regr)
-
-        realization = re.search(rf"{scenario}_(.*?)_gn_{year}", os.path.basename(fut_file)).group(1)
-        out_file = f'{variable}_{year}_{gcm}_{scenario}_{realization}_BA.nc'
-        out_path = os.path.join('./data/DQM/', gcm, scenario, variable, out_file)
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-
-        print(f"Saving bias-corrected data to {out_path}...")
-        fut_bc.to_netcdf(out_path)
-
-    except Exception as e:
-        print(f"Failed to process {scenario} {year} for {gcm}: {e}")
-GLOBALS = {}
-
-def init_worker(DQM_, REGRIDDER_):
-    GLOBALS['dqm'] = DQM_
-    GLOBALS['regridder'] = REGRIDDER_

@@ -1,24 +1,41 @@
-"""
-Bias Correction and Statistical Downscaling (BCSD)
+"""Bias correction and statistical downscaling, wrapping ISIMIP3BASD for xarray.
 
-This module provides a high-level interface to the ISIMIP3BASD methods
-for climate data downloaded via climdata. It wraps the ISIMIP3BASD
-functionality to work seamlessly with xarray datasets.
+Two stages, usable separately or chained by :class:`BCSD`:
 
-The BCSD method performs:
-1. Bias Correction: Adjusts systematic biases in climate model outputs
-2. Statistical Downscaling: Increases spatial resolution using fine-scale observations
+* :class:`BiasCorrection` removes systematic bias from a model simulation on the
+  *coarse* grid, by trend-preserving quantile mapping against observations
+  regridded to that grid.
+* :class:`StatisticalDownscaling` maps the corrected coarse field onto the fine
+  observational grid with a modified MBCn algorithm.
+
+The order is deliberate: correcting before downscaling keeps the expensive
+quantile mapping on the smaller grid, and gives the downscaling step a field
+whose distribution already matches the observations.
+
+The vendored ISIMIP3BASD code works in ``iris`` cubes on a proleptic Gregorian
+calendar, so this module also carries the conversions that get real GCM output
+into that shape — notably :func:`_to_proleptic_gregorian`, which inserts a 29
+February into ``365_day`` model calendars rather than relabelling and silently
+shifting every date.
+
+Requires ``iris``; ``xesmf`` or a CDO installation is needed for the regridding
+step.
 
 Reference:
-    Lange, S. (2019). Trend-preserving bias adjustment and statistical downscaling
-    with ISIMIP3BASD (v1.0). Geoscientific Model Development, 12(7), 3055-3070.
-    https://doi.org/10.5194/gmd-12-3055-2019
+    Lange, S. (2019). Trend-preserving bias adjustment and statistical
+    downscaling with ISIMIP3BASD (v1.0). Geoscientific Model Development,
+    12(7), 3055-3070. https://doi.org/10.5194/gmd-12-3055-2019
+
+Example:
+    >>> from climdata.sdba import BCSD                             # doctest: +SKIP
+    >>> bcsd = BCSD(variable="tas")                                # doctest: +SKIP
+    >>> paths = bcsd.run(obs_fine, sim_hist_coarse, sim_fut_coarse)  # doctest: +SKIP
 """
 
 import xarray as xr
 import numpy as np
 from pathlib import Path
-from typing import Optional, Union, Dict, List, Literal
+from typing import Optional, Union, Dict, List
 import shutil
 import warnings
 import subprocess
@@ -247,30 +264,19 @@ def regrid_to_coarse(
     cdo_env: str = 'cdo_stable',
     weights_dir: Optional[str] = None
 ) -> xr.Dataset:
-    """
-    Regrid fine-resolution data to coarse resolution.
+    """Regrid fine-resolution data to coarse resolution.
 
-    Parameters
-    ----------
-    fine_data : xr.Dataset
-        Fine-resolution dataset to regrid.
-    coarse_template : xr.Dataset
-        Coarse-resolution dataset used as the target grid.
-    method : str
-        xESMF method: 'conservative' (default), 'bilinear', or 'nearest'.
-    regridding_tool : str
-        'xesmf' (default) or 'cdo'.
-    cdo_method : str
-        CDO operator string when regridding_tool='cdo'.
-    cdo_env : str
-        Conda environment that has CDO installed.
-    weights_dir : str, optional
-        Directory to cache regridding weight files.
+    Args:
+        fine_data (xr.Dataset): Fine-resolution dataset to regrid.
+        coarse_template (xr.Dataset): Coarse-resolution dataset used as the target grid.
+        method (str): xESMF method: 'conservative' (default), 'bilinear', or 'nearest'.
+        regridding_tool (str): 'xesmf' (default) or 'cdo'.
+        cdo_method (str): CDO operator string when regridding_tool='cdo'.
+        cdo_env (str): Conda environment that has CDO installed.
+        weights_dir (str, optional): Directory to cache regridding weight files.
 
-    Returns
-    -------
-    xr.Dataset
-        Regridded dataset on the coarse grid.
+    Returns:
+        xr.Dataset: Regridded dataset on the coarse grid.
     """
     print(f"Regridding fine→coarse using {regridding_tool}...")
 
@@ -333,46 +339,36 @@ def regrid_to_coarse(
 # ---------------------------------------------------------------------------
 
 class BiasCorrection:
-    """
-    Bias correction using ISIMIP3BASD trend-preserving quantile mapping.
+    """Bias correction using ISIMIP3BASD trend-preserving quantile mapping.
 
     Applies bias correction at the coarse GCM resolution before any spatial
     downscaling.  Supports single-variable and multivariate (MBCn) correction.
 
-    Parameters
-    ----------
-    variable : str or list of str
-        Climate variable name(s). When a list is given MBCn is used.
-    method : str
-        'parametric' (default).
-    distribution : str, optional
-        Parametric distribution override. Defaults come from DEFAULT_CONFIGS.
-    trend_preservation : str, optional
-        Override for trend preservation ('additive', 'multiplicative', 'mixed',
-        'bounded').
-    detrend : bool
-        Detrend before correction.
-    adjust_p_values : bool
-        Adjust p-values for perfect match in the reference period.
-    lower_bound, lower_threshold, upper_bound, upper_threshold : float, optional
-        Physical bounds / thresholds.
-    halfwin_upper_bound_climatology : int
-        Half-window for upper bound climatology (0 = disabled).
-    n_processes : int, optional
-        Parallel worker count. Defaults to all CPUs.
-    n_quantiles : int
-        Quantiles for non-parametric QM (default 50).
-    n_iterations : int
-        MBCn iterations (default 20; 0 = univariate, no MBCn).
-    randomization_seed : int, optional
-        RNG seed for reproducibility.
+    Args:
+        variable (str or list of str): Climate variable name(s). When a list is given
+            MBCn is used.
+        method (str): 'parametric' (default).
+        distribution (str, optional): Parametric distribution override. Defaults come
+            from DEFAULT_CONFIGS.
+        trend_preservation (str, optional): Override for trend preservation ('additive',
+            'multiplicative', 'mixed', 'bounded').
+        detrend (bool): Detrend before correction.
+        adjust_p_values (bool): Adjust p-values for perfect match in the reference
+            period.
+        lower_bound, lower_threshold, upper_bound, upper_threshold (float, optional):
+            Physical bounds / thresholds.
+        halfwin_upper_bound_climatology (int): Half-window for upper bound climatology
+            (0 = disabled).
+        n_processes (int, optional): Parallel worker count. Defaults to all CPUs.
+        n_quantiles (int): Quantiles for non-parametric QM (default 50).
+        n_iterations (int): MBCn iterations (default 20; 0 = univariate, no MBCn).
+        randomization_seed (int, optional): RNG seed for reproducibility.
 
-    Examples
-    --------
-    >>> bc = BiasCorrection(variable='tas', distribution='normal',
-    ...                     trend_preservation='additive', detrend=True)
-    >>> tas_corrected = bc.correct(obs_hist=obs_ds, sim_hist=gcm_hist_ds,
-    ...                            sim_fut=gcm_fut_ds)
+    Example:
+        >>> bc = BiasCorrection(variable='tas', distribution='normal',
+        ...                     trend_preservation='additive', detrend=True)
+        >>> tas_corrected = bc.correct(obs_hist=obs_ds, sim_hist=gcm_hist_ds,
+        ...                            sim_fut=gcm_fut_ds)
     """
 
     DEFAULT_CONFIGS = {
@@ -437,6 +433,16 @@ class BiasCorrection:
         randomization_seed: Optional[int] = None,
         **kwargs
     ):
+        """Configure a bias-correction run.
+
+        Every argument is documented on the class. Where an argument is left as
+        ``None``, the per-variable entry in :attr:`DEFAULT_CONFIGS` supplies the
+        value, so a bare ``BiasCorrection("pr")`` already uses the distribution,
+        bounds and trend-preservation mode appropriate to precipitation.
+
+        Raises:
+            ImportError: If ``iris`` is not installed.
+        """
         self.variables = [variable] if isinstance(variable, str) else list(variable)
         self.variable  = self.variables[0] if len(self.variables) == 1 else None
         self.method    = method
@@ -603,24 +609,18 @@ class BiasCorrection:
         output_path: Optional[Union[str, Path]] = None,
         **kwargs,
     ) -> xr.Dataset:
-        """
-        Apply bias correction to climate model data.
+        """Apply bias correction to climate model data.
 
-        Parameters
-        ----------
-        obs_hist : xr.Dataset
-            Historical observations (e.g. 1980–2014).
-        sim_hist : xr.Dataset
-            Historical model simulations matching the obs_hist period.
-        sim_fut : xr.Dataset
-            Future model simulations to be corrected.
-        output_path : str or Path, optional
-            Save the merged result to this NetCDF path.
+        Args:
+            obs_hist (xr.Dataset): Historical observations (e.g. 1980–2014).
+            sim_hist (xr.Dataset): Historical model simulations matching the obs_hist
+                period.
+            sim_fut (xr.Dataset): Future model simulations to be corrected.
+            output_path (str or Path, optional): Save the merged result to this NetCDF
+                path.
 
-        Returns
-        -------
-        xr.Dataset
-            Bias-corrected future simulations.
+        Returns:
+            xr.Dataset: Bias-corrected future simulations.
         """
         if not IRIS_AVAILABLE:
             raise ImportError("iris is required: pip install scitools-iris")
@@ -631,7 +631,6 @@ class BiasCorrection:
             raise ImportError(
                 "ISIMIP3BASD vendor code not found in climdata/_vendor/isimip3basd/."
             )
-        import dask.array as da
 
         mv_tag = (f"{len(self.variables)} variables (MBCn multivariate)"
                   if len(self.variables) > 1 else self.variables[0])
@@ -716,31 +715,24 @@ class BiasCorrection:
 # ---------------------------------------------------------------------------
 
 class StatisticalDownscaling:
-    """
-    Statistical downscaling using the ISIMIP3BASD modified MBCn algorithm.
+    """Statistical downscaling using the ISIMIP3BASD modified MBCn algorithm.
 
     Downscales bias-corrected coarse-resolution data to the fine resolution
     of the reference observations, processing one year at a time to bound
     memory use.  Already-completed years are skipped automatically.
 
-    Parameters
-    ----------
-    variable : str
-        Climate variable name.
-    n_processes : int, optional
-        Parallel worker count.
-    n_iterations : int
-        MBCn iterations (default 20).
-    randomization_seed : int, optional
-        RNG seed.
-    lower_bound, lower_threshold, upper_bound, upper_threshold : float, optional
-        Physical bounds / thresholds (defaults from BiasCorrection.DEFAULT_CONFIGS).
+    Args:
+        variable (str): Climate variable name.
+        n_processes (int, optional): Parallel worker count.
+        n_iterations (int): MBCn iterations (default 20).
+        randomization_seed (int, optional): RNG seed.
+        lower_bound, lower_threshold, upper_bound, upper_threshold (float, optional):
+            Physical bounds / thresholds (defaults from BiasCorrection.DEFAULT_CONFIGS).
 
-    Examples
-    --------
-    >>> sd = StatisticalDownscaling(variable='tas', n_iterations=20)
-    >>> paths = sd.downscale(obs_fine=obs_fine_ds, sim_coarse=gcm_corrected_ds,
-    ...                      output_path='./downscaled/', model='ACCESS', scenario='ssp585')
+    Example:
+        >>> sd = StatisticalDownscaling(variable='tas', n_iterations=20)
+        >>> paths = sd.downscale(obs_fine=obs_fine_ds, sim_coarse=gcm_corrected_ds,
+        ...                      output_path='./downscaled/', model='ACCESS', scenario='ssp585')
     """
 
     DEFAULT_CONFIGS = BiasCorrection.DEFAULT_CONFIGS
@@ -757,6 +749,14 @@ class StatisticalDownscaling:
         upper_threshold: Optional[float] = None,
         **kwargs
     ):
+        """Configure a downscaling run.
+
+        Every argument is documented on the class. Arguments left as ``None``
+        fall back to the variable's entry in :attr:`DEFAULT_CONFIGS`.
+
+        Raises:
+            ImportError: If ``iris`` is not installed.
+        """
         self.variable        = variable
         self.n_processes     = n_processes if n_processes is not None else os.cpu_count()
         self.n_iterations    = n_iterations
@@ -781,26 +781,20 @@ class StatisticalDownscaling:
         scenario: Optional[str] = None,
         **kwargs
     ) -> list:
-        """
-        Apply statistical downscaling to coarse-resolution data.
+        """Apply statistical downscaling to coarse-resolution data.
 
-        Parameters
-        ----------
-        obs_fine : xr.Dataset or DataArray
-            Fine-resolution observations.
-        sim_coarse : xr.Dataset or DataArray
-            Coarse-resolution bias-corrected simulations.
-        output_path : str or Path, optional
-            Directory for per-year output NetCDF files.
-        model : str, optional
-            Model tag used in output filenames.
-        scenario : str, optional
-            Scenario tag used in output filenames.
+        Args:
+            obs_fine (xr.Dataset or DataArray): Fine-resolution observations.
+            sim_coarse (xr.Dataset or DataArray): Coarse-resolution bias-corrected
+                simulations.
+            output_path (str or Path, optional): Directory for per-year output NetCDF
+                files.
+            model (str, optional): Model tag used in output filenames.
+            scenario (str, optional): Scenario tag used in output filenames.
 
-        Returns
-        -------
-        list of Path
-            Per-year NetCDF paths (BCSD_{var}_{model}_{scenario}_{year}.nc).
+        Returns:
+            list of Path: Per-year NetCDF paths
+                (BCSD_{var}_{model}_{scenario}_{year}.nc).
         """
         if not IRIS_AVAILABLE:
             raise ImportError("iris is required: pip install scitools-iris")
@@ -941,39 +935,29 @@ class StatisticalDownscaling:
 # ---------------------------------------------------------------------------
 
 class BCSD:
-    """
-    Complete Bias Correction and Statistical Downscaling (BCSD) workflow.
+    """Complete Bias Correction and Statistical Downscaling (BCSD) workflow.
 
     Combines BiasCorrection and StatisticalDownscaling in a single pipeline
     following the ISIMIP3BASD methodology.
 
-    Parameters
-    ----------
-    variable : str
-        Climate variable name.
-    bias_correction_kwargs : dict, optional
-        Forwarded to BiasCorrection.
-    downscaling_kwargs : dict, optional
-        Forwarded to StatisticalDownscaling.
-    regridding_method : str
-        xESMF method for obs_fine→coarse regridding (default 'conservative').
-    regridding_tool : str
-        'xesmf' (default) or 'cdo'.
-    cdo_method : str
-        CDO operator when regridding_tool='cdo'.
-    cdo_env : str
-        Conda environment with CDO.
-    weights_dir : str, optional
-        Directory to cache regridding weights.
+    Args:
+        variable (str): Climate variable name.
+        bias_correction_kwargs (dict, optional): Forwarded to BiasCorrection.
+        downscaling_kwargs (dict, optional): Forwarded to StatisticalDownscaling.
+        regridding_method (str): xESMF method for obs_fine→coarse regridding (default
+            'conservative').
+        regridding_tool (str): 'xesmf' (default) or 'cdo'.
+        cdo_method (str): CDO operator when regridding_tool='cdo'.
+        cdo_env (str): Conda environment with CDO.
+        weights_dir (str, optional): Directory to cache regridding weights.
 
-    Examples
-    --------
-    >>> bcsd = BCSD(variable='tas',
-    ...             bias_correction_kwargs={'detrend': True},
-    ...             downscaling_kwargs={'n_iterations': 20})
-    >>> paths = bcsd.run(obs_fine=obs_025deg,
-    ...                  sim_hist_coarse=gcm_hist_1deg,
-    ...                  sim_fut_coarse=gcm_fut_1deg)
+    Example:
+        >>> bcsd = BCSD(variable='tas',
+        ...             bias_correction_kwargs={'detrend': True},
+        ...             downscaling_kwargs={'n_iterations': 20})
+        >>> paths = bcsd.run(obs_fine=obs_025deg,
+        ...                  sim_hist_coarse=gcm_hist_1deg,
+        ...                  sim_fut_coarse=gcm_fut_1deg)
     """
 
     def __init__(
@@ -987,6 +971,15 @@ class BCSD:
         cdo_env: str = 'cdo_stable',
         weights_dir: Optional[str] = None
     ):
+        """Configure the two stages of a BCSD run.
+
+        Every argument is documented on the class. The stage objects are built
+        here, so an invalid ``bias_correction_kwargs`` or ``downscaling_kwargs``
+        is rejected now rather than partway through :meth:`run`.
+
+        Raises:
+            ImportError: If ``iris`` is not installed.
+        """
         self.variable          = variable
         self.regridding_method = regridding_method
         self.regridding_tool   = regridding_tool
@@ -1011,35 +1004,32 @@ class BCSD:
         output_path: Optional[Union[str, Path]] = None,
         save_intermediate: bool = False
     ) -> list:
-        """
-        Run the complete BCSD workflow.
+        """Run the complete BCSD workflow.
 
-        Parameters
-        ----------
-        obs_fine : xr.Dataset
-            Historical observations at fine resolution.
-        sim_hist_coarse : xr.Dataset
-            Historical GCM simulations at coarse resolution.
-        sim_fut_coarse : xr.Dataset
-            Future GCM simulations at coarse resolution.
-        obs_hist_coarse : xr.Dataset, optional
-            Historical observations already at coarse resolution.
-            When None, derived automatically via conservative regridding.
-        output_path : str or Path, optional
-            Directory for per-year downscaled NetCDF files.
-        save_intermediate : bool
-            Save intermediate bias-corrected output alongside final results.
+        Three steps, of which the first is conditional:
 
-        Returns
-        -------
-        list of Path
-            Per-year downscaled NetCDF paths.
+        0. If ``obs_hist_coarse`` is not supplied, regrid ``obs_fine`` onto the
+           simulation's coarse grid by conservative remapping.
+        1. Bias-correct the coarse simulation against the coarse observations
+           using ISIMIP3BASD.
+        2. Downscale the corrected coarse field onto the fine grid, again with
+           ISIMIP3BASD, writing one NetCDF per year.
 
-        Workflow
-        --------
-        0. (Optional) Regrid obs_fine → coarse grid to obtain obs_hist_coarse.
-        1. Bias correction at coarse resolution using ISIMIP3BASD.
-        2. Statistical downscaling to fine resolution using ISIMIP3BASD.
+        Args:
+            obs_fine (xr.Dataset): Historical observations at fine resolution.
+            sim_hist_coarse (xr.Dataset): Historical GCM simulations at coarse
+                resolution.
+            sim_fut_coarse (xr.Dataset): Future GCM simulations at coarse resolution.
+            obs_hist_coarse (xr.Dataset, optional): Historical observations already at
+                coarse resolution. When None, derived automatically via conservative
+                regridding.
+            output_path (str or Path, optional): Directory for per-year downscaled
+                NetCDF files.
+            save_intermediate (bool): Save intermediate bias-corrected output alongside
+                final results.
+
+        Returns:
+            list[Path]: Path of the downscaled NetCDF written for each year.
         """
         print(f"\n{'='*60}\nStarting BCSD Workflow\n{'='*60}\n")
 

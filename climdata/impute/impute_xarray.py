@@ -1,3 +1,21 @@
+"""Gap filling for gridded datasets, backed by the vendored imputegap library.
+
+Each ``(variable, lat, lon)`` cell is treated as an independent time series: the
+dataset is flattened to a 2-D ``(n_series, seq_len)`` matrix, handed to one of
+imputegap's algorithms, and folded back into its original shape. Nothing exploits
+spatial correlation between neighbouring cells — a cell with no valid values of
+its own cannot be recovered from its neighbours.
+
+The deep-learning methods (BRITS, GRIN, BayOTIDE, DeepMVI) need PyTorch, which
+climdata does not install by default; the matrix-completion and tree methods
+(SoftImpute, CDRec, XGBOOST) do not.
+
+Example:
+    >>> imputer = Imputer(ds, method="SoftImpute")     # doctest: +SKIP
+    >>> filled = imputer.impute()                      # doctest: +SKIP
+    >>> imputer.summary()                              # doctest: +SKIP
+"""
+
 import warnings
 import numpy as np
 import xarray as xr
@@ -44,11 +62,26 @@ _COLOR_YELLOW = "\033[93m"
 _COLOR_RESET = "\033[0m"
 
 class Imputer:
-    """
-    Impute missing values in an xarray.Dataset with dims (time, lat, lon)
-    using imputegap (BRITS / matrix completion).
+    """Fill missing values in a ``(time, lat, lon)`` dataset, cell by cell.
 
-    Each (variable, lat, lon) grid cell is treated as an independent time series.
+    Reshapes the dataset into one time series per variable and grid cell, runs an
+    imputegap algorithm over the resulting matrix, and reassembles the output.
+    Optional z-score normalisation is applied before imputation and inverted
+    afterwards, which matters for the neural methods and is harmless otherwise.
+
+    Attributes:
+        ds (xr.Dataset): The input dataset.
+        method (str): Algorithm name — ``"BRITS"``, ``"SoftImpute"``,
+            ``"CDRec"`` or ``"XGBOOST"``.
+        normalize (bool): Whether series are z-scored before imputation.
+        variables (list[str]): Data variables that will be imputed.
+        recovered_ds (xr.Dataset | None): Result of the last :meth:`impute`.
+
+    Example:
+        >>> imputer = Imputer(ds, method="CDRec")          # doctest: +SKIP
+        >>> imputer.missing_fraction()["global"]           # doctest: +SKIP
+        0.043
+        >>> filled = imputer.impute()                      # doctest: +SKIP
     """
 
     # Methods that require PyTorch (BRITS, GRIN, BayOTIDE, DeepMVI)
@@ -63,6 +96,24 @@ class Imputer:
         method: str = "BRITS",
         normalize: bool = True,
     ):
+        """Bind a dataset and check that the chosen method can actually run.
+
+        The PyTorch check happens here rather than at :meth:`impute`, so a
+        missing backend is reported before any reshaping work is done.
+
+        Args:
+            ds (xr.Dataset): Dataset with time, latitude and longitude dimensions.
+            time_dim (str): Name of the time dimension. Defaults to ``"time"``.
+            lat_dim (str): Name of the latitude dimension. Defaults to ``"lat"``.
+            lon_dim (str): Name of the longitude dimension. Defaults to ``"lon"``.
+            method (str): Algorithm to use. Defaults to ``"BRITS"``.
+            normalize (bool): Z-score each series before imputing, and invert
+                afterwards. Defaults to ``True``.
+
+        Raises:
+            ImportError: If the vendored imputegap is unavailable, or if
+                ``method`` needs PyTorch and PyTorch is not installed.
+        """
         if not _IMPUTEGAP_AVAILABLE:
             raise ImportError(
                 "[climdata.impute] imputegap is not available. "
@@ -95,8 +146,12 @@ class Imputer:
         self.shape_info = None
         self.recovered_ds = None
     def missing_fraction(self):
-        """
-        Missing fraction per variable and globally.
+        """Report how much data is missing, per variable and overall.
+
+        Returns:
+            dict[str, float]: One entry per data variable plus a ``"global"``
+            key. The global figure is the unweighted mean of the per-variable
+            fractions, so variables of different sizes count equally.
         """
         frac = {
             v: float(self.ds[v].isnull().mean())
@@ -107,8 +162,15 @@ class Imputer:
         )
         return frac
     def _to_timeseries(self):
-        """
-        Convert Dataset → 2D array (n_series, seq_len)
+        """Flatten the dataset into the ``(n_series, seq_len)`` matrix imputegap wants.
+
+        Series are ordered ``(variable, lat, lon)``, and the shape and coordinate
+        values are recorded on ``self.shape_info`` so :meth:`_from_timeseries`
+        can invert the operation. The NaN mask is captured before any
+        normalisation.
+
+        Returns:
+            None: Sets ``self.ts``, ``self.mask`` and ``self.shape_info``.
         """
         da = self.ds[self.variables].to_array("variable")
         # dims: (variable, time, lat, lon)
@@ -149,8 +211,20 @@ class Imputer:
 
         self.ts = ts
     def _from_timeseries(self, data_2d):
-        """
-        Convert (n_series, seq_len) → xarray.Dataset
+        """Rebuild a dataset from the imputed matrix.
+
+        Coordinates are restored from ``self.shape_info``. Any coordinate that
+        does not match the expected length is replaced by a plain integer range
+        rather than raising, so a shape surprise costs coordinate labels rather
+        than the whole result.
+
+        Args:
+            data_2d (numpy.ndarray): Imputed matrix of shape
+                ``(n_series, seq_len)``.
+
+        Returns:
+            xr.Dataset: One variable per input variable, dimensioned
+            ``(time, lat, lon)``, carrying the original global attributes.
         """
         n_var = self.shape_info["n_var"]
         n_lat = self.shape_info["n_lat"]
@@ -202,8 +276,24 @@ class Imputer:
 
         return da.to_dataset(dim="variable")
     def impute(self, epochs: int = 300):
-        """
-        Run imputation unless missing fraction is zero.
+        """Fill the missing values and return the completed dataset.
+
+        Returns a copy unchanged when there is nothing missing, so calling this
+        unconditionally in a workflow is safe and cheap.
+
+        Note that every value is reconstructed, not just the gaps: the returned
+        dataset carries the algorithm's estimate everywhere. Use :meth:`metrics`
+        to see how closely it reproduces the values that were present.
+
+        Args:
+            epochs (int): Training epochs, used only by ``BRITS``. Defaults to ``300``.
+
+        Returns:
+            xr.Dataset: The completed dataset, also stored on
+            :attr:`recovered_ds`.
+
+        Raises:
+            ValueError: If :attr:`method` is not one of the supported algorithms.
         """
         if self.missing_fraction()["global"] == 0.0:
             logger.info(f"{_COLOR_YELLOW}No missing data found. Imputation not required.{_COLOR_RESET}")
@@ -237,8 +327,22 @@ class Imputer:
         self.recovered_ds = self._from_timeseries(rec)
         return self.recovered_ds
     def metrics(self):
-        """
-        RMSE and MAE on originally missing values only.
+        """Score the reconstruction against the values that were actually present.
+
+        Compares imputed against original on the cells that were *not* missing —
+        the only cells where ground truth exists. This measures how faithfully
+        the algorithm reproduces known data, which is an upper bound on, not a
+        measure of, its accuracy in the gaps. For a real estimate, mask out known
+        values yourself and score the reconstruction there.
+
+        Variables with no missing values are omitted entirely.
+
+        Returns:
+            dict[str, dict]: Per variable, ``rmse``, ``mae`` and
+            ``missing_fraction``.
+
+        Raises:
+            RuntimeError: If :meth:`impute` has not been called.
         """
         if self.recovered_ds is None:
             raise RuntimeError("Call impute() first")
@@ -268,6 +372,13 @@ class Imputer:
 
         return scores
     def summary(self):
+        """Describe the imputation setup and the gaps it faces.
+
+        Returns:
+            dict: ``method``, ``normalize``, ``variables``, ``missing_fraction``
+            and ``dims``. Cheap to call before :meth:`impute` to check what will
+            be run.
+        """
         return {
             "method": self.method,
             "normalize": self.normalize,

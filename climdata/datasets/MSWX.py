@@ -1,7 +1,24 @@
-import pandas as pd
+"""MSWX access through the public Google Drive mirror.
+
+MSWX (Multi-Source Weather) is distributed as one global NetCDF file per day per
+variable on Google Drive. A single year of one variable is therefore 365 files,
+which shapes the whole module: downloads are incremental and resumable, and
+:meth:`MSWXmirror.load` pushes the spatial subset into ``open_mfdataset``'s
+``preprocess`` hook so each global frame is cut down as it is opened, rather
+than after 365 of them have been stitched together.
+
+Downloading requires a Google service-account key, supplied through
+``cfg.dsinfo.MSWX.params.google_service_account``. Data already on disk is
+served without one.
+
+Example:
+    >>> mswx = MSWXmirror(cfg)                              # doctest: +SKIP
+    >>> mswx.extract(point=(13.4, 52.5))                    # doctest: +SKIP
+    >>> ds = mswx.load("tasmax")                            # doctest: +SKIP
+"""
+
 import geopandas as gpd
 import os
-from tqdm import tqdm
 import warnings
 from datetime import datetime, timedelta
 import xarray as xr
@@ -16,12 +33,45 @@ except ImportError:
 
 from climdata.utils.utils_download import list_drive_files, download_drive_file
 from shapely.geometry import mapping
-import cf_xarray
+import cf_xarray  # noqa: F401 — registers the .cf accessor used by _fix_coords
 
 warnings.filterwarnings("ignore", category=Warning)
 
 class MSWXmirror:
+    """Download and load MSWX daily data, one variable at a time.
+
+    The order of operations is inverted relative to the other providers: call
+    :meth:`extract` *first* to record the region of interest, then
+    :meth:`load`, which downloads what is missing and applies the subset
+    per-file during opening. Loading before extracting works but pulls whole
+    global frames into the graph.
+
+    One call handles one variable, because each variable lives in its own Drive
+    folder. :class:`~climdata.utils.wrapper_workflow.ClimateExtractor` loops over
+    ``cfg.variables`` and merges the results.
+
+    Attributes:
+        cfg (DictConfig): Hydra configuration.
+        variables (list[str]): ``cfg.variables``, used to shape long-form output.
+        dataset (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+
+    Example:
+        >>> mswx = MSWXmirror(cfg)                                # doctest: +SKIP
+        >>> mswx.extract(box={"lat_min": 47, "lat_max": 55,       # doctest: +SKIP
+        ...                   "lon_min": 5, "lon_max": 15})
+        >>> ds = mswx.load("pr")                                  # doctest: +SKIP
+    """
+
     def __init__(self, cfg: DictConfig):
+        """Bind a configuration.
+
+        Args:
+            cfg (DictConfig): Configuration with ``variables``, ``data_dir``,
+                ``dataset``, ``time_range`` and ``dsinfo.MSWX``.
+
+        Raises:
+            ImportError: If the Google API client libraries are not installed.
+        """
         if not _GOOGLE_AVAILABLE:
             raise ImportError(
                 "MSWX requires google-api-python-client and google-auth. "
@@ -35,10 +85,20 @@ class MSWXmirror:
         self._extract_params = None
 
     def _load_opts(self):
-        """Read the optional ``cfg.load`` block, falling back to sensible defaults.
+        """Resolve the optional ``cfg.load`` block into concrete open options.
 
-        Keeping this defensive means configs/overrides without a ``load:`` section
-        continue to work unchanged.
+        Every key is optional, so a config written before ``load:`` existed keeps
+        working. The default chunking pins ``lat`` and ``lon`` to their full
+        extent: MSWX files are stored in roughly 8x32 blocks, which would give
+        about 25 000 tiny chunks per global frame and stall Dask's graph
+        optimisation long before any data moves. Spatial dimensions the caller
+        leaves unspecified are pinned the same way.
+
+        Returns:
+            dict: Keys ``engine``, ``parallel``, ``chunks``, ``fix_coords`` and
+            ``eager``. ``eager`` is the inverse of ``load.dask.enabled``, so
+            without a Dask cluster the dataset is materialised into memory at the
+            end of :meth:`load` rather than left lazy.
         """
         defaults = {
             "engine": "h5netcdf",
@@ -80,15 +140,22 @@ class MSWXmirror:
 
         return opts
 
-    def _fix_coords(self, ds: xr.Dataset | xr.DataArray):
-        """Ensure latitude is ascending and longitude is in the range [-180, 180).
+    def _fix_coords(self, ds):
+        """Put latitude in ascending order and longitude on -180..180.
 
-        Latitude is flipped with a plain slice reversal instead of ``sortby``
-        when it is monotonically decreasing: ``sortby`` builds an argsort +
-        fancy-index reindex layer *per file*, which — over ~1800 daily global
-        files — explodes the dask graph and stalls the client in graph
-        optimisation. A ``[::-1]`` reversal is exact for a monotone axis and
-        adds essentially no graph.
+        A descending latitude axis is reversed by slicing rather than
+        ``sortby``. ``sortby`` adds an argsort plus a fancy-index reindex layer
+        *per file*; across the ~1800 daily files a multi-year request opens, that
+        alone stalls the Dask client in graph optimisation. A ``[::-1]`` reversal
+        is exact for a monotone axis and adds essentially no graph. Genuinely
+        non-monotone axes still fall back to ``sortby``.
+
+        Args:
+            ds (xr.Dataset | xr.DataArray): Object with CF-identifiable latitude
+                and longitude coordinates.
+
+        Returns:
+            xr.Dataset | xr.DataArray: Same type as the input, reoriented.
         """
         lat_name = ds.cf["latitude"].name
         lat = ds[lat_name]
@@ -111,8 +178,27 @@ class MSWXmirror:
 
         return ds
     def fetch(self, folder_id: str, variable: str):
-        """
-        Fetch MSWX files from Google Drive for a given variable.
+        """Download the daily MSWX files for one variable, skipping what exists.
+
+        Expands the configured date range into one expected filename per day
+        (``YYYYDDD.nc``), checks which are already under
+        ``<data_dir>/<DATASET>/<VARIABLE>/``, and downloads only the rest — so an
+        interrupted run resumes rather than restarting. Google credentials are
+        only required when something is actually missing.
+
+        Args:
+            folder_id (str): Google Drive folder ID for this variable, from
+                ``cfg.dsinfo.MSWX.variables[<var>].folder_id``.
+            variable (str): CF variable name, e.g. ``"tasmax"``.
+
+        Returns:
+            list[str]: Basenames now present locally. May be shorter than the
+            requested range if Drive does not hold every day.
+
+        Raises:
+            ValueError: If files are missing and no service-account key is
+                configured.
+            FileNotFoundError: If the configured key file does not exist.
         """
         start = datetime.fromisoformat(self.cfg.time_range.start_date)
         end = datetime.fromisoformat(self.cfg.time_range.end_date)
@@ -177,7 +263,19 @@ class MSWXmirror:
 
         return local_files
     def _extract_preprocess(self, ds):
-        """Apply extraction to a single-daily dataset during preprocessing."""
+        """Subset one daily file as it is opened by ``open_mfdataset``.
+
+        Runs inside the ``preprocess`` hook, so each global frame is cut to the
+        region of interest before it joins the concatenation — the difference
+        between a graph over global arrays and one over the requested box.
+
+        Args:
+            ds (xr.Dataset): One day's global data, as just opened.
+
+        Returns:
+            xr.Dataset: The subset recorded by :meth:`extract`, or ``ds``
+            unchanged if no extraction mode was set.
+        """
 
         # Fix coords first (can be disabled via cfg.load.fix_coords for speed
         # when the source grid is already ascending-lat / [0,360]-lon).
@@ -222,7 +320,31 @@ class MSWXmirror:
 
         return ds
     def extract(self, *, point=None, box=None, shapefile=None, buffer_km=0.0):
-        """Store extraction instructions; the actual extraction happens during load()."""
+        """Record the region of interest for :meth:`load` to apply.
+
+        Nothing is read here — the instruction is stored and executed per-file
+        inside :meth:`load`, which is why this should be called first. The three
+        modes are mutually exclusive; the first supplied wins, in the order
+        ``point``, ``box``, ``shapefile``.
+
+        Args:
+            point (tuple[float, float], optional): ``(lon, lat)`` in degrees,
+                longitude first.
+            box (dict, optional): Bounding box with keys ``lon_min``, ``lon_max``,
+                ``lat_min``, ``lat_max``.
+            shapefile (str | geopandas.GeoDataFrame, optional): Polygon(s) to clip
+                to, as a path or an in-memory frame.
+            buffer_km (float): For ``point``, half-width of a box that is
+                area-averaged instead of taking the nearest cell, converted at a
+                flat 111 km per degree; for ``shapefile``, a dilation applied in
+                Web Mercator. Defaults to ``0.0``.
+
+        Returns:
+            MSWXmirror: ``self``, so the call can be chained into :meth:`load`.
+
+        Raises:
+            ValueError: If none of ``point``, ``box`` or ``shapefile`` was given.
+        """
 
         if point is not None:
             lon, lat = point
@@ -254,15 +376,27 @@ class MSWXmirror:
         return self
 
     def load(self, variable: str):
-        """
-        Load MSWX NetCDF files for a given variable into a single xarray Dataset using open_mfdataset.
-        This method supports lazy loading, parallel processing, and large numbers of files efficiently.
+        """Download what is missing, then open every daily file as one dataset.
+
+        Calls :meth:`fetch` for this variable, then opens the files with
+        ``open_mfdataset``, concatenating along ``time``. The per-file
+        ``preprocess`` hook fixes coordinates, applies the subset recorded by
+        :meth:`extract`, and renames the MSWX-internal variable to its CF name.
+
+        Whether the result is lazy depends on ``cfg.load.dask.enabled``: with a
+        Dask cluster the dataset stays lazy, without one it is materialised into
+        memory before returning.
 
         Args:
-            variable (str): Variable name as defined in cfg.variables.
+            variable (str): CF variable name, as declared in ``cfg.variables``.
 
         Returns:
-            xr.Dataset: Concatenated dataset along the 'time' dimension with fixed coordinates.
+            xr.Dataset: The concatenated dataset, also stored on :attr:`dataset`.
+
+        Raises:
+            RuntimeError: If no files could be found for the variable, or if
+                opening them failed.
+            KeyError: If the variable has no entry in ``cfg.dsinfo.MSWX.variables``.
         """
         # Get folder ID and list of files
         folder_id = self.cfg.dsinfo[self.cfg.dataset.upper()]["variables"][variable]["folder_id"]
@@ -321,6 +455,17 @@ class MSWXmirror:
 
 
     def to_zarr(self, zarr_filename: str):
+        """Write the loaded dataset to a Zarr store under ``data/MSWX/``.
+
+        Args:
+            zarr_filename (str): Store name, resolved relative to ``data/MSWX``.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If :meth:`load` has not been called.
+        """
         if self.dataset is None:
             raise ValueError("No dataset loaded. Call `load()` first.")
 
@@ -338,7 +483,18 @@ class MSWXmirror:
 
     
     def _format(self, df):
-        """Format dataframe for standardized output."""
+        """Reshape a wide frame into climdata's long output form.
+
+        Melts the variable columns into ``variable``/``value`` pairs, attaches
+        each variable's units and stamps the provider name.
+
+        Args:
+            df (pd.DataFrame): Wide frame from ``ds.to_dataframe().reset_index()``.
+
+        Returns:
+            pd.DataFrame: Long frame with columns ``source``, ``time``, ``lat``,
+            ``lon``, ``variable``, ``value``, ``units`` — those of them present.
+        """
         value_vars = [v for v in self.variables if v in df.columns]
         id_vars = [c for c in df.columns if c not in value_vars]
 
@@ -372,6 +528,16 @@ class MSWXmirror:
         return df_long
 
     def save_csv(self, filename):
+        """Write the loaded dataset to CSV in long form.
+
+        Does nothing if no dataset is loaded.
+
+        Args:
+            filename (str): Destination path. The parent directory must exist.
+
+        Returns:
+            None
+        """
         if self.dataset is not None:
             df = self.dataset.to_dataframe().reset_index()
             df = self._format(df)

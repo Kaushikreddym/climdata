@@ -1,185 +1,108 @@
-# Welcome to climdata
+# climdata
 
+[![PyPI](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
+[![DOI](https://zenodo.org/badge/19554926/climdata.svg)](https://zenodo.org/record/19554926)
 
-
-[![image](https://img.shields.io/pypi/v/climdata.svg)](https://pypi.python.org/pypi/climdata)
-<!-- [![image](https://img.shields.io/conda/vn/conda-forge/climdata.svg)](https://anaconda.org/conda-forge/climdata) -->
-
-# ClimData — Quickstart & Overview
 <p align="center">
-  <img src="assets/climdata_logo.png" alt="ClimData Logo" class="page-logo" width="200">
+  <img src="assets/climdata_logo.png" alt="climdata logo" class="page-logo" width="200">
 </p>
-ClimData provides a unified interface for extracting climate data from multiple providers (MSWX, CMIP, POWER, DWD, HYRAS), computing extreme indices, and converting results to tabular form. The ClimData (or ClimateExtractor) class is central: it manages configuration, extraction, index computation, and common I/O.
 
-## Key features
-- Provider-agnostic extraction (point / region / shapefile)
-- Unit normalization via xclim
-- Compute extreme indices using package indices
-- Convert xarray Datasets → long-form pandas DataFrames
-- Simple workflow runner for chained actions
+**One interface for eleven climate data providers.** Extract from reanalyses,
+observational grids, station networks and CMIP6 projections through a single
+configuration, then compute extreme indices, regrid, bias-correct, fill gaps and
+export — without rewriting the code for each source.
 
-## Installation
-
-1) Create and activate a conda environment:
-```bash
-# create
-conda create -n climdata python=3.11 -y
-
-# activate
-conda activate climdata
-```
-
-2) Install via pip (PyPI, if available) or from source:
-```bash
-# from PyPI
-pip install climdata
-
-# or from local source (editable)
-git clone <repo-url>
-cd climdata
-pip install -e .
-```
-
-Install optional extras as needed (e.g., xclim, shapely, hydra, dask):
-```bash
-pip install xarray xclim shapely hydra-core dask "pandas>=1.5"
-```
-
-## Quick example
 ```python
-from climdata import ClimData  # or from climdata.utils.wrapper_workflow import ClimateExtractor
+import climdata as cd
 
-overrides = [
-    "dataset=mswx",
-    "lat=52.5",
-    "lon=13.4",
+extractor = cd.ClimData(overrides=[
+    "dataset=hyras",                      # swap for mswx, cmip, nexgddp, ...
+    "lat=52.5", "lon=13.4",
+    "variables=[tasmin,tasmax,pr]",
     "time_range.start_date=2014-01-01",
     "time_range.end_date=2014-12-31",
-    "variables=[tasmin,tasmax,pr]",
-    "data_dir=/path/to/data",
-    "index=tn10p",
-]
+])
 
-# initialize
-extractor = ClimData(overrides=overrides)
-
-# extract data (returns xarray.Dataset and updates internal state)
-ds = extractor.extract()
-
-# compute index (uses cfg.index)
-ds_index = extractor.calc_index(ds)
-
-# convert to long-form dataframe and save
-df = extractor.to_dataframe(ds_index)
-extractor.to_csv(df, filename="index.csv")
+ds = extractor.extract()                  # xarray.Dataset, CF names, unit-normalised
+df = extractor.to_dataframe()             # long-form pandas
 ```
 
-## Workflow runner
-Use `run_workflow` for multi-step sequences:
+Change `dataset=` and nothing else. Variable names and units come out the same
+whichever provider answered.
+
+## Start here
+
+<div class="grid cards" markdown>
+
+- **[Install](installation.md)** — pip, conda, and the credentials three of the
+  providers need.
+- **[Usage](usage.md)** — the workflow, region selection, indices, regridding,
+  imputation, output formats.
+- **[Datasets](datasets.md)** — what each of the eleven providers offers, and
+  its quirks.
+- **[API reference](api.md)** — every public function and class.
+
+</div>
+
+## What it does
+
+**Extraction** — point, bounding box, shapefile or GeoJSON, against
+[eleven providers](datasets.md). Variables are renamed to CF conventions and
+converted to declared units on the way out, so a `tasmax` from a DWD station and
+a `tasmax` from a CMIP6 Zarr store are directly comparable.
+
+**Extreme indices** — ETCCDI and threshold indices via xclim, declared in
+configuration rather than code. climdata warns when a percentile-based index is
+asked of a record too short to support it.
+
+**Regridding** — reprojection and resampling onto a target CRS and cell size,
+with a compatibility gate: a metric resolution combined with a geographic CRS is
+[rejected rather than silently approximated](usage.md#regridding).
+
+**Bias correction and downscaling** — the ISIMIP3BASD method, wrapped for
+xarray. See the [BCSD guide](bcsd_guide.md).
+
+**Gap filling** — imputation per grid cell, with several backends.
+
+**Reproducible output** — long-form CSV, NetCDF, crop-model formats for SIMPLACE
+and MONICA, or a FAIR RO-Crate with a JSON-LD manifest.
+
+## Finding your way around the data
+
 ```python
-result = extractor.run_workflow(actions=["extract", "calc_index", "to_dataframe", "to_csv"])
+import climdata as cd
+
+cd.list_available_data()                     # the catalogue
+cd.explore("NEXGDDP")                        # one provider in detail
+cd.find(variable="pr", coverage="Germany")   # search across providers
 ```
-`WorkflowResult` contains produced dataset(s), dataframe(s), and filenames.
 
-## Documentation & API
-- See API docs under `docs/api/` for detailed descriptions of ClimData/ClimateExtractor methods.
-- Examples and notebooks are under `examples/`.
+None of these download anything.
 
-## Contributing
-- Run tests and lint locally.
-- Follow project coding and documentation conventions; submit PRs with tests.
+## How configuration works
+
+climdata is driven by [Hydra](https://hydra.cc). Defaults live in
+`climdata/conf/`, and a working copy is placed in your current directory the
+first time you run something, so you can edit it. Overrides passed to
+`ClimData(overrides=[...])` are applied on top:
+
+```python
+"dataset=cmip"                    # replace a value
+"variables=[tasmax,pr]"           # a list
+"time_range.start_date=2050-01-01"   # a nested value
+```
+
+Providers themselves are declared in `conf/mappings/parameters.yaml`, so adding
+one to the catalogue takes no code change.
+
+## Citing
+
+If climdata contributes to published work, please cite it via its
+[Zenodo record](https://doi.org/10.5281/zenodo.19554926). `CITATION.cff` in the
+repository has the machine-readable form.
 
 ## License
-Refer to the repository LICENSE file for terms.
 
-### ⚡️ Tip
-
-- Make sure `yq` is installed:
-  ```bash
-  brew install yq   # macOS
-  # OR
-  pip install yq
-  ```
-
-- To see available variables for a specific dataset (for example `mswx`), run:
-  ```bash
-  python download_location.py --cfg job | yq '.mappings.mswx.variables | keys'
-  ```
-
----
-
----
-
-## ⚙️ **Key Features**
-
-- **Supports multiple weather data providers**
-- **Uses `xarray` for robust gridded data extraction**
-- **Handles curvilinear and rectilinear grids**
-- **Uses a Google Drive Service Account for secure downloads**
-- **Easily reproducible runs using Hydra**
-
----
-## 📡 Google Drive API Setup
-
-This project uses the **Google Drive API** with a **Service Account** to securely download weather data files from a shared Google Drive folder.
-
-Follow these steps to set it up correctly:
-
----
-
-### ✅ 1. Create a Google Cloud Project
-
-- Go to [Google Cloud Console](https://console.cloud.google.com/).
-- Click **“Select Project”** → **“New Project”**.
-- Enter a project name (e.g. `WeatherDataDownloader`).
-- Click **“Create”**.
-
----
-
-### ✅ 2. Enable the Google Drive API
-
-- In the left sidebar, go to **APIs & Services → Library**.
-- Search for **“Google Drive API”**.
-- Click it, then click **“Enable”**.
-
----
-
-### ✅ 3. Create a Service Account
-
-- Go to **IAM & Admin → Service Accounts**.
-- Click **“Create Service Account”**.
-- Enter a name (e.g. `weather-downloader-sa`).
-- Click **“Create and Continue”**. You can skip assigning roles for read-only Drive access.
-- Click **“Done”** to finish.
-
----
-
-### ✅ 4. Create and Download a JSON Key
-
-- After creating the Service Account, click on its email address to open its details.
-- Go to the **“Keys”** tab.
-- Click **“Add Key” → “Create new key”** → choose **`JSON`** → click **“Create”**.
-- A `.json` key file will download automatically. **Store it securely!**
-
-### ✅ 5. Store the JSON Key Securely
-
-- Place the downloaded `.json` key in the conf folder with the name service.json. 
-
-
-## Setup Instructions from ERA5 api
-
-### 1. CDS API Key Setup
-
-1. Create a free account on the
-[Copernicus Climate Data Store](https://cds.climate.copernicus.eu/user/register)
-2. Once logged in, go to your [user profile](https://cds.climate.copernicus.eu/user)
-3. Click on the "Show API key" button
-4. Create the file `~/.cdsapirc` with the following content:
-
-   ```bash
-   url: https://cds.climate.copernicus.eu/api/v2
-   key: <your-api-key-here>
-   ```
-
-5. Make sure the file has the correct permissions: `chmod 600 ~/.cdsapirc`
-
+MIT — see the repository `LICENSE`. Note that individual **datasets** carry
+their own terms; MSWX in particular is CC BY-NC 4.0 (non-commercial use only).
+See the [MSWX guide](MSWX_guide.md).

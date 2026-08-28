@@ -44,7 +44,7 @@ from . import planner as planner_mod
 from . import execution as execution_mod
 from . import narrator as narrator_mod
 from .execution import build_execution_plan, ExecutionStatus
-from .planner import ReadyPlan, ClarificationRequest, TimeRange
+from .planner import ReadyPlan, ClarificationRequest
 from .tool_registry import REGISTRY
 
 
@@ -53,6 +53,17 @@ from .tool_registry import REGISTRY
 # ===========================================================================
 
 def configure_logging(level: int = logging.INFO) -> logging.Logger:
+    """Attach a formatted stream handler to the orchestrator logger, once.
+
+    Idempotent: a second call adjusts the level without adding a duplicate
+    handler.
+
+    Args:
+        level (int): Logging level. Defaults to ``logging.INFO``.
+
+    Returns:
+        logging.Logger: The ``climdata.orchestrator`` logger.
+    """
     logger = logging.getLogger("climdata.orchestrator")
     if not logger.handlers:
         h = logging.StreamHandler()
@@ -101,8 +112,30 @@ def with_retry(fn: Callable, *args, retries: int = 3, backoff: float = 1.5,
 # ===========================================================================
 
 class DataProvider(Protocol):
+    """The interface the orchestrator needs in order to get data.
+
+    Structural, not inherited: anything with a matching :meth:`extract`
+    satisfies it. Two implementations ship — :class:`RealClimDataProvider`,
+    which runs a real extraction, and :class:`SyntheticProvider`, which
+    generates data with a known trend so the pipeline can be exercised offline
+    and its output checked against a known answer.
+    """
+
     def extract(self, overrides: List[str], role: str, spatial: Dict,
-                time_range: Optional[Dict]) -> xr.Dataset: ...
+                time_range: Optional[Dict]) -> xr.Dataset:
+        """Return the data for one role.
+
+        Args:
+            overrides (list[str]): Hydra overrides describing the extraction.
+            role (str): Role being filled, e.g. ``"observation"``,
+                ``"model_historical"``, ``"model_future"``.
+            spatial (dict): Region of interest.
+            time_range (dict | None): ``{"start": ..., "end": ...}``.
+
+        Returns:
+            xr.Dataset: The extracted data.
+        """
+        ...
 
 
 class RealClimDataProvider:
@@ -118,6 +151,18 @@ class RealClimDataProvider:
         self.extra_overrides = list(extra_overrides or [])
 
     def extract(self, overrides, role, spatial, time_range) -> xr.Dataset:
+        """Run a real climdata extraction for one role.
+
+        Args:
+            overrides (list[str]): Hydra overrides from the execution plan.
+            role (str): Role being filled. Unused — the overrides already encode
+                the difference between roles.
+            spatial (dict): Region of interest. Unused, for the same reason.
+            time_range (dict | None): Time window. Unused, for the same reason.
+
+        Returns:
+            xr.Dataset: The extracted data.
+        """
         import climdata
         return climdata.ClimData(overrides=overrides + self.extra_overrides).extract()
 
@@ -151,6 +196,23 @@ class SyntheticProvider:
         return ["tasmax"]
 
     def extract(self, overrides, role, spatial, time_range) -> xr.Dataset:
+        """Generate a synthetic series with a known trend for one role.
+
+        The signal is built from a per-role recipe, so a model-future role warms
+        faster than an observation role and the pipeline's arithmetic can be
+        checked against an answer that is known in advance.
+
+        Args:
+            overrides (list[str]): Hydra overrides; read only for the requested
+                variable names.
+            role (str): Role being filled. Selects the signal recipe.
+            spatial (dict): Region of interest. Unused.
+            time_range (dict | None): ``{"start": ..., "end": ...}``. Defaults
+                depend on the role.
+
+        Returns:
+            xr.Dataset: Daily synthetic data over the requested period.
+        """
         sig = self.ROLE_SIGNAL.get(role, self.ROLE_SIGNAL["observation"])
         start = (time_range or {}).get("start") or ("2015-01-01" if role == "model_future"
                                                     else "1980-01-01")
@@ -178,6 +240,15 @@ class SyntheticProvider:
 # ===========================================================================
 
 class StageStatus(str, Enum):
+    """Outcome of one pipeline stage.
+
+    Attributes:
+        OK: Completed successfully.
+        SKIPPED: Not applicable to this request.
+        FAILED: Raised; the pipeline continues in degraded form.
+        NEEDS_CLARIFICATION: The request was too underspecified to proceed.
+    """
+
     OK = "ok"
     SKIPPED = "skipped"
     FAILED = "failed"
@@ -186,6 +257,16 @@ class StageStatus(str, Enum):
 
 @dataclass
 class StageResult:
+    """What one pipeline stage did, and how long it took.
+
+    Attributes:
+        name (str): Stage name, e.g. ``"planner"``, ``"extraction"``.
+        status (StageStatus): Outcome.
+        seconds (float): Wall-clock duration.
+        error (str | None): Error message when ``status`` is ``FAILED``.
+        detail (dict): Stage-specific extras.
+    """
+
     name: str
     status: StageStatus
     seconds: float = 0.0
@@ -195,6 +276,26 @@ class StageResult:
 
 @dataclass
 class PipelineResult:
+    """Everything one assistant run produced, stage by stage.
+
+    Because the pipeline is fail-soft, a result is returned even when stages
+    failed: ``stages`` records what happened at each step, and the later fields
+    stay ``None`` for stages that never ran. Check ``status`` before reading
+    ``narrative``.
+
+    Attributes:
+        request (str): The original natural-language question.
+        status (str): Overall outcome.
+        stages (list[StageResult]): Per-stage outcomes, in execution order.
+        plan (dict | None): The planner's output.
+        execution (dict | None): The resolved :class:`ExecutionPlan`.
+        summary (dict | None): Computed statistics.
+        narrative (str | None): The written assessment.
+        clarification (dict | None): What to ask the user, when the request was
+            too underspecified.
+        provenance (dict): Models and data sources used.
+    """
+
     request: str
     status: str
     stages: List[StageResult] = field(default_factory=list)

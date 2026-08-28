@@ -27,9 +27,8 @@ import json
 import dask
 import calendar
 from dask.diagnostics import ProgressBar
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Union
 import urllib3
-import logging
 import numpy as np
 import fsspec
 
@@ -37,18 +36,46 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class ERA5Mirror:
-    """
-    A class to manage downloading ERA5 datasets. The datasets are downloaded from the Copernicus Climate Data Store (CDS) and stored in Zarr format.
+    """Build and maintain a local Zarr mirror of ERA5 from the Copernicus CDS.
 
-    Attributes
-    ----------
-    base_path : Path
-        The path to the Zarr dataset.
-    fs : fsspec.AbstractFileSystem
-        The filesystem to use for the Zarr dataset. If None, the local filesystem will be used.
+    Unlike the other providers this is a *mirroring* tool rather than an
+    extractor: it downloads whole global months and appends them to one Zarr
+    store per variable, to be read afterwards with ``xarray.open_zarr``. It also
+    takes a storage path rather than a Hydra config, so it is not driven by
+    :class:`~climdata.utils.wrapper_workflow.ClimateExtractor`.
+
+    Progress is journalled in a ``metadata.json`` beside the stores, so an
+    interrupted mirror resumes at the first month it has not yet written instead
+    of re-downloading. Months are fetched concurrently through Dask.
+
+    Requires a Copernicus CDS account and a ``~/.cdsapirc`` key file.
+
+    Attributes:
+        base_path (str): Directory holding the Zarr stores and ``metadata.json``.
+        fs (fsspec.AbstractFileSystem): Filesystem the stores live on — local by
+            default, but any fsspec target (S3, GCS) works.
+        metadata (dict): The journal of downloaded chunks.
+
+    Example:
+        >>> import datetime
+        >>> mirror = ERA5Mirror("./era5")                        # doctest: +SKIP
+        >>> paths = mirror.download(                             # doctest: +SKIP
+        ...     ["2m_temperature", ("temperature", 500)],
+        ...     (datetime.date(2020, 1, 1), datetime.date(2020, 3, 1)),
+        ... )
     """
 
     def __init__(self, base_path: str, fs: fsspec.AbstractFileSystem = None):
+        """Open (or create) a mirror directory and read its journal.
+
+        Args:
+            base_path (str): Directory for the Zarr stores. Created if absent.
+            fs (fsspec.AbstractFileSystem, optional): Filesystem to use.
+                Defaults to the local filesystem.
+
+        Raises:
+            ImportError: If ``cdsapi`` is not installed.
+        """
         if not _CDSAPI_AVAILABLE:
             raise ImportError(
                 "ERA5 requires cdsapi. "
@@ -69,7 +96,13 @@ class ERA5Mirror:
         self.metadata = self.get_metadata()
 
     def get_metadata(self):
-        """Get metadata"""
+        """Read the download journal from ``metadata.json``.
+
+        Returns:
+            dict: ``{"chunks": [...]}``. An absent or corrupt file yields an
+            empty journal rather than raising, so a truncated write from an
+            interrupted run costs a re-download rather than a crash.
+        """
         if self.fs.exists(self.metadata_file):
             with self.fs.open(self.metadata_file, "r") as f:
                 try:
@@ -81,12 +114,27 @@ class ERA5Mirror:
         return metadata
 
     def save_metadata(self):
-        """Save metadata"""
+        """Write the download journal back to ``metadata.json``.
+
+        Returns:
+            None
+        """
         with self.fs.open(self.metadata_file, "w") as f:
             json.dump(self.metadata, f)
 
     def chunk_exists(self, variable, year, month, pressure_level):
-        """Check if chunk exists"""
+        """Test whether a month has already been mirrored.
+
+        Args:
+            variable (str): CDS variable name.
+            year (int): Calendar year.
+            month (int): Calendar month, 1-12.
+            pressure_level (int | None): Pressure level in hPa, or ``None`` for
+                single-level data.
+
+        Returns:
+            bool: ``True`` if the journal records this chunk.
+        """
         for chunk in self.metadata["chunks"]:
             if (
                 chunk["variable"] == variable
@@ -104,24 +152,28 @@ class ERA5Mirror:
         month: int,
         pressure_level: int = None,
     ):
-        """
-        Download ERA5 data for the specified variable, date range, and pressure levels.
+        """Download one global month of daily-mean ERA5 data.
 
-        Parameters
-        ----------
-        variable : str
-            The ERA5 variable to download, e.g. 'tisr' for solar radiation or 'z' for geopotential.
-        year : int
-            The year to download.
-        month : int
-            The month to download.
-        pressure_level : int, optional
-            A pressure level to include in the download, by default None. If None, the single-level data will be downloaded.
+        Requests the CDS daily-statistics product, so what arrives is already
+        aggregated to daily means from 6-hourly steps rather than raw hourly
+        data. The NetCDF lands in a temporary directory and is opened before
+        that directory is removed, so the returned dataset must be consumed or
+        loaded before it goes out of scope.
 
-        Returns
-        -------
-        xr.Dataset
-            An xarray Dataset containing the downloaded data.
+        Args:
+            variable (str): CDS variable name, e.g. ``"2m_temperature"`` or
+                ``"total_precipitation"``.
+            year (int): Calendar year.
+            month (int): Calendar month, 1-12.
+            pressure_level (int, optional): Pressure level in hPa. ``None``, the
+                default, requests the single-level product.
+
+        Returns:
+            xr.Dataset: The downloaded month.
+
+        Raises:
+            Exception: Whatever ``cdsapi`` raises for a rejected request — an
+                unknown variable name, or a missing/invalid ``~/.cdsapirc``.
         """
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -167,7 +219,17 @@ class ERA5Mirror:
         return ds
 
     def variable_to_zarr_name(self, variable: str, pressure_level: int = None):
-        """convert variable to zarr name"""
+        """Build the Zarr store path for a variable.
+
+        Args:
+            variable (str): CDS variable name.
+            pressure_level (int, optional): Pressure level in hPa. When given it
+                is folded into the name, so each level gets its own store.
+
+        Returns:
+            str: Path of the form ``<base_path>/<variable>.zarr`` or
+            ``<base_path>/<variable>_pressure_level_<n>.zarr``.
+        """
         # create zarr path for variable
         zarr_path = f"{self.base_path}/{variable}"
         if pressure_level:
@@ -182,20 +244,24 @@ class ERA5Mirror:
         month: int,
         pressure_level: int = None,
     ):
-        """
-        Downloads a chunk of ERA5 data for a specific variable and date range, and uploads it to a Zarr array.
-        This downloads a 1-month chunk of data.
+        """Download one month and append it to the variable's Zarr store.
 
-        Parameters
-        ----------
-        variable : str
-            The variable to download.
-        year : int
-            The year to download.
-        month : int
-            The month to download.
-        pressure_level : int, optional
-            Pressure levels to download, if applicable.
+        Creates the store on the first month and appends along ``time``
+        thereafter. Chunking is one timestep by the full global grid, which suits
+        reading a few dates over a wide area — the common ERA5 access pattern —
+        rather than long time series at one point.
+
+        The journal is updated only after a successful write, so a crash
+        mid-append leaves the month marked as missing and it is retried.
+
+        Args:
+            variable (str): CDS variable name.
+            year (int): Calendar year.
+            month (int): Calendar month, 1-12.
+            pressure_level (int, optional): Pressure level in hPa.
+
+        Returns:
+            None
         """
 
         # Download the data
@@ -244,21 +310,29 @@ class ERA5Mirror:
         variables: List[Union[str, Tuple[str, int]]],
         date_range: Tuple[datetime.date, datetime.date],
     ):
-        """
-        Start the process of mirroring the specified ERA5 variables for the given date range.
+        """Mirror a set of variables over a date range, month by month.
 
-        Parameters
-        ----------
-        variables : List[Union[str, Tuple[str, List[int]]]]
-            A list of variables to mirror, where each element can either be a string (single-level variable)
-            or a tuple (variable with pressure level).
-        date_range : Tuple[datetime.date, datetime.date]
-            A tuple containing the start and end dates for the data to be mirrored. This will download and store every month in the range.
+        Walks the range one calendar month at a time, skipping months the journal
+        already records and submitting the rest to Dask so several download
+        concurrently. Both endpoints are rounded down to the first of the month,
+        so any month the range touches is fetched whole.
 
-        Returns
-        -------
-        zarr_paths : List[str]
-            A list of Zarr paths for each of the variables.
+        Every resulting store is verified afterwards to have an evenly spaced
+        time axis — the symptom of a download that failed partway through.
+
+        Args:
+            variables (list[str | tuple[str, int]]): Variables to mirror. A bare
+                string requests single-level data; a ``(variable, level)`` tuple
+                requests one pressure level.
+            date_range (tuple[datetime.date, datetime.date]): Inclusive start and
+                end dates.
+
+        Returns:
+            list[str]: Path of the Zarr store for each requested variable.
+
+        Raises:
+            AssertionError: If a store ends with an unevenly spaced time axis.
+                Delete that store and re-run — the message names the path.
         """
 
         start_date, end_date = date_range

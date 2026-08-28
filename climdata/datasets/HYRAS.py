@@ -1,3 +1,23 @@
+"""HYRAS 1 km gridded observations for Germany, from the DWD Open Data server.
+
+HYRAS is published in two shapes that this module has to reconcile. The older
+variables (``pr``, ``tas``, ``tasmin``, ``tasmax``, ``hurs``) ship as one NetCDF
+per year on a curvilinear grid: projected ``x``/``y`` dimensions in Gauss-Krueger
+zone 3 (EPSG:31467) with 2-D ``lat(y, x)`` / ``lon(y, x)`` coordinates. The newer
+soil and evaporation variables (``evpot``, ``soilMoist``, ``soilTemp``) ship as
+monthly ``.tgz`` archives of daily ESRI ASCII rasters, which are read straight
+out of the archive without ever being extracted to disk.
+
+Because the geographic coordinates are two-dimensional, a lat/lon request cannot
+be a coordinate slice; it is resolved to integer indices through a k-d tree
+(:func:`find_nearest_xy`) or a rasterised mask, computed once from a sample file
+and reused for every file in the request.
+
+Example:
+    >>> hyras = HYRASmirror(cfg)                                  # doctest: +SKIP
+    >>> hyras.extract(point=(13.4, 52.5))                         # doctest: +SKIP
+    >>> ds = hyras.load("pr", chunking={"time": "auto"})          # doctest: +SKIP
+"""
 
 import os
 import tarfile
@@ -16,8 +36,31 @@ from shapely.geometry import mapping
 
 from omegaconf import DictConfig
 
-def fetch_dwd(var_cfg,var):
-    """Download HYRAS data for one variable and a list of years. Handles both .nc and .tgz formats."""
+def fetch_dwd(var_cfg, var):
+    """Download the HYRAS files covering the configured period for one variable.
+
+    Picks the layout from the variable's ``prefix``: monthly ``.tgz`` archives
+    for the soil and evaporation variables, yearly ``.nc`` files for the rest.
+    Files already on disk are skipped, so an interrupted run resumes.
+
+    The two layouts differ in how they treat a missing file, deliberately. The
+    ``.tgz`` variables are still being published, so a month the server does not
+    yet have is reported and skipped. The ``.nc`` variables are a closed
+    archive, so a missing year means the request is wrong and it raises.
+
+    Args:
+        var_cfg (DictConfig): Configuration with ``dataset``, ``data_dir``,
+            ``time_range`` and ``dsinfo.HYRAS.variables``.
+        var (str): CF variable name, e.g. ``"pr"``.
+
+    Returns:
+        None: Files are written under ``<data_dir>/HYRAS/<VARIABLE>/``.
+
+    Raises:
+        FileNotFoundError: If a required yearly ``.nc`` file is absent from the server.
+        RuntimeError: If a yearly ``.nc`` download fails partway through.
+        KeyError: If ``var`` is not declared in ``dsinfo.HYRAS.variables``.
+    """
     param_mapping = var_cfg.dsinfo
     provider = var_cfg.dataset.upper()
     parameter_key = var
@@ -115,27 +158,27 @@ def fetch_dwd(var_cfg,var):
                 raise RuntimeError(f"❌ Failed download: {file_url} — {e}")
 
 def read_asc_file(asc_file: str, varname: str = None, units: str = None) -> xr.DataArray:
-    """
-    Read an ASCII raster file (ESRI .asc format) and return as xarray DataArray.
-    
-    ASCII raster format header:
-        ncols         NUMBER
-        nrows         NUMBER
-        xllcorner     NUMBER
-        yllcorner     NUMBER
-        cellsize      NUMBER
-        NODATA_value  NUMBER
-        
-    Followed by the data grid.
-    
-    Parameters:
-    -----------
-    asc_file : str
-        Path to ASCII raster file
-    varname : str, optional
-        Variable name to determine scaling rules (evpot, soilTemp -> divide by 10; soilMoist -> no scaling)
-    units : str, optional
-        Units string to include in attributes
+    """Read one ESRI ASCII raster into a DataArray on the Gauss-Krueger grid.
+
+    The six-line header (``ncols``, ``nrows``, ``xllcorner``, ``yllcorner``,
+    ``cellsize``, ``NODATA_value``) is parsed, the nodata sentinel replaced with
+    NaN, and the grid given descending ``y`` coordinates to match the
+    north-to-south row order the format stores.
+
+    DWD publishes ``evpot`` and ``soilTemp`` scaled by ten; those are divided
+    back, while ``soilMoist`` is left alone. Getting ``varname`` wrong therefore
+    yields values off by a factor of ten rather than an error.
+
+    Args:
+        asc_file (str | os.PathLike | IO): Path to a ``.asc`` file, or an open
+            binary/text file object — which is how members are read directly out
+            of a ``.tgz`` archive.
+        varname (str, optional): CF variable name, used only to decide scaling.
+        units (str, optional): Units string to record in the attributes.
+
+    Returns:
+        xr.DataArray: Dimensions ``(y, x)`` in EPSG:31467 metres, with
+        ``xllcorner``, ``yllcorner``, ``cellsize`` and ``crs_grid`` attributes.
     """
     import io
     if isinstance(asc_file, (str, os.PathLike)):
@@ -158,8 +201,11 @@ def read_asc_file(asc_file: str, varname: str = None, units: str = None) -> xr.D
         nodata = header['nodata_value']
         
         # Read data
-        data = np.loadtxt(f)
-        
+        # loadtxt squeezes a single-row or single-column grid to 1-D, which does
+        # not match the ('y', 'x') dims below. The header already declares the
+        # shape, so reshape to it — that also catches a truncated file.
+        data = np.loadtxt(f).reshape(nrows, ncols)
+
         # Handle NODATA values
         data[data == nodata] = np.nan
         
@@ -192,11 +238,25 @@ def read_asc_file(asc_file: str, varname: str = None, units: str = None) -> xr.D
         return da
 
 def read_asc_timeseries(asc_files: List[str], varname: str = 'value', units: str = None) -> xr.Dataset:
+    """Stack per-day ASCII rasters into one dataset with geographic coordinates.
+
+    Files are sorted by name, so the ``YYYYMMDD`` stamp they carry puts them in
+    chronological order. The projected ``x``/``y`` grid is transformed to 2-D
+    ``lat``/``lon`` auxiliary coordinates, matching the layout of the NetCDF
+    HYRAS variables so both branches of :meth:`HYRASmirror.load` return the same
+    shape.
+
+    Unlike :func:`read_asc_timeseries_from_tgz`, every file is read eagerly.
+
+    Args:
+        asc_files (list[str]): Paths to ``.asc`` files, one per day.
+        varname (str): Name for the resulting data variable. Defaults to ``"value"``.
+        units (str, optional): Units string to record on the variable.
+
+    Returns:
+        xr.Dataset: Dimensions ``(time, y, x)``, with ``lat``/``lon`` coordinates
+        and ``crs_grid`` / ``crs_geographic`` attributes.
     """
-    Read a list of ASCII raster files (one per time step) and stack into a 3D xarray Dataset.
-    Transforms grid coordinates (Gauss Krüger 3) to geographic lat/lon and includes CRS information.
-    """
-    from dateutil import parser
     import re
     
     data_arrays = []
@@ -278,10 +338,16 @@ def read_asc_timeseries(asc_files: List[str], varname: str = 'value', units: str
     return ds
 
 def _iter_tgz_members(tgz_path: str):
-    """
-    Yield ``(date_str, member_name, file_like)`` for every .asc or .nc member
-    inside a .tgz archive.  The file-like object is an in-memory BytesIO so the
-    archive is never extracted to disk.
+    """Iterate the raster members of a ``.tgz`` archive without extracting it.
+
+    Args:
+        tgz_path (str): Path to the archive.
+
+    Yields:
+        tuple[str | None, str, io.BytesIO]: ``(date_str, member_name, file_like)``
+        for each ``.asc`` or ``.nc`` member, in name order. ``date_str`` is the
+        ``YYYYMMDD`` stamp found in the member name, or ``None`` if it has none.
+        The file object holds the member in memory.
     """
     import io, re
     with tarfile.open(tgz_path, 'r:gz') as tar:
@@ -299,9 +365,23 @@ def _iter_tgz_members(tgz_path: str):
 
 def _read_one_asc_member(tgz_path: str, member_name: str,
                           varname: str, units: str) -> np.ndarray:
-    """
-    Open *one* .asc member from a .tgz archive and return a 2-D float64 array.
-    Called lazily by dask workers — no state shared with the main process.
+    """Read one ``.asc`` member out of an archive as a plain array.
+
+    Reopens the archive on every call rather than holding a handle, because this
+    runs inside a ``dask.delayed`` task: a shared ``tarfile`` object is neither
+    picklable nor safe to read from several workers at once.
+
+    Args:
+        tgz_path (str): Path to the archive.
+        member_name (str): Name of the member to read.
+        varname (str): CF variable name, passed to :func:`read_asc_file` for scaling.
+        units (str): Units string, passed through to :func:`read_asc_file`.
+
+    Returns:
+        numpy.ndarray: The 2-D grid as ``float64``.
+
+    Raises:
+        RuntimeError: If the member cannot be extracted.
     """
     import io, tarfile as _tarfile
     with _tarfile.open(tgz_path, 'r:gz') as tar:
@@ -315,12 +395,21 @@ def _read_one_asc_member(tgz_path: str, member_name: str,
 
 def read_asc_timeseries_from_tgz(tgz_files: List[str], varname: str = 'value',
                                   units: str = None) -> xr.Dataset:
-    """
-    Read daily .asc members from a list of .tgz archives *without* extracting
-    them to disk.  Each daily slice is wrapped in a ``dask.delayed`` call so
-    the data is loaded lazily when computed.
+    """Build a lazy dataset over the daily rasters inside several ``.tgz`` archives.
 
-    Returns an xarray Dataset backed by a dask array with dims (time, y, x).
+    Scans every archive once to index its members and read the grid geometry from
+    the first, then wraps each daily raster in a ``dask.delayed`` call. Nothing
+    but that first raster is decompressed until the result is computed, so a
+    multi-year request costs an index scan rather than a full decompression.
+
+    Args:
+        tgz_files (list[str]): Paths to monthly archives. Sorted internally.
+        varname (str): Name for the resulting data variable. Defaults to ``"value"``.
+        units (str, optional): Units string to record on the variable.
+
+    Returns:
+        xr.Dataset: Dask-backed, dimensions ``(time, y, x)``, with ``lat``/``lon``
+        coordinates and the same attributes as :func:`read_asc_timeseries`.
     """
     import dask
     import dask.array as da
@@ -400,8 +489,22 @@ def read_asc_timeseries_from_tgz(tgz_files: List[str], varname: str = 'value',
 
 
 def find_nearest_xy(ds, target_lat, target_lon):
-    """
-    Given a dataset with curvilinear grid, find the nearest x,y index.
+    """Find the grid indices nearest a geographic point on a curvilinear grid.
+
+    Builds a k-d tree over the flattened 2-D ``lat``/``lon`` coordinates and
+    queries it in degree space — treating latitude and longitude as if they were
+    Cartesian. That overweights longitude at German latitudes, but at HYRAS's
+    1 km spacing the answer is the same cell.
+
+    The tree is rebuilt on every call, so this belongs outside per-file loops.
+
+    Args:
+        ds (xr.Dataset): Dataset with 2-D ``lat`` and ``lon`` coordinates.
+        target_lat (float): Latitude in degrees.
+        target_lon (float): Longitude in degrees.
+
+    Returns:
+        tuple[int, int]: ``(iy, ix)`` indices into the ``y`` and ``x`` dimensions.
     """
     lat = ds['lat'].values  # shape (y,x) or (x,y)
     lon = ds['lon'].values
@@ -418,18 +521,46 @@ def find_nearest_xy(ds, target_lat, target_lon):
 
 
 class HYRASmirror:
-    """
-    Optimized HYRAS mirror loader.
+    """Download, open and subset HYRAS grids across both of its file layouts.
 
-    - Point extraction: done per-file inside preprocess (open_mfdataset).
-    - Box / shapefile extraction: done outside open_mfdataset:
-        * compute indices / mask from a sample file once
-        * apply indices / mask to each file opened individually
-        * concat along time
-    - Optional dask chunking via use_dask flag.
+    Call :meth:`extract` to record the region of interest, then :meth:`load`,
+    which downloads what is missing and applies the subset. Each of the three
+    subsetting modes takes a different route, chosen for cost:
+
+    * **point** — resolved per file inside ``open_mfdataset``'s ``preprocess``
+      hook, so only one cell of each file is ever materialised.
+    * **box** — index bounds computed once from a sample file, then applied to
+      each file opened individually and concatenated. Files are opened one at a
+      time rather than through ``open_mfdataset`` because the index bounds must
+      be known before the first file is read.
+    * **shapefile** — a mask rasterised once, then applied with ``where``. Unlike
+      the box path this keeps the full grid extent and blanks cells outside the
+      geometry, so the result has the source's spatial shape.
+
+    Loading also normalises two unit strings DWD writes in a form xclim does not
+    accept: ``pr`` in ``"mm"`` becomes ``"mm/day"``, and ``hurs`` in
+    ``"Percent"`` becomes ``"%"``.
+
+    Attributes:
+        cfg (DictConfig): Hydra configuration.
+        variables (list[str]): ``cfg.variables``.
+        files (list[str]): Local paths resolved by the last :meth:`fetch`.
+        dataset (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+
+    Example:
+        >>> hyras = HYRASmirror(cfg)                                 # doctest: +SKIP
+        >>> hyras.extract(box={"lat_min": 47, "lat_max": 55,         # doctest: +SKIP
+        ...                    "lon_min": 6, "lon_max": 15})
+        >>> ds = hyras.load("pr")                                    # doctest: +SKIP
     """
 
     def __init__(self, cfg: DictConfig):
+        """Bind a configuration.
+
+        Args:
+            cfg (DictConfig): Configuration with ``dataset``, ``data_dir``,
+                ``variables``, ``time_range`` and ``dsinfo.HYRAS``.
+        """
         self.cfg = cfg
         self.dataset: Optional[xr.Dataset] = None
         self.variables = cfg.variables
@@ -448,7 +579,16 @@ class HYRASmirror:
     # File discovery / fetch
     # --------------------------
     def fetch(self, variable: str) -> List[str]:
-        """Download HYRAS data for a given variable and time range and return file list. Handles both .nc, .asc, and .tgz formats."""
+        """Download a variable's files and list the local paths now available.
+
+        Args:
+            variable (str): CF variable name, e.g. ``"pr"``.
+
+        Returns:
+            list[str]: Local paths in chronological order — monthly ``.tgz``
+            archives or yearly ``.nc`` files depending on the variable. Also
+            stored on :attr:`files`.
+        """
         # keep your fetch behavior (calls fetch_dwd)
         fetch_dwd(self.cfg, variable)
 
@@ -483,7 +623,6 @@ class HYRASmirror:
                         files.append(tgz_path)
         else:
             # Handle old format: *_{year}_{version}_de.nc
-            import glob
             for year in range(start_year, end_year + 1):
                 file_name = f"{prefix}_{year}_{version}_de.nc"
                 file_path = os.path.join(var_dir, file_name)
@@ -499,11 +638,27 @@ class HYRASmirror:
     # --------------------------
     def extract(self, *, point: Tuple[float, float] = None, box: Dict[str, float] = None,
                 shapefile: str = None, buffer_km: float = 0.0):
-        """
-        Specify extraction intent.
-        - point: (lon, lat)
-        - box: dict(lat_min, lat_max, lon_min, lon_max)
-        - shapefile: path or GeoDataFrame (if str -> read file)
+        """Record the region of interest for :meth:`load` to apply.
+
+        Nothing is read here, and any cached grid indices from a previous call
+        are discarded. The three modes are mutually exclusive; the first supplied
+        wins, in the order ``point``, ``box``, ``shapefile``.
+
+        Args:
+            point (tuple[float, float], optional): ``(lon, lat)`` in degrees,
+                longitude first. Selects the single nearest grid cell.
+            box (dict, optional): Bounding box; all four of ``lat_min``,
+                ``lat_max``, ``lon_min``, ``lon_max`` are required.
+            shapefile (str | geopandas.GeoDataFrame, optional): Polygon(s) to
+                mask to, as a path or an in-memory frame.
+            buffer_km (float): Dilation applied to ``shapefile`` geometries in
+                Web Mercator. Ignored for ``point`` and ``box``. Defaults to ``0.0``.
+
+        Returns:
+            HYRASmirror: ``self``, so the call can be chained into :meth:`load`.
+
+        Raises:
+            ValueError: If no geometry was given, or if ``box`` is missing a key.
         """
         if point is not None:
             lon, lat = point
@@ -541,9 +696,18 @@ class HYRASmirror:
     # Helpers to compute indices/mask from a sample file
     # --------------------------
     def _load_sample_grid(self, sample_file: str, varname: Optional[str] = None):
-        """
-        Open one file (lightweight) and return lat/lon arrays and shape.
-        We don't load big data arrays here; just coordinates.
+        """Read just the coordinate arrays from one file.
+
+        Opens with ``decode_times=False`` and touches only the coordinates, so
+        no data array is materialised.
+
+        Args:
+            sample_file (str): Path to a HYRAS NetCDF file.
+            varname (str, optional): Unused; accepted for call-site symmetry.
+
+        Returns:
+            tuple[numpy.ndarray, numpy.ndarray]: ``(lat, lon)``, each 1-D or 2-D
+            depending on the file.
         """
         ds = xr.open_dataset(sample_file, engine="netcdf4", decode_times=False)
         # Try to access coordinates in common names; adapt if your files differ.
@@ -560,7 +724,21 @@ class HYRASmirror:
         return lat, lon
 
     def _compute_box_indices(self, sample_file: str):
-        """Compute nearest-array indices for the box on sample grid and cache them."""
+        """Resolve the requested box to cached integer index bounds.
+
+        Maps the box's two opposite corners to grid indices through
+        :func:`find_nearest_xy` and takes the enclosing rectangle. Because the
+        grid is curvilinear, that rectangle is an approximation of the
+        geographic box, and a rotated domain yields slightly more area than
+        asked for. The result is cached until :meth:`extract` is called again.
+
+        Args:
+            sample_file (str): Path to a file whose grid represents the request.
+
+        Returns:
+            tuple[int, int, int, int]: ``(y0, y1, x0, x1)`` as Python slice
+            endpoints, so ``y1`` and ``x1`` are exclusive.
+        """
         if self._cached_box_idx is not None:
             return self._cached_box_idx
 
@@ -578,7 +756,24 @@ class HYRASmirror:
         return self._cached_box_idx
 
     def _compute_shapefile_mask(self, sample_file: str):
-        """Rasterize shapefile on the sample grid and cache mask (y,x boolean)."""
+        """Rasterise the requested geometry onto the grid, and cache the mask.
+
+        The transform is derived from the coordinate bounding box and the grid
+        shape, which treats the curvilinear grid as regular in lat/lon. Over
+        Germany the distortion is under a cell; over a larger or more rotated
+        domain it would not be.
+
+        Args:
+            sample_file (str): Path to a file whose grid represents the request.
+
+        Returns:
+            numpy.ndarray: Boolean mask of shape ``(ny, nx)``, ``True`` inside
+            the geometry.
+
+        Raises:
+            RuntimeError: If the extraction mode is not ``"shapefile"``, or the
+                coordinate arrays are neither 1-D nor 2-D.
+        """
         if self._cached_mask is not None:
             return self._cached_mask
 
@@ -624,6 +819,19 @@ class HYRASmirror:
     # --------------------------
 
     def _apply_time_subset(self, ds):
+        """Clip a dataset to the configured time range.
+
+        Yearly and monthly files always overrun the request at both ends. If the
+        time coordinate has not been decoded, ``decode_cf`` is applied and the
+        slice retried; if that also fails the dataset is returned unclipped, so a
+        surprising time encoding costs extra timesteps rather than the whole load.
+
+        Args:
+            ds (xr.Dataset): Dataset with a ``time`` dimension.
+
+        Returns:
+            xr.Dataset: The clipped dataset, or ``ds`` unchanged on failure.
+        """
         start = getattr(self.cfg.time_range, "start_date", None)
         end = getattr(self.cfg.time_range, "end_date", None)
         if start or end:
@@ -639,13 +847,25 @@ class HYRASmirror:
                     pass
         return ds
     def load(self, variable: str, use_dask: bool = True, chunking: dict = None):
-        """
-        Load variable with extraction applied.
-        Handles both NetCDF (.nc) and ASCII raster (.asc) files.
+        """Download what is missing, then open the variable with the subset applied.
 
-        - If extraction mode == 'point' -> uses open_mfdataset with preprocess (fast)
-        - If extraction mode in ('box','shapefile') -> open per-file, apply index/mask, concat
-        - If files are .asc -> converts to xarray via read_asc_timeseries
+        Dispatches on file layout first (``.tgz`` archives versus yearly NetCDF)
+        and then on extraction mode; see the class docstring for why each mode
+        takes the route it does. Unit strings are normalised and the result is
+        clipped to the configured time range.
+
+        Args:
+            variable (str): CF variable name, e.g. ``"pr"``.
+            use_dask (bool): Whether ``chunking`` is applied. Defaults to ``True``.
+            chunking (dict, optional): Chunk sizes, e.g. ``{"time": "auto"}``.
+                Only used when ``use_dask`` is true.
+
+        Returns:
+            xr.Dataset: The subset dataset, also stored on :attr:`dataset`.
+            Dimensions are ``(time, y, x)``, or ``(time,)`` in point mode.
+
+        Raises:
+            FileNotFoundError: If no files exist for the variable and period.
         """
 
         files = self.fetch(variable)
@@ -823,6 +1043,22 @@ class HYRASmirror:
     # Utility: save current dataset to CSV
     # --------------------------
     def save_csv(self, filename: str, df: pd.DataFrame = None):
+        """Write a frame, or the loaded dataset, to CSV.
+
+        A gridded HYRAS dataset flattens to one row per cell per timestep, so
+        this can be very large for anything but a point or a small box.
+
+        Args:
+            filename (str): Destination path. The parent directory must exist.
+            df (pd.DataFrame, optional): Frame to write. Defaults to the loaded
+                dataset converted with ``to_dataframe()``.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no frame is given and no dataset is loaded.
+        """
         if df is None:
             if self.dataset is None:
                 raise ValueError("No dataset loaded")

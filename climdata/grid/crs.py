@@ -12,7 +12,6 @@ normalising 0-360 longitudes that arrive from CMIP / NEX-GDDP.
 
 from __future__ import annotations
 
-import math
 import warnings
 from typing import Any, Optional, Sequence, Tuple
 
@@ -166,7 +165,7 @@ def infer_spatial_dims(
         return x_dim, y_dim
 
     try:  # rioxarray may already have them set
-        import rioxarray  # noqa: F401
+        import rioxarray  # noqa: F401 — registers the .rio accessor
 
         return obj.rio.x_dim, obj.rio.y_dim
     except Exception:

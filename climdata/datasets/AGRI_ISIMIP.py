@@ -1,58 +1,74 @@
-"""
-AGRI-ISIMIP dataset access module
+"""Agricultural impact-model output from ISIMIP.
 
-This module provides access to agricultural impact model outputs from ISIMIP (Inter-Sectoral Impact Model
-Intercomparison Project). It provides data on crop yields, biomass, plant year, and other agricultural
-metrics under various climate scenarios and irrigation conditions.
+Unlike the other providers, which serve climate variables, this serves the
+*output* of crop models — yields, biomass, planting dates — produced by models
+such as DSSAT, EPIC, GEPIC, LPJmL and PROMET driven by CMIP6 projections.
 
-Data includes outputs from different crop models (DSSAT, EPIC, GEPIC, LPJmL, PEGASUS, PROMET, etc.)
-driven by climate projections (CMIP6) for different experiments, scenarios, and irrigation conditions.
+That difference shapes the API. A file is identified by a five-part combination
+(impact model, climate forcing, period, crop, irrigation regime), and which
+combinations actually exist cannot be guessed. So this class is the only one in
+climdata with a discovery step: :meth:`AGRI_ISIMIP.query_available_metadata`
+asks the API what exists for a configuration before anything is requested, and
+the ``AVAILABLE_*`` properties raise until it has run.
 
 More info: https://www.isimip.org/
+
+Example:
+    >>> agri = AGRI_ISIMIP(cfg)                                  # doctest: +SKIP
+    >>> agri.explore()             # what exists for this config  # doctest: +SKIP
+    >>> agri.fetch()                                             # doctest: +SKIP
+    >>> ds = agri.load("yield-mai-noirr")                        # doctest: +SKIP
 """
 
-import os
-import xarray as xr
 import pandas as pd
+import xarray as xr
 from pathlib import Path
-from datetime import datetime
 from omegaconf import DictConfig
 from typing import Optional, Tuple, Dict, List, Set
 import warnings
-import requests
-from tqdm import tqdm
 import re
 
 warnings.filterwarnings("ignore", category=Warning)
 
 
 class AGRI_ISIMIP:
-    """
-    A class to query, download and process agricultural model outputs from ISIMIP.
+    """Discover, download and subset ISIMIP agricultural model output.
 
-    This class provides access to crop model outputs (yields, biomass, plant year, etc.)
-    driven by different climate projections under various experiments and irrigation conditions.
+    The lifecycle has an extra first step compared to the climate providers:
+    :meth:`query_available_metadata` (or :meth:`explore`, which loops it over
+    every configured combination) must run before the ``AVAILABLE_*`` properties
+    return anything, because what a given impact model published for a given
+    forcing and period can only be learned from the API.
 
-    The class uses the isimip_client to query the ISIMIP API with specific paths and configurations
-    (impact_model, climate_forcing, period) that come from the configuration file.
+    After that the usual ``fetch`` → ``load`` → ``extract`` applies. Requests are
+    described by ``cfg.query_configs``, a list of ``impact_model`` /
+    ``climate_forcing`` / ``period`` combinations.
 
-    Attributes
-    ----------
-    cfg : DictConfig
-        Configuration containing query_configs, data_dir, etc.
-    client : ISIMIPClient
-        ISIMIP API client for querying datasets
-    _available_crops : Set[str]
-        Available crops (cached from API query)
-    _available_variables : Set[str]
-        Available variables (cached from API query)
-    _available_irrigations : Set[str]
-        Available irrigation types (cached from API query)
-    _available_scenarios : Set[str]
-        Available climate scenarios (cached from API query)
+    Attributes:
+        cfg (DictConfig): Configuration with ``query_configs`` and ``data_dir``.
+        client (ISIMIPClient): ISIMIP API client, created in :meth:`__init__`.
+        ds (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+        downloaded_files (list[str]): Local paths accumulated by :meth:`fetch`.
+
+    Example:
+        >>> agri = AGRI_ISIMIP(cfg)                                    # doctest: +SKIP
+        >>> agri.query_available_metadata("LPJmL", "gfdl-esm4", "future")
+        >>> sorted(agri.AVAILABLE_CROPS)[:3]                           # doctest: +SKIP
+        ['mai', 'ri1', 'soy']
     """
 
     def __init__(self, cfg: DictConfig):
+        """Bind a configuration and open an ISIMIP client.
+
+        No metadata is queried here; the ``AVAILABLE_*`` caches start empty.
+
+        Args:
+            cfg (DictConfig): Configuration with ``query_configs``, ``data_dir``
+                and ``variables``.
+
+        Raises:
+            ImportError: If ``isimip-client`` is not installed.
+        """
         self.cfg = cfg
         self.ds = None
         self.downloaded_files = []
@@ -77,50 +93,72 @@ class AGRI_ISIMIP:
 
     @property
     def AVAILABLE_CROPS(self) -> Set[str]:
-        """Available crops (cached from API query)."""
+        """Crops the API reported for the queried configuration.
+
+        Returns:
+            set[str]: Crop codes, e.g. ``{"mai", "ri1", "soy", "swh", "wwh"}``.
+
+        Raises:
+            ValueError: If :meth:`query_available_metadata` has not run.
+        """
         if self._available_crops is None:
             raise ValueError("No crops loaded. Call query_available_metadata() first.")
         return self._available_crops
 
     @property
     def AVAILABLE_VARIABLES(self) -> Set[str]:
-        """Available variables (cached from API query)."""
+        """Variables the API reported for the queried configuration.
+
+        Returns:
+            set[str]: Variable names, e.g. ``{"yield", "biom", "plantyear"}``.
+
+        Raises:
+            ValueError: If :meth:`query_available_metadata` has not run.
+        """
         if self._available_variables is None:
             raise ValueError("No variables loaded. Call query_available_metadata() first.")
         return self._available_variables
 
     @property
     def AVAILABLE_IRRIGATIONS(self) -> Set[str]:
-        """Available irrigation types (cached from API query)."""
+        """Irrigation regimes the API reported for the queried configuration.
+
+        Returns:
+            set[str]: Regime codes — typically ``{"noirr", "firr"}`` for rainfed
+            and fully irrigated.
+
+        Raises:
+            ValueError: If :meth:`query_available_metadata` has not run.
+        """
         if self._available_irrigations is None:
             raise ValueError("No irrigations loaded. Call query_available_metadata() first.")
         return self._available_irrigations
 
     @property
     def AVAILABLE_SCENARIOS(self) -> Set[str]:
-        """Available climate scenarios (cached from API query)."""
+        """Climate scenarios the API reported for the queried configuration.
+
+        Returns:
+            set[str]: Scenario names, e.g. ``{"historical", "ssp126", "ssp585"}``.
+
+        Raises:
+            ValueError: If :meth:`query_available_metadata` has not run.
+        """
         if self._available_scenarios is None:
             raise ValueError("No scenarios loaded. Call query_available_metadata() first.")
         return self._available_scenarios
 
     def query_available_metadata(self, impact_model: str, climate_forcing: str, period: str) -> None:
-        """
-        Query ISIMIP API to get all available metadata for a specific configuration.
+        """Query ISIMIP API to get all available metadata for a specific configuration.
         Extracts crops, variables, irrigation types, and scenarios.
-        
-        Parameters
-        ----------
-        impact_model : str
-            Impact model name (e.g., 'SIMPLACE-LINTUL5')
-        climate_forcing : str
-            Climate forcing/model (e.g., 'mpi-esm1-2-hr')
-        period : str
-            Time period (e.g., 'historical')
-        
-        Raises
-        ------
-        Exception
-            If API query fails or no datasets found
+
+        Args:
+            impact_model (str): Impact model name (e.g., 'SIMPLACE-LINTUL5')
+            climate_forcing (str): Climate forcing/model (e.g., 'mpi-esm1-2-hr')
+            period (str): Time period (e.g., 'historical')
+
+        Raises:
+            Exception: If API query fails or no datasets found
         """
         path = f'ISIMIP3b/OutputData/agriculture/{impact_model}/{climate_forcing}/{period}'
         
@@ -181,10 +219,18 @@ class AGRI_ISIMIP:
         print(f"   Scenarios: {sorted(scenarios)}")
 
     def explore(self):
-        """
-        Explore available metadata for configured query options.
-        
-        Iterates through query_configs and fetches available metadata for each.
+        """Print what ISIMIP holds for every configured query combination.
+
+        Runs :meth:`query_available_metadata` over each entry of
+        ``cfg.query_configs`` and prints the crops, variables, irrigation
+        regimes and scenarios found. The intended first call on a new
+        configuration, before committing to a download.
+
+        Note that the ``AVAILABLE_*`` caches are overwritten by each combination
+        in turn, so after this they reflect the last one only.
+
+        Returns:
+            None: The report is written to stdout.
         """
         print("\n" + "=" * 70)
         print("🌾 AGRI-ISIMIP Dataset Explorer")
@@ -215,28 +261,18 @@ class AGRI_ISIMIP:
     def list_files(self, impact_model: str, climate_forcing: str, period: str,
                    crop: Optional[str] = None, irrigation: Optional[str] = None,
                    variable: Optional[str] = None) -> List[Dict]:
-        """
-        List available files matching the given criteria.
+        """List available files matching the given criteria.
 
-        Parameters
-        ----------
-        impact_model : str
-            Impact model name (e.g., 'SIMPLACE-LINTUL5')
-        climate_forcing : str
-            Climate forcing (e.g., 'mpi-esm1-2-hr')
-        period : str
-            Time period (e.g., 'historical')
-        crop : str, optional
-            Filter by crop name
-        irrigation : str, optional
-            Filter by irrigation type ('firr' or 'noirr')
-        variable : str, optional
-            Filter by variable name
+        Args:
+            impact_model (str): Impact model name (e.g., 'SIMPLACE-LINTUL5')
+            climate_forcing (str): Climate forcing (e.g., 'mpi-esm1-2-hr')
+            period (str): Time period (e.g., 'historical')
+            crop (str, optional): Filter by crop name
+            irrigation (str, optional): Filter by irrigation type ('firr' or 'noirr')
+            variable (str, optional): Filter by variable name
 
-        Returns
-        -------
-        List[Dict]
-            List of file metadata dictionaries
+        Returns:
+            List[Dict]: List of file metadata dictionaries
         """
         path = f'ISIMIP3b/OutputData/agriculture/{impact_model}/{climate_forcing}/{period}'
         
@@ -324,26 +360,18 @@ class AGRI_ISIMIP:
     def fetch(self, impact_model: str, climate_forcing: str, period: str,
               crop: Optional[str] = None, irrigation: Optional[str] = None,
               variable: Optional[str] = None):
-        """
-        Download AGRI-ISIMIP files matching the criteria using isimip_client.download().
+        """Download AGRI-ISIMIP files matching the criteria using isimip_client.download().
 
         Files are stored as::
-            <data_dir>/AGRI_ISIMIP/<impact_model>/<climate_forcing>/<period>/<crop>/<variable>/<irrigation>/
+        <data_dir>/AGRI_ISIMIP/<impact_model>/<climate_forcing>/<period>/<crop>/<variable>/<irrigation>/
 
-        Parameters
-        ----------
-        impact_model : str
-            Impact model name
-        climate_forcing : str
-            Climate forcing
-        period : str
-            Time period
-        crop : str, optional
-            Specific crop to download
-        irrigation : str, optional
-            Specific irrigation type to download
-        variable : str, optional
-            Specific variable to download
+        Args:
+            impact_model (str): Impact model name
+            climate_forcing (str): Climate forcing
+            period (str): Time period
+            crop (str, optional): Specific crop to download
+            irrigation (str, optional): Specific irrigation type to download
+            variable (str, optional): Specific variable to download
         """
         files_list = self.list_files(
             impact_model=impact_model,
@@ -430,33 +458,27 @@ class AGRI_ISIMIP:
         print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
 
     def load(self, file_path: str, use_dask: bool = True, decode_times: bool = False) -> xr.Dataset:
-        """
-        Load a NetCDF file into an xarray Dataset with custom time handling for ISIMIP data.
+        """Load a NetCDF file into an xarray Dataset with custom time handling for ISIMIP data.
 
-        Parameters
-        ----------
-        file_path : str
-            Path to the NetCDF file
-        use_dask : bool, optional
-            Whether to use dask for lazy loading (default: True)
-        decode_times : bool, optional
-            Whether to decode times (default: False for ISIMIP data with custom calendars)
-            Set to True if your data uses standard time encoding
+        Args:
+            file_path (str): Path to the NetCDF file
+            use_dask (bool, optional): Whether to use dask for lazy loading (default:
+                True)
+            decode_times (bool, optional): Whether to decode times (default: False for
+                ISIMIP data with custom calendars) Set to True if your data uses
+                standard time encoding
 
-        Returns
-        -------
-        xr.Dataset
-            Loaded xarray dataset with properly decoded time coordinates
-            
-        Notes
-        -----
-        ISIMIP data often uses custom time encoding like "growing seasons since 1601-01-01"
-        with custom calendars. This function automatically detects and converts such times
-        to proper datetime coordinates by:
-        1. Loading with decode_times=False
-        2. Parsing the time unit string (e.g., "since 1601-01-01")
-        3. Interpreting time values as years offset from the reference year
-        4. Creating proper datetime coordinates
+        Returns:
+            xr.Dataset: Loaded xarray dataset with properly decoded time coordinates
+
+        Note:
+            ISIMIP data often uses custom time encoding like "growing seasons since 1601-01-01"
+            with custom calendars. This function automatically detects and converts such times
+            to proper datetime coordinates by:
+            1. Loading with decode_times=False
+            2. Parsing the time unit string (e.g., "since 1601-01-01")
+            3. Interpreting time values as years offset from the reference year
+            4. Creating proper datetime coordinates
         """
         print(f"📂 Loading {file_path}...")
         
@@ -506,19 +528,14 @@ class AGRI_ISIMIP:
 
     def extract(self, *, point: Tuple[float, float] = None, box: Dict[str, float] = None,
                 shapefile: str = None, buffer_km: float = 0.0):
-        """
-        Specify spatial extraction intent.
+        """Specify spatial extraction intent.
 
-        Parameters
-        ----------
-        point : tuple, optional
-            (lon, lat) for point extraction
-        box : dict, optional
-            dict(lat_min, lat_max, lon_min, lon_max) for box extraction
-        shapefile : str, optional
-            Path to shapefile for shapefile extraction
-        buffer_km : float, optional
-            Buffer in km for shapefile extraction
+        Args:
+            point (tuple, optional): (lon, lat) for point extraction
+            box (dict, optional): dict(lat_min, lat_max, lon_min, lon_max) for box
+                extraction
+            shapefile (str, optional): Path to shapefile for shapefile extraction
+            buffer_km (float, optional): Buffer in km for shapefile extraction
         """
         if point is not None:
             lon, lat = point
@@ -551,13 +568,10 @@ class AGRI_ISIMIP:
         return self
 
     def get_extracted_data(self) -> xr.Dataset:
-        """
-        Extract data based on spatial mode set via extract().
-        
-        Returns
-        -------
-        xr.Dataset
-            Extracted dataset at specified location(s)
+        """Extract data based on spatial mode set via extract().
+
+        Returns:
+            xr.Dataset: Extracted dataset at specified location(s)
         """
         if self.ds is None:
             raise ValueError("No dataset loaded. Call load() first.")
@@ -585,7 +599,17 @@ class AGRI_ISIMIP:
             raise ValueError("No extraction mode set. Call extract() first.")
 
     def save_csv(self, filename: str):
-        """Save the current dataset to CSV."""
+        """Write the loaded dataset to CSV, one row per cell per timestep.
+
+        Args:
+            filename (str): Destination path. The parent directory must exist.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no dataset has been loaded.
+        """
         if self.ds is None:
             raise ValueError("No dataset loaded. Call load() first.")
         df = self.ds.to_dataframe().reset_index()
@@ -593,7 +617,17 @@ class AGRI_ISIMIP:
         print(f"✅ Saved CSV to {filename}")
 
     def save_netcdf(self, filename: str):
-        """Save the current dataset to NetCDF."""
+        """Write the loaded dataset to NetCDF.
+
+        Args:
+            filename (str): Destination path. The parent directory must exist.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no dataset has been loaded.
+        """
         if self.ds is None:
             raise ValueError("No dataset loaded. Call load() first.")
         self.ds.to_netcdf(filename)

@@ -23,7 +23,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple
 
 from .crs import crs_axis_unit, parse_crs
 

@@ -1,5 +1,10 @@
-"""
-Query and display functions for the explore module.
+"""Console-formatted queries over the climdata dataset registry.
+
+Every function here prints a human-readable report and returns ``None`` — they
+exist for interactive use at a REPL or in a notebook, to answer "what data can I
+get, and what is in it?" before any download is attempted. For programmatic
+access to the same metadata use :func:`climdata.explore.get_registry`, which
+returns a plain dictionary.
 """
 
 from __future__ import annotations
@@ -9,12 +14,19 @@ from climdata.explore.registry import REGISTRY, resolve_dataset_key
 
 
 def list_available_data() -> None:
-    """Print a formatted summary table of all datasets in the registry.
+    """Print a summary table of every dataset in the registry.
 
-    Examples
-    --------
-    >>> import climdata as cd
-    >>> cd.list_available_data()
+    One row per provider, with its abbreviation, long name, type, spatial
+    coverage and native resolution. The abbreviation in the first column is the
+    key accepted by :func:`explore`, :func:`inspect` and the ``dataset=`` Hydra
+    override.
+
+    Returns:
+        None: The table is written to stdout.
+
+    Example:
+        >>> import climdata as cd
+        >>> cd.list_available_data()                       # doctest: +SKIP
     """
     col_abbr  = 12
     col_name  = 44
@@ -48,18 +60,22 @@ def list_available_data() -> None:
 
 
 def explore(dataset: str) -> None:
-    """Print a detailed profile for a specific dataset.
+    """Print a detailed profile for one dataset.
 
-    Parameters
-    ----------
-    dataset : str
-        Dataset abbreviation as shown in :func:`list_available_data`
-        (e.g. ``"ERA5"``, ``"NEXGDDP"``, ``"CMIP"``).
+    Covers type, coverage, resolution, frequency, temporal extent and source,
+    followed by the experiments, models and variables the registry knows about.
+    An unknown name prints the list of valid ones rather than raising.
 
-    Examples
-    --------
-    >>> import climdata as cd
-    >>> cd.explore(dataset="NEXGDDP")
+    Args:
+        dataset (str): Dataset abbreviation as shown by :func:`list_available_data`
+            (e.g. ``"ERA5"``, ``"NEXGDDP"``, ``"CMIP"``). Matched case-insensitively.
+
+    Returns:
+        None: The profile is written to stdout.
+
+    Example:
+        >>> import climdata as cd
+        >>> cd.explore(dataset="NEXGDDP")                  # doctest: +SKIP
     """
     key = resolve_dataset_key(dataset)
     if key is None:
@@ -112,24 +128,30 @@ def find(
     type_filter: Optional[str] = None,
     coverage:    Optional[str] = None,
 ) -> None:
-    """Search the registry for datasets matching given criteria.
+    """Search the registry for datasets matching the given criteria.
 
-    Parameters
-    ----------
-    variable : str, optional
-        CF variable name to search for (e.g. ``"pr"``, ``"tas"``).
-    frequency : str, optional
-        Temporal resolution keyword, e.g. ``"daily"``, ``"hourly"``.
-    type_filter : str, optional
-        Dataset type substring, e.g. ``"Observation"``, ``"ESM"``.
-    coverage : str, optional
-        Coverage region keyword, e.g. ``"Global"``, ``"Germany"``.
+    Criteria combine with AND: a dataset is listed only if it satisfies every
+    argument that was supplied. ``variable`` requires an exact CF-name match;
+    the other three match as case-insensitive substrings. Passing no arguments
+    lists everything.
 
-    Examples
-    --------
-    >>> import climdata as cd
-    >>> cd.find(variable="pr", frequency="daily")
-    >>> cd.find(type_filter="ESM")
+    Args:
+        variable (str, optional): CF variable name that the dataset must provide
+            (e.g. ``"pr"``, ``"tas"``). Exact match.
+        frequency (str, optional): Temporal resolution keyword, e.g. ``"daily"``,
+            ``"hourly"``. Substring match.
+        type_filter (str, optional): Dataset type, e.g. ``"Observation"``,
+            ``"ESM"``. Substring match.
+        coverage (str, optional): Coverage region, e.g. ``"Global"``,
+            ``"Germany"``. Substring match.
+
+    Returns:
+        None: Matches are written to stdout.
+
+    Example:
+        >>> import climdata as cd
+        >>> cd.find(variable="pr", frequency="daily")      # doctest: +SKIP
+        >>> cd.find(type_filter="ESM")                     # doctest: +SKIP
     """
     matches = []
     for key, meta in REGISTRY.items():
@@ -168,23 +190,26 @@ def find(
 
 
 def inspect(dataset: str, variable: str) -> None:
-    """Print detailed metadata for a single variable within a dataset,
-    including unit information and any BASD conversion hints.
+    """Print variable-level metadata for one variable of one dataset.
 
-    Metadata is loaded from climdata/conf/mappings/parameters.yaml if available,
-    with fallback to hardcoded VAR_META dictionary.
+    Reports the long name, the unit BASD expects for the variable, and any
+    conversion note attached to it — the detail that matters before feeding data
+    to :mod:`climdata.sdba`, since a unit mismatch there fails silently rather
+    than loudly. Metadata comes from ``conf/mappings/parameters.yaml``.
 
-    Parameters
-    ----------
-    dataset : str
-        Dataset abbreviation (e.g. ``"ERA5"``).
-    variable : str
-        CF variable name (e.g. ``"tp"``, ``"pr"``).
+    Unknown datasets, and variables the dataset does not carry, print the valid
+    alternatives rather than raising.
 
-    Examples
-    --------
-    >>> import climdata as cd
-    >>> cd.inspect("ERA5", variable="tp")
+    Args:
+        dataset (str): Dataset abbreviation (e.g. ``"ERA5"``). Case-insensitive.
+        variable (str): CF variable name (e.g. ``"tp"``, ``"pr"``).
+
+    Returns:
+        None: The report is written to stdout.
+
+    Example:
+        >>> import climdata as cd
+        >>> cd.inspect("ERA5", variable="tp")              # doctest: +SKIP
     """
     key = resolve_dataset_key(dataset)
     if key is None:
@@ -203,7 +228,7 @@ def inspect(dataset: str, variable: str) -> None:
 
     # Try to load metadata from YAML config first
     vmeta = _get_variable_metadata(variable)
-    
+
     if vmeta is None:
         print(f"\n  Variable '{variable}' found in {key} but has no detailed metadata yet.\n")
         return
@@ -228,17 +253,23 @@ def inspect(dataset: str, variable: str) -> None:
 # -----------------------------------------------------------------------
 
 def list_esm_experiments(dataset: str) -> None:
-    """Print available experiments (scenarios) for an ESM dataset.
+    """Print the experiments (scenarios) available for an ESM dataset.
 
-    Parameters
-    ----------
-    dataset : str
-        Dataset abbreviation (e.g. ``"CMIP"``, ``"NEXGDDP"``, ``"CMIPW5E5"``).
+    Reads the experiment list straight from the registry, so it costs nothing and
+    needs no credentials. Non-ESM datasets, and ESM datasets whose experiments
+    are not declared in the configuration, print a hint pointing at the dataset
+    class's own ``get_experiment_ids()``.
 
-    Examples
-    --------
-    >>> import climdata as cd
-    >>> cd.list_esm_experiments("CMIP")
+    Args:
+        dataset (str): Dataset abbreviation (e.g. ``"CMIP"``, ``"NEXGDDP"``,
+            ``"CMIP_W5E5"``). Case-insensitive.
+
+    Returns:
+        None: The list is written to stdout.
+
+    Example:
+        >>> import climdata as cd
+        >>> cd.list_esm_experiments("CMIP")                # doctest: +SKIP
     """
     key = resolve_dataset_key(dataset)
     if key is None:
@@ -246,14 +277,14 @@ def list_esm_experiments(dataset: str) -> None:
         return
 
     meta = REGISTRY[key]
-    
+
     # Check if dataset is ESM-based
     if "ESM" not in meta.get("type", ""):
         print(f"\n  ℹ  {key} is not an ESM dataset (Type: {meta.get('type')}).\n")
         return
 
     experiments = meta.get("experiments", [])
-    
+
     if not experiments:
         print(f"\n  ℹ  No experiment metadata found for {key}.\n"
               f"     Try accessing the dataset directly:\n"
@@ -272,21 +303,28 @@ def list_esm_experiments(dataset: str) -> None:
 
 
 def list_esm_models(dataset: str, experiment: Optional[str] = None) -> None:
-    """Print available ESM models for a dataset, optionally filtered by experiment.
+    """Print the ESM models available for a dataset, optionally for one experiment.
 
-    Parameters
-    ----------
-    dataset : str
-        Dataset abbreviation (e.g. ``"CMIP"``, ``"NEXGDDP"``, ``"CMIPW5E5"``).
-    experiment : str, optional
-        Experiment ID to filter models (e.g. ``"historical"``, ``"ssp585"``).
-        If not provided, shows models available for the first experiment.
+    Unlike :func:`list_esm_experiments`, this queries the provider's live
+    catalogue through the dataset class, so it needs network access and can be
+    slow. Failures at any step — unimportable class, unreachable catalogue,
+    unknown experiment — are reported and swallowed rather than raised, so an
+    exploratory call never aborts a session.
 
-    Examples
-    --------
-    >>> import climdata as cd
-    >>> cd.list_esm_models("NEXGDDP")
-    >>> cd.list_esm_models("CMIP", experiment="ssp585")
+    Args:
+        dataset (str): Dataset abbreviation (e.g. ``"CMIP"``, ``"NEXGDDP"``,
+            ``"CMIP_W5E5"``). Case-insensitive.
+        experiment (str, optional): Experiment ID to filter by, e.g.
+            ``"historical"`` or ``"ssp585"``. Defaults to the provider's first
+            experiment.
+
+    Returns:
+        None: The list is written to stdout.
+
+    Example:
+        >>> import climdata as cd
+        >>> cd.list_esm_models("NEXGDDP")                          # doctest: +SKIP
+        >>> cd.list_esm_models("CMIP", experiment="ssp585")        # doctest: +SKIP
     """
     key = resolve_dataset_key(dataset)
     if key is None:
@@ -294,7 +332,7 @@ def list_esm_models(dataset: str, experiment: Optional[str] = None) -> None:
         return
 
     meta = REGISTRY[key]
-    
+
     # Check if dataset is ESM-based
     if "ESM" not in meta.get("type", ""):
         print(f"\n  ℹ  {key} is not an ESM dataset (Type: {meta.get('type')}).\n")
@@ -349,6 +387,11 @@ def list_esm_models(dataset: str, experiment: Optional[str] = None) -> None:
 
 
 def _unknown_dataset_hint(name: str) -> None:
+    """Print the available dataset keys after a lookup miss.
+
+    Args:
+        name (str): The name the caller asked for.
+    """
     available = ", ".join(REGISTRY.keys())
     print(
         f"\n  ✗  Dataset '{name}' not found in the registry.\n"
@@ -358,19 +401,29 @@ def _unknown_dataset_hint(name: str) -> None:
 
 
 def _get_variable_metadata(variable: str) -> Optional[dict]:
-    """Get variable metadata from YAML config (parameters.yaml).
-    
-    Loads metadata directly from climdata/conf/mappings/parameters.yaml.
-    Each variable must define: long_name, basd_unit, and optionally basd_note.
+    """Look up BASD metadata for a variable across every dataset in the config.
+
+    The same CF variable is declared under several providers in
+    ``parameters.yaml``, and only some carry a ``basd_note``. Entries that have
+    one are preferred, since a note is what makes the difference between a
+    correct and a silently wrong BASD run.
+
+    Args:
+        variable (str): CF variable name, e.g. ``"pr"``.
+
+    Returns:
+        dict | None: Mapping with ``long_name``, ``basd_unit`` and ``basd_note``,
+        or ``None`` if no declaration carries a ``basd_unit`` (or the config
+        cannot be read).
     """
     try:
         from climdata.explore.registry import _load_parameters_yaml
         params = _load_parameters_yaml()
-        
+
         # Search all datasets for this variable's BASD metadata
         # Prefer entries with basd_note (most complete metadata)
         best_match = None
-        
+
         for dataset_cfg in params.values():
             if isinstance(dataset_cfg, dict) and "variables" in dataset_cfg:
                 var_cfg = dataset_cfg["variables"].get(variable, {})
@@ -385,9 +438,9 @@ def _get_variable_metadata(variable: str) -> Optional[dict]:
                         best_match = candidate
                     elif not best_match:
                         best_match = candidate
-        
+
         return best_match
     except Exception:
         pass
-    
+
     return None

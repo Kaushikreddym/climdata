@@ -9,9 +9,7 @@ This module uses the isimip-client library to search and download W5E5 data from
 ISIMIP data repository.
 """
 
-import os
 import xarray as xr
-import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from omegaconf import DictConfig
@@ -21,23 +19,42 @@ import warnings
 warnings.filterwarnings("ignore", category=Warning)
 
 class W5E5:
-    """
-    A class to download and process W5E5 climate data from ISIMIP repository.
-    
-    W5E5 is available through ISIMIP3a (historical observations) and is used as 
-    bias adjustment reference for ISIMIP3b climate projections.
-    
-    Attributes
-    ----------
-    cfg : DictConfig
-        Configuration containing lat, lon, variables, time_range, etc.
-    ds : xr.Dataset
-        Loaded xarray dataset
-    client : ISIMIPClient
-        ISIMIP API client for data access
+    """Download and assemble W5E5 climate data from the ISIMIP repository.
+
+    W5E5 is distributed through ISIMIP3a as observational input data and serves
+    as the bias-adjustment reference for ISIMIP3b projections — pair it with
+    :class:`~climdata.datasets.CMIP_W5E5.CMIPW5E5` to compare a projection
+    against the reference it was adjusted to.
+
+    The lifecycle is ``fetch`` → ``load`` → ``extract``. :meth:`extract` may be
+    called before :meth:`load`, in which case the subsetting instructions are
+    stored and applied as soon as data arrives.
+
+    Attributes:
+        cfg (DictConfig): Configuration supplying ``variables``, ``time_range``,
+            ``data_dir`` and ``dataset``.
+        ds (xr.Dataset | None): The loaded dataset, set by :meth:`load`.
+        client (ISIMIPClient): ISIMIP API client, created in :meth:`__init__`.
+        downloaded_files (list[str]): Local paths accumulated by :meth:`fetch`.
+
+    Example:
+        >>> w5e5 = W5E5(cfg)                                  # doctest: +SKIP
+        >>> w5e5.fetch()                                      # doctest: +SKIP
+        >>> w5e5.load()                                       # doctest: +SKIP
+        >>> w5e5.extract(point=(13.4, 52.5))                  # doctest: +SKIP
     """
     
     def __init__(self, cfg: DictConfig):
+        """Bind a configuration and open an ISIMIP client.
+
+        Args:
+            cfg (DictConfig): Configuration with ``variables``,
+                ``time_range.start_date`` / ``.end_date``, ``data_dir`` and
+                ``dataset``.
+
+        Raises:
+            ImportError: If ``isimip-client`` is not installed.
+        """
         self.cfg = cfg
         self.ds = None
         self.client = None
@@ -56,11 +73,19 @@ class W5E5:
             )
     
     def fetch(self):
-        """
-        Search and download W5E5 files from ISIMIP repository for the requested
-        variables and time range.
-        
-        Uses ISIMIP3a simulation round for W5E5 observational data.
+        """Search ISIMIP and download the W5E5 files covering the request.
+
+        Queries the ISIMIP3a ``obsclim`` catalogue once per configured variable,
+        keeps the files whose filename year-range overlaps the requested period
+        (see :meth:`_is_file_in_date_range`), and downloads any that are not
+        already on disk under ``<data_dir>/<DATASET>/<variable>/``.
+
+        Per-variable failures are reported and skipped rather than raised, so one
+        unavailable variable does not abort a multi-variable request — check
+        :attr:`downloaded_files` to see what actually arrived.
+
+        Returns:
+            None: Paths are appended to :attr:`downloaded_files`.
         """
         print("🔍 Searching for W5E5 datasets in ISIMIP repository...")
         
@@ -99,7 +124,6 @@ class W5E5:
                 
                 # Filter files by date range
                 for file_info in self._extract_files_list(dataset):
-                    file_path = file_info['path']
                     file_name = file_info['name']
                     
                     # Parse date from filename (W5E5 files typically contain year ranges)
@@ -128,7 +152,17 @@ class W5E5:
         print(f"\n✅ Downloaded {len(self.downloaded_files)} files")
 
     def _normalize_dataset_results(self, response) -> List[Dict]:
-        """Normalize isimip-client dataset responses to a list of dataset dicts."""
+        """Coerce an isimip-client response into a list of dataset records.
+
+        The client returns a bare list from some endpoints and a paginated
+        ``{"results": [...]}`` envelope from others.
+
+        Args:
+            response: The value returned by ``client.datasets(...)``.
+
+        Returns:
+            list[dict]: Dataset records, empty if the response has neither shape.
+        """
         if response is None:
             return []
         if isinstance(response, list):
@@ -140,7 +174,16 @@ class W5E5:
         return []
 
     def _extract_files_list(self, dataset: Dict) -> List[Dict]:
-        """Extract file list from a dataset record, handling multiple response shapes."""
+        """Pull the file records out of one ISIMIP dataset record.
+
+        Args:
+            dataset (dict): A single dataset record.
+
+        Returns:
+            list[dict]: File records, each with ``path``, ``name`` and
+            ``file_url``. Empty if the record carries neither ``files`` nor a
+            single ``file``.
+        """
         files = dataset.get('files')
         if isinstance(files, list):
             return files
@@ -150,9 +193,17 @@ class W5E5:
         return []
     
     def load(self):
-        """
-        Load the downloaded W5E5 netCDF files into an xarray Dataset.
-        Combines multiple files if necessary and selects the requested time range.
+        """Open the downloaded files and merge them into one dataset.
+
+        Files are grouped by variable, concatenated along time where a variable
+        spans several decades, merged across variables, and finally clipped to
+        the configured time range.
+
+        Returns:
+            None: The dataset is stored on :attr:`ds`.
+
+        Raises:
+            ValueError: If :meth:`fetch` has not run, or produced no files.
         """
         if not self.downloaded_files:
             raise ValueError("No files to load. Run fetch() first.")
@@ -209,19 +260,27 @@ class W5E5:
                 box: Optional[Dict] = None, 
                 shapefile: Optional[str] = None, 
                 buffer_km: float = 0.0):
-        """
-        Store extraction instructions to be applied during or after load.
-        
-        Parameters
-        ----------
-        point : tuple of (lon, lat), optional
-            Extract data for a specific point location
-        box : dict, optional
-            Extract data for a bounding box with keys: lon_min, lon_max, lat_min, lat_max
-        shapefile : str or GeoDataFrame, optional
-            Extract data for a shapefile region
-        buffer_km : float, default=0.0
-            Buffer distance in kilometers around point (converted to degrees)
+        """Record a spatial subset, and apply it if data is already loaded.
+
+        The instruction is stored rather than executed, so this may be called
+        before :meth:`load`; :meth:`_apply_extraction` runs it once :attr:`ds`
+        exists. The three modes are mutually exclusive — the first one supplied
+        wins, in the order ``point``, ``box``, ``shapefile``. Calling with no
+        argument clears nothing and does nothing.
+
+        Args:
+            point (tuple[float, float], optional): ``(lon, lat)`` in degrees.
+                Note the order: longitude first.
+            box (dict, optional): Bounding box with keys ``lon_min``, ``lon_max``,
+                ``lat_min``, ``lat_max``.
+            shapefile (str | geopandas.GeoDataFrame, optional): Polygon(s) to clip
+                to, as a path or an in-memory frame.
+            buffer_km (float): Half-width of a box averaged around ``point``,
+                converted at a flat 111 km per degree. ``0.0``, the default,
+                selects the single nearest grid cell instead.
+
+        Returns:
+            None
         """
         if point is not None:
             lon, lat = point
@@ -254,7 +313,15 @@ class W5E5:
                 self._apply_extraction()
     
     def _apply_extraction(self):
-        """Apply the stored extraction instructions to the dataset."""
+        """Run the subset recorded by :meth:`extract` against :attr:`ds`.
+
+        Point requests either take the nearest cell or area-average a buffered
+        box; box requests slice; shapefile requests clip each geometry through
+        rioxarray and stack the results along a new ``geom_id`` dimension.
+
+        Returns:
+            None: :attr:`ds` is replaced in place.
+        """
         if self._extract_mode == "point":
             lon, lat, buffer_deg = self._extract_params
             
@@ -274,7 +341,7 @@ class W5E5:
             )
         
         elif self._extract_mode == "shapefile":
-            import rioxarray
+            import rioxarray  # noqa: F401 — registers the .rio accessor
             from shapely.geometry import mapping
             
             gdf = self._extract_params
@@ -289,7 +356,17 @@ class W5E5:
             self.ds = xr.concat(clipped_list, dim="geom_id")
     
     def save_netcdf(self, filename: str):
-        """Save the dataset to a NetCDF file."""
+        """Write the dataset to NetCDF, creating parent directories.
+
+        Args:
+            filename (str): Destination path.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no dataset has been loaded.
+        """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")
         
@@ -300,7 +377,21 @@ class W5E5:
         print(f"💾 Saved to: {output_path}")
     
     def save_csv(self, filename: str):
-        """Save the dataset to a CSV file."""
+        """Write the dataset to CSV, creating parent directories.
+
+        The frame is written in xarray's wide form — one column per variable,
+        indexed by the dataset's dimensions — not the long form produced by
+        :meth:`~climdata.utils.wrapper_workflow.ClimateExtractor.to_dataframe`.
+
+        Args:
+            filename (str): Destination path.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If no dataset has been loaded.
+        """
         if self.ds is None:
             raise ValueError("No dataset loaded. Run load() first.")
         
@@ -312,10 +403,16 @@ class W5E5:
         print(f"💾 Saved to: {output_path}")
     
     def _map_variable_name(self, var: str) -> str:
-        """
-        Map standard variable names to W5E5 variable names.
-        
-        W5E5 uses standard CMIP variable names.
+        """Translate a CF variable name to the name W5E5 files use.
+
+        W5E5 follows CMIP naming, so nearly all names pass through unchanged;
+        ``sfcWind`` is the exception, stored lowercase as ``sfcwind``.
+
+        Args:
+            var (str): CF variable name, e.g. ``"tasmax"``.
+
+        Returns:
+            str: The W5E5 name, or ``var`` unchanged if it is not in the table.
         """
         # W5E5 uses standard names, so most map directly
         variable_map = {
@@ -333,11 +430,22 @@ class W5E5:
         return variable_map.get(var, var)
     
     def _is_file_in_date_range(self, filename: str, start_date: datetime, end_date: datetime) -> bool:
-        """
-        Check if a file covers the requested date range.
-        
-        W5E5 files typically have year ranges in their names like:
-        w5e5v2.0_obsclim_tas_global_daily_1979_1989.nc
+        """Test whether a file's year range overlaps the requested period.
+
+        W5E5 encodes coverage in the filename, e.g.
+        ``w5e5v2.0_obsclim_tas_global_daily_1979_1989.nc``. Comparison is at
+        year granularity, so a file may be kept for a request that only touches
+        part of it.
+
+        Args:
+            filename (str): Basename of the candidate file.
+            start_date (datetime): Start of the requested period.
+            end_date (datetime): End of the requested period.
+
+        Returns:
+            bool: ``True`` if the ranges overlap. Also ``True`` when the filename
+            carries no parseable year range — an unrecognised name is downloaded
+            rather than silently dropped.
         """
         import re
         
@@ -352,10 +460,3 @@ class W5E5:
         
         # If we can't parse the date, include the file to be safe
         return True
-
-
-class W5E5Mirror(W5E5):
-    """
-    Alias for W5E5 class to maintain consistent naming with other datasets.
-    """
-    pass
