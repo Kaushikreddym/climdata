@@ -701,7 +701,7 @@
   <span class="md-ellipsis">
     
   
-    Advanced
+    Grids
   
 
     
@@ -714,6 +714,89 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Grids
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/grid/reprojection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resolution & Projection Transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_4" id="__nav_6_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1198,9 +1281,9 @@ https://github.com/ISI-MIP/isimip3basd</p>
 
 <span class="c1"># Initialize BCSD for temperature</span>
 <span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
-    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">&#39;xesmf&#39;</span><span class="p">,</span>  <span class="c1"># or &#39;cdo&#39;</span>
-    <span class="n">regridding_method</span><span class="o">=</span><span class="s1">&#39;conservative&#39;</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
+    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">'xesmf'</span><span class="p">,</span>  <span class="c1"># or 'cdo'</span>
+    <span class="n">regridding_method</span><span class="o">=</span><span class="s1">'conservative'</span>
 <span class="p">)</span>
 
 <span class="c1"># Run complete workflow - obs_hist_coarse automatically derived!</span>
@@ -1208,7 +1291,7 @@ https://github.com/ISI-MIP/isimip3basd</p>
     <span class="n">obs_fine</span><span class="o">=</span><span class="n">obs_025deg</span><span class="p">,</span>             <span class="c1"># Historical obs at fine resolution</span>
     <span class="n">sim_hist_coarse</span><span class="o">=</span><span class="n">gcm_hist_1deg</span><span class="p">,</span>  <span class="c1"># Historical GCM</span>
     <span class="n">sim_fut_coarse</span><span class="o">=</span><span class="n">gcm_fut_1deg</span><span class="p">,</span>    <span class="c1"># Future GCM</span>
-    <span class="n">output_path</span><span class="o">=</span><span class="s1">&#39;./outputs/tas_bcsd.nc&#39;</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s1">'./outputs/tas_bcsd.nc'</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <p><strong>Key Feature</strong>: No need to manually create coarse observations! The module automatically regrids <code>obs_fine</code> to match the GCM grid using your choice of xESMF (Python) or CDO (command-line).</p>
@@ -1235,11 +1318,11 @@ https://github.com/ISI-MIP/isimip3basd</p>
 
 <span class="c1"># Automatic configuration for temperature</span>
 <span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
-    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">&#39;xesmf&#39;</span><span class="p">,</span>  <span class="c1"># Use Python-based xESMF</span>
-    <span class="n">regridding_method</span><span class="o">=</span><span class="s1">&#39;conservative&#39;</span><span class="p">,</span>  <span class="c1"># Conservative for aggregation</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
+    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">'xesmf'</span><span class="p">,</span>  <span class="c1"># Use Python-based xESMF</span>
+    <span class="n">regridding_method</span><span class="o">=</span><span class="s1">'conservative'</span><span class="p">,</span>  <span class="c1"># Conservative for aggregation</span>
     <span class="n">bias_correction_kwargs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s1">&#39;n_processes&#39;</span><span class="p">:</span> <span class="mi">4</span>  <span class="c1"># Use 4 CPU cores</span>
+        <span class="s1">'n_processes'</span><span class="p">:</span> <span class="mi">4</span>  <span class="c1"># Use 4 CPU cores</span>
     <span class="p">}</span>
 <span class="p">)</span>
 
@@ -1284,11 +1367,11 @@ https://github.com/ISI-MIP/isimip3basd</p>
 
 <span class="c1"># Use CDO instead of xESMF</span>
 <span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
-    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">&#39;cdo&#39;</span><span class="p">,</span>        <span class="c1"># Use CDO command-line tool</span>
-    <span class="n">cdo_method</span><span class="o">=</span><span class="s1">&#39;remapcon&#39;</span><span class="p">,</span>        <span class="c1"># Conservative remapping</span>
-    <span class="n">cdo_env</span><span class="o">=</span><span class="s1">&#39;cdo_stable&#39;</span><span class="p">,</span>         <span class="c1"># Your conda env with CDO</span>
-    <span class="n">weights_dir</span><span class="o">=</span><span class="s1">&#39;./weights&#39;</span>       <span class="c1"># Save weights for reuse</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
+    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">'cdo'</span><span class="p">,</span>        <span class="c1"># Use CDO command-line tool</span>
+    <span class="n">cdo_method</span><span class="o">=</span><span class="s1">'remapcon'</span><span class="p">,</span>        <span class="c1"># Conservative remapping</span>
+    <span class="n">cdo_env</span><span class="o">=</span><span class="s1">'cdo_stable'</span><span class="p">,</span>         <span class="c1"># Your conda env with CDO</span>
+    <span class="n">weights_dir</span><span class="o">=</span><span class="s1">'./weights'</span>       <span class="c1"># Save weights for reuse</span>
 <span class="p">)</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">bcsd</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -1300,9 +1383,9 @@ https://github.com/ISI-MIP/isimip3basd</p>
 
 <span class="err">```</span><span class="n">python</span>
 <span class="c1"># Load your own coarse observations</span>
-<span class="n">obs_hist_coarse</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="s1">&#39;./data/obs_coarse_native.nc&#39;</span><span class="p">)</span>
+<span class="n">obs_hist_coarse</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="s1">'./data/obs_coarse_native.nc'</span><span class="p">)</span>
 
-<span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">)</span>
+<span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span><span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">)</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">bcsd</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
     <span class="n">obs_fine</span><span class="o">=</span><span class="n">obs_fine</span><span class="p">,</span>
@@ -1335,13 +1418,13 @@ https://github.com/ISI-MIP/isimip3basd</p>
 from climdata.sdba import BCSD
 
 bcsd = BCSD(
-    variable=&#39;pr&#39;,
+    variable='pr',
     bias_correction_kwargs={
-        &#39;distribution&#39;: &#39;gamma&#39;,
-        &#39;trend_preservation&#39;: &#39;mixed&#39;,
-        &#39;lower_bound&#39;: 0,
-        &#39;lower_threshold&#39;: 0.1,
-        &#39;n_quantiles&#39;: 100
+        'distribution': 'gamma',
+        'trend_preservation': 'mixed',
+        'lower_bound': 0,
+        'lower_threshold': 0.1,
+        'n_quantiles': 100
     }
 )
 
@@ -1365,9 +1448,9 @@ result = bcsd.run(...)
 <span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata.sdba</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiasCorrection</span>
 
 <span class="n">bc</span> <span class="o">=</span> <span class="n">BiasCorrection</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
-    <span class="n">distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">,</span>
-    <span class="n">trend_preservation</span><span class="o">=</span><span class="s1">&#39;additive&#39;</span><span class="p">,</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
+    <span class="n">distribution</span><span class="o">=</span><span class="s1">'normal'</span><span class="p">,</span>
+    <span class="n">trend_preservation</span><span class="o">=</span><span class="s1">'additive'</span><span class="p">,</span>
     <span class="n">detrend</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 
@@ -1486,7 +1569,7 @@ result = bcsd.run(...)
 <span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata.sdba</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatisticalDownscaling</span>
 
 <span class="n">sd</span> <span class="o">=</span> <span class="n">StatisticalDownscaling</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
     <span class="n">n_iterations</span><span class="o">=</span><span class="mi">20</span>
 <span class="p">)</span>
 
@@ -1564,11 +1647,11 @@ result = bcsd.run(...)
 
 <span class="c1"># 1. Download CMIP6 historical (coarse)</span>
 <span class="n">cfg_hist</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="p">({</span>
-    <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;tas&#39;</span><span class="p">],</span>
-    <span class="s1">&#39;time_range&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;start_date&#39;</span><span class="p">:</span> <span class="s1">&#39;1980-01-01&#39;</span><span class="p">,</span> <span class="s1">&#39;end_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2014-12-31&#39;</span><span class="p">},</span>
-    <span class="s1">&#39;experiment_id&#39;</span><span class="p">:</span> <span class="s1">&#39;historical&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;source_id&#39;</span><span class="p">:</span> <span class="s1">&#39;gfdl-esm4&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;data_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data&#39;</span>
+    <span class="s1">'variables'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'tas'</span><span class="p">],</span>
+    <span class="s1">'time_range'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'start_date'</span><span class="p">:</span> <span class="s1">'1980-01-01'</span><span class="p">,</span> <span class="s1">'end_date'</span><span class="p">:</span> <span class="s1">'2014-12-31'</span><span class="p">},</span>
+    <span class="s1">'experiment_id'</span><span class="p">:</span> <span class="s1">'historical'</span><span class="p">,</span>
+    <span class="s1">'source_id'</span><span class="p">:</span> <span class="s1">'gfdl-esm4'</span><span class="p">,</span>
+    <span class="s1">'data_dir'</span><span class="p">:</span> <span class="s1">'./data'</span>
 <span class="p">})</span>
 <span class="n">cmip_hist</span> <span class="o">=</span> <span class="n">CMIPW5E5</span><span class="p">(</span><span class="n">cfg_hist</span><span class="p">)</span>
 <span class="n">cmip_hist</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
@@ -1576,18 +1659,18 @@ result = bcsd.run(...)
 
 <span class="c1"># 2. Download CMIP6 future (coarse)</span>
 <span class="n">cfg_fut</span> <span class="o">=</span> <span class="n">DictConfig</span><span class="p">({</span>
-    <span class="s1">&#39;variables&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;tas&#39;</span><span class="p">],</span>
-    <span class="s1">&#39;time_range&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;start_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2015-01-01&#39;</span><span class="p">,</span> <span class="s1">&#39;end_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2050-12-31&#39;</span><span class="p">},</span>
-    <span class="s1">&#39;experiment_id&#39;</span><span class="p">:</span> <span class="s1">&#39;ssp585&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;source_id&#39;</span><span class="p">:</span> <span class="s1">&#39;gfdl-esm4&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;data_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;./data&#39;</span>
+    <span class="s1">'variables'</span><span class="p">:</span> <span class="p">[</span><span class="s1">'tas'</span><span class="p">],</span>
+    <span class="s1">'time_range'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'start_date'</span><span class="p">:</span> <span class="s1">'2015-01-01'</span><span class="p">,</span> <span class="s1">'end_date'</span><span class="p">:</span> <span class="s1">'2050-12-31'</span><span class="p">},</span>
+    <span class="s1">'experiment_id'</span><span class="p">:</span> <span class="s1">'ssp585'</span><span class="p">,</span>
+    <span class="s1">'source_id'</span><span class="p">:</span> <span class="s1">'gfdl-esm4'</span><span class="p">,</span>
+    <span class="s1">'data_dir'</span><span class="p">:</span> <span class="s1">'./data'</span>
 <span class="p">})</span>
 <span class="n">cmip_fut</span> <span class="o">=</span> <span class="n">CMIPW5E5</span><span class="p">(</span><span class="n">cfg_fut</span><span class="p">)</span>
 <span class="n">cmip_fut</span><span class="o">.</span><span class="n">fetch</span><span class="p">()</span>
 <span class="n">cmip_futfine</span><span class="o">=</span><span class="n">w5e5</span><span class="o">.</span><span class="n">ds</span><span class="p">,</span>                <span class="c1"># Fine obs (auto-regridded to coarse)</span>
     <span class="n">sim_hist_coarse</span><span class="o">=</span><span class="n">cmip_hist</span><span class="o">.</span><span class="n">ds</span><span class="p">,</span>
     <span class="n">sim_fut_coarse</span><span class="o">=</span><span class="n">cmip_fut</span><span class="o">.</span><span class="n">ds</span><span class="p">,</span>
-    <span class="n">output_path</span><span class="o">=</span><span class="s1">&#39;./outputs/tas_ssp585_bcsd.nc&#39;</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s1">'./outputs/tas_ssp585_bcsd.nc'</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="regridding-options">Regridding Options<a class="headerlink" href="#regridding-options" title="Permanent link">&para;</a></h2>
@@ -1611,10 +1694,10 @@ result = bcsd.run(...)
 <span class="normal">4</span>
 <span class="normal">5</span>
 <span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
-    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">&#39;xesmf&#39;</span><span class="p">,</span>
-    <span class="n">regridding_method</span><span class="o">=</span><span class="s1">&#39;conservative&#39;</span><span class="p">,</span>  <span class="c1"># or &#39;bilinear&#39;, &#39;nearest&#39;</span>
-    <span class="n">weights_dir</span><span class="o">=</span><span class="s1">&#39;./weights&#39;</span>  <span class="c1"># Cache weights here</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
+    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">'xesmf'</span><span class="p">,</span>
+    <span class="n">regridding_method</span><span class="o">=</span><span class="s1">'conservative'</span><span class="p">,</span>  <span class="c1"># or 'bilinear', 'nearest'</span>
+    <span class="n">weights_dir</span><span class="o">=</span><span class="s1">'./weights'</span>  <span class="c1"># Cache weights here</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div></p>
 <h3 id="cdo-command-line">CDO (Command-line)<a class="headerlink" href="#cdo-command-line" title="Permanent link">&para;</a></h3>
@@ -1633,10 +1716,10 @@ result = bcsd.run(...)
 <span class="normal">4</span>
 <span class="normal">5</span>
 <span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">bcsd</span> <span class="o">=</span> <span class="n">BCSD</span><span class="p">(</span>
-    <span class="n">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="p">,</span>
-    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">&#39;cdo&#39;</span><span class="p">,</span>
-    <span class="n">cdo_method</span><span class="o">=</span><span class="s1">&#39;remapcon&#39;</span><span class="p">,</span>  <span class="c1"># or &#39;remapbil&#39;, &#39;remapdis&#39;, &#39;remapnn&#39;</span>
-    <span class="n">cdo_env</span><span class="o">=</span><span class="s1">&#39;cdo_stable&#39;</span>    <span class="c1"># Conda env with CDO</span>
+    <span class="n">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="p">,</span>
+    <span class="n">regridding_tool</span><span class="o">=</span><span class="s1">'cdo'</span><span class="p">,</span>
+    <span class="n">cdo_method</span><span class="o">=</span><span class="s1">'remapcon'</span><span class="p">,</span>  <span class="c1"># or 'remapbil', 'remapdis', 'remapnn'</span>
+    <span class="n">cdo_env</span><span class="o">=</span><span class="s1">'cdo_stable'</span>    <span class="c1"># Conda env with CDO</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div></p>
 <p><strong>Install CDO:</strong>
@@ -1658,24 +1741,24 @@ result = bcsd.run(...)
 <span class="normal">16</span>
 <span class="normal">17</span>
 <span class="normal">18</span>
-<span class="normal">19</span></pre></div></td><td class="code"><div><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>cdo_stable<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>cdo<span class="w">   </span><span class="s1">&#39;time_range&#39;</span>:<span class="w"> </span><span class="o">{</span><span class="s1">&#39;start_date&#39;</span>:<span class="w"> </span><span class="s1">&#39;1980-01-01&#39;</span>,<span class="w"> </span><span class="s1">&#39;end_date&#39;</span>:<span class="w"> </span><span class="s1">&#39;2014-12-31&#39;</span><span class="o">}</span>,
-<span class="w">    </span><span class="s1">&#39;data_dir&#39;</span>:<span class="w"> </span><span class="s1">&#39;./data&#39;</span>
+<span class="normal">19</span></pre></div></td><td class="code"><div><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>cdo_stable<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>cdo<span class="w">   </span><span class="s1">'time_range'</span>:<span class="w"> </span><span class="o">{</span><span class="s1">'start_date'</span>:<span class="w"> </span><span class="s1">'1980-01-01'</span>,<span class="w"> </span><span class="s1">'end_date'</span>:<span class="w"> </span><span class="s1">'2014-12-31'</span><span class="o">}</span>,
+<span class="w">    </span><span class="s1">'data_dir'</span>:<span class="w"> </span><span class="s1">'./data'</span>
 <span class="o">})</span>
 <span class="nv">w5e5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>W5E5<span class="o">(</span>cfg_obs<span class="o">)</span>
 w5e5.fetch<span class="o">()</span>
 w5e5.load<span class="o">()</span>
 
 <span class="c1"># 4. Create coarse observations (aggregate fine obs)</span>
-<span class="nv">obs_coarse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>w5e5.ds.coarsen<span class="o">(</span><span class="nv">lat</span><span class="o">=</span><span class="m">2</span>,<span class="w"> </span><span class="nv">lon</span><span class="o">=</span><span class="m">2</span>,<span class="w"> </span><span class="nv">boundary</span><span class="o">=</span><span class="s1">&#39;trim&#39;</span><span class="o">)</span>.mean<span class="o">()</span>
+<span class="nv">obs_coarse</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>w5e5.ds.coarsen<span class="o">(</span><span class="nv">lat</span><span class="o">=</span><span class="m">2</span>,<span class="w"> </span><span class="nv">lon</span><span class="o">=</span><span class="m">2</span>,<span class="w"> </span><span class="nv">boundary</span><span class="o">=</span><span class="s1">'trim'</span><span class="o">)</span>.mean<span class="o">()</span>
 
 <span class="c1"># 5. Run BCSD</span>
-<span class="nv">bcsd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>BCSD<span class="o">(</span><span class="nv">variable</span><span class="o">=</span><span class="s1">&#39;tas&#39;</span><span class="o">)</span>
+<span class="nv">bcsd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>BCSD<span class="o">(</span><span class="nv">variable</span><span class="o">=</span><span class="s1">'tas'</span><span class="o">)</span>
 <span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>bcsd.run<span class="o">(</span>
 <span class="w">    </span><span class="nv">obs_hist_coarse</span><span class="o">=</span>obs_coarse,
 <span class="w">    </span><span class="nv">obs_fine</span><span class="o">=</span>w5e5.ds,
 <span class="w">    </span><span class="nv">sim_hist_coarse</span><span class="o">=</span>cmip_hist.ds,
 <span class="w">    </span><span class="nv">sim_fut_coarse</span><span class="o">=</span>cmip_fut.ds,
-<span class="w">    </span><span class="nv">output_path</span><span class="o">=</span><span class="s1">&#39;./outputs/tas_ssp585_bcsd.nc&#39;</span>
+<span class="w">    </span><span class="nv">output_path</span><span class="o">=</span><span class="s1">'./outputs/tas_ssp585_bcsd.nc'</span>
 <span class="o">)</span>
 </code></pre></div></td></tr></table></div></p>
 <h2 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h2>

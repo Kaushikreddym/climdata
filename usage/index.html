@@ -818,7 +818,7 @@
   <span class="md-ellipsis">
     
   
-    Advanced
+    Grids
   
 
     
@@ -831,6 +831,89 @@
         
         <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Grids
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/grid/reprojection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resolution & Projection Transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_4" id="__nav_6_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1177,12 +1260,12 @@ pip<span class="w"> </span>install<span class="w"> </span>climdata
 <span class="normal">24</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">climdata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClimData</span>
 
 <span class="n">overrides</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;dataset=mswx&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;lat=52.5&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;lon=13.4&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;time_range.start_date=2014-01-01&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;time_range.end_date=2014-12-31&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;variables=[tasmin,tasmax,pr]&quot;</span><span class="p">,</span>
+    <span class="s2">"dataset=mswx"</span><span class="p">,</span>
+    <span class="s2">"lat=52.5"</span><span class="p">,</span>
+    <span class="s2">"lon=13.4"</span><span class="p">,</span>
+    <span class="s2">"time_range.start_date=2014-01-01"</span><span class="p">,</span>
+    <span class="s2">"time_range.end_date=2014-12-31"</span><span class="p">,</span>
+    <span class="s2">"variables=[tasmin,tasmax,pr]"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">extractor</span> <span class="o">=</span> <span class="n">ClimData</span><span class="p">(</span><span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">)</span>
@@ -1197,17 +1280,17 @@ pip<span class="w"> </span>install<span class="w"> </span>climdata
 <span class="n">df</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">index_ds</span><span class="p">)</span>
 
 <span class="c1"># Save DataFrame to CSV</span>
-<span class="n">extractor</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;index.csv&quot;</span><span class="p">)</span>
+<span class="n">extractor</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"index.csv"</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 <h2 id="single-call-workflow">Single-call workflow<a class="headerlink" href="#single-call-workflow" title="Permanent link">&para;</a></h2>
 <p>Use the high-level runner to chain common steps:
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">run_workflow</span><span class="p">(</span><span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;extract&quot;</span><span class="p">,</span> <span class="s2">&quot;calc_index&quot;</span><span class="p">,</span> <span class="s2">&quot;to_dataframe&quot;</span><span class="p">,</span> <span class="s2">&quot;to_csv&quot;</span><span class="p">])</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">extractor</span><span class="o">.</span><span class="n">run_workflow</span><span class="p">(</span><span class="n">actions</span><span class="o">=</span><span class="p">[</span><span class="s2">"extract"</span><span class="p">,</span> <span class="s2">"calc_index"</span><span class="p">,</span> <span class="s2">"to_dataframe"</span><span class="p">,</span> <span class="s2">"to_csv"</span><span class="p">])</span>
 <span class="c1"># result contains produced dataset/dataframe and filenames</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">dataframe</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saved to:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Saved to:"</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div></p>
 <h2 id="uploading-existing-files">Uploading existing files<a class="headerlink" href="#uploading-existing-files" title="Permanent link">&para;</a></h2>
 <ul>
