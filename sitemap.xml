@@ -29,6 +29,10 @@
          <lastmod>2026-08-28</lastmod>
     </url>
     <url>
+         <loc>https://Kaushikreddym.github.io/climdata/datasets/</loc>
+         <lastmod>2026-08-28</lastmod>
+    </url>
+    <url>
          <loc>https://Kaushikreddym.github.io/climdata/dwd_format_guide/</loc>
          <lastmod>2026-08-28</lastmod>
     </url>
@@ -45,19 +49,11 @@
          <lastmod>2026-08-28</lastmod>
     </url>
     <url>
-         <loc>https://Kaushikreddym.github.io/climdata/examples/climdata_cli/</loc>
-         <lastmod>2026-08-28</lastmod>
-    </url>
-    <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/wrapper_workflow/</loc>
          <lastmod>2026-08-28</lastmod>
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/advanced/cmip_obs_comparison/</loc>
-         <lastmod>2026-08-28</lastmod>
-    </url>
-    <url>
-         <loc>https://Kaushikreddym.github.io/climdata/examples/datasets/cmip_nex_gddp/</loc>
          <lastmod>2026-08-28</lastmod>
     </url>
     <url>
@@ -70,10 +66,6 @@
     </url>
     <url>
          <loc>https://Kaushikreddym.github.io/climdata/examples/datasets/multi_dataset_comparison/</loc>
-         <lastmod>2026-08-28</lastmod>
-    </url>
-    <url>
-         <loc>https://Kaushikreddym.github.io/climdata/examples/datasets/w5e5_example/</loc>
          <lastmod>2026-08-28</lastmod>
     </url>
     <url>

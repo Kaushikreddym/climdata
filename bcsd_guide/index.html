@@ -15,6 +15,10 @@
         <link rel="canonical" href="https://Kaushikreddym.github.io/climdata/bcsd_guide/">
       
       
+        <link rel="prev" href="../dwd_format_guide/">
+      
+      
+        <link rel="next" href="../examples/wrapper_workflow/">
       
       
         
@@ -25,7 +29,7 @@
     
     
       
-        <title>Bias Correction and Statistical Downscaling (BCSD) - climdata</title>
+        <title>Bias Correction - climdata</title>
       
     
     
@@ -115,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Bias Correction and Statistical Downscaling (BCSD)
+              Bias Correction
             
           </span>
         </div>
@@ -379,6 +383,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../datasets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../MSWX_guide/" class="md-nav__link">
         
   
@@ -387,6 +419,34 @@
     
   
     MSWX Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dwd_format_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DWD Export Format
   
 
     
@@ -411,17 +471,44 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="https://github.com/Kaushikreddym/climdata/issues" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bias Correction
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    Report Issues
+    Bias Correction
   
 
     
@@ -430,6 +517,231 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-install-climdata-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Install climdata dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-download-isimip3basd-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Download ISIMIP3BASD code
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-temperature-bias-correction-and-downscaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Temperature Bias Correction and Downscaling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-using-cdo-for-regridding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Using CDO for Regridding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-5oarsesim_fut_coarse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 5oarse=sim_fut_coarse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-bias-correction-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: Bias Correction Only
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-4-downscaling-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 4: Downscaling Only
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#regridding-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regridding Options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Regridding Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#xesmf-python-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        xESMF (Python-based)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cdo-command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CDO (Command-line)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Tips
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -495,7 +807,7 @@
   <span class="md-ellipsis">
     
   
-    Workflow Notebook
+    Workflow Tutorial
   
 
     
@@ -563,90 +875,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/datasets/cmip_w5e5_example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CMIP Downscaled (0.5 deg)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/datasets/w5e5_example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    W5E5 0.5 deg reference dataset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/datasets/cmip_nex_gddp/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CMIP NEX-GDDP Downscaled (0.25 deg)
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../examples/datasets/mswx_example/" class="md-nav__link">
         
   
@@ -654,7 +882,35 @@
   <span class="md-ellipsis">
     
   
-    MSWX Example
+    MSWX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/datasets/cmip_w5e5_example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMIP6 bias-adjusted (0.5 deg)
   
 
     
@@ -813,6 +1069,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/datasets/multi_dataset_comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Dataset Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/advanced/cmip_obs_comparison/" class="md-nav__link">
         
   
@@ -820,7 +1104,7 @@
   <span class="md-ellipsis">
     
   
-    CMIP validation
+    CMIP vs Observations
   
 
     
@@ -848,35 +1132,7 @@
   <span class="md-ellipsis">
     
   
-    Bias Correction Downscaling
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/datasets/multi_dataset_comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Multi-Dataset Climate Comparison - point location
+    Bias Correction & Downscaling
   
 
     
@@ -930,7 +1186,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Reference
   
 
     
@@ -946,7 +1202,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    API Reference
+    Reference
   
 
           </label>
@@ -966,7 +1222,63 @@
   <span class="md-ellipsis">
     
   
-    Workflow Reference
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../common/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
   
 
     
@@ -983,6 +1295,87 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Kaushikreddym/climdata/issues" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Report Issues
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
