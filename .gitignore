@@ -131,7 +131,7 @@ climdata_gui/conf/
 # drops a conf/ copy there, and data/ holds local downloads or symlinks to
 # machine-specific archives. Neither belongs in the repo.
 docs/examples/**/conf/
-docs/examples/**/data/
+docs/examples/**/data
 
 # Working copy of climdata/conf, dropped into cwd by _ensure_local_conf()
 /conf/

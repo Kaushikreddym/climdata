@@ -12,7 +12,7 @@ copyright: "Copyright &copy; 2024 - 2024 Kaushik Muduchuru"
 # docs/ into the site verbatim — which fills the build disk and takes minutes.
 # Excluding them here is what keeps `mkdocs build` fast and small.
 exclude_docs: |
-  examples/**/data/
+  examples/**/data
   examples/**/conf/
   examples/climdata_cli.py
 
