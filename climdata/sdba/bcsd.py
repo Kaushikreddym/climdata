@@ -718,8 +718,8 @@ class StatisticalDownscaling:
     """Statistical downscaling using the ISIMIP3BASD modified MBCn algorithm.
 
     Downscales bias-corrected coarse-resolution data to the fine resolution
-    of the reference observations, processing one year at a time to bound
-    memory use.  Already-completed years are skipped automatically.
+    of the reference observations, fitting multi-decade windows (``window_years``)
+    and writing one file per year.  Already-completed years are skipped.
 
     Args:
         variable (str): Climate variable name.
@@ -728,6 +728,14 @@ class StatisticalDownscaling:
         randomization_seed (int, optional): RNG seed.
         lower_bound, lower_threshold, upper_bound, upper_threshold (float, optional):
             Physical bounds / thresholds (defaults from BiasCorrection.DEFAULT_CONFIGS).
+        load_obs_in_memory (bool): Read ``obs_fine`` into memory once before
+            the year loop instead of re-reading it lazily for every coarse
+            cell of every year (default True). Needs RAM for one variable's
+            full obs_fine array; set False for domains too large for that.
+        window_years (int): Length of the fitting window (default 30). The
+            years are split into equal chunks of about this length and each
+            chunk is downscaled in one call; output is still one file per year.
+            Short windows (e.g. 1 year) bias pr high and inflate variance.
 
     Example:
         >>> sd = StatisticalDownscaling(variable='tas', n_iterations=20)
@@ -747,6 +755,8 @@ class StatisticalDownscaling:
         lower_threshold: Optional[float] = None,
         upper_bound: Optional[float] = None,
         upper_threshold: Optional[float] = None,
+        load_obs_in_memory: bool = True,
+        window_years: int = 30,
         **kwargs
     ):
         """Configure a downscaling run.
@@ -761,6 +771,8 @@ class StatisticalDownscaling:
         self.n_processes     = n_processes if n_processes is not None else os.cpu_count()
         self.n_iterations    = n_iterations
         self.randomization_seed = randomization_seed
+        self.load_obs_in_memory = load_obs_in_memory
+        self.window_years    = window_years
         self.kwargs          = kwargs
 
         cfg = self.DEFAULT_CONFIGS.get(variable, {})
@@ -768,6 +780,12 @@ class StatisticalDownscaling:
         self.lower_threshold = lower_threshold if lower_threshold is not None else cfg.get('lower_threshold')
         self.upper_bound     = upper_bound     if upper_bound     is not None else cfg.get('upper_bound')
         self.upper_threshold = upper_threshold if upper_threshold is not None else cfg.get('upper_threshold')
+        # With halfwin_upper_bound_climatology (rsds) the bias-adjustment upper
+        # bound is a factor on a running climatology of daily maxima, not a value.
+        # Downscaling has no such climatology and would clip at the factor itself
+        # (rsds at 1 W m-2), so the default upper bound is dropped here.
+        if cfg.get('halfwin_upper_bound_climatology') and upper_bound is None:
+            self.upper_bound = self.upper_threshold = None
 
         print(f"StatisticalDownscaling initialized for {variable}")
         print(f"  n_iterations={n_iterations}  n_processes={self.n_processes}  seed={self.randomization_seed}")
@@ -837,55 +855,95 @@ class StatisticalDownscaling:
                 print(f"  obs_fine cropped to ({nlat_crop}×{nlon_crop}) "
                       f"[was {nlat_f}×{nlon_f}, coarse {nlat_c}×{nlon_c}]")
 
+            # Realize obs_fine once, up front. The vendor reads every coarse
+            # cell's obs block with .compute() — once per cell per year — and
+            # a lazy, store-backed obs_fine makes each of those reads decompress
+            # (and masked_invalid) whole Zarr chunks, e.g. (13148, 100, 100) =
+            # 526 MB for a 10×12 block: ~60% of the per-cell time, repeated for
+            # every year. Held in memory, a read is just a slice. Still wrapped
+            # in dask because the vendor calls .compute(); worker processes are
+            # forked, so they share this array rather than copying it.
+            if self.load_obs_in_memory:
+                _t0 = __import__("time").time()
+                obs_arr = np.ma.masked_invalid(obs_fine_cube.core_data().compute())
+                obs_fine_cube.data = da.from_array(obs_arr, chunks=-1, asarray=False)
+                print(f"  obs_fine loaded into memory: {obs_arr.nbytes / 1e9:.1f} GB "
+                      f"({__import__('time').time() - _t0:.0f}s)")
+
             # Output directory and filename template
             out_dir = Path(output_path).resolve() if output_path else tmpdir
             out_dir.mkdir(parents=True, exist_ok=True)
             _model_tag    = model    or "model"
             _scenario_tag = scenario or "scenario"
 
-            # Determine year indices for the year-by-year loop
+            # Fit window. The vendor algorithm quantile-maps the simulated
+            # fine-cell series against ~36 years of obs per calendar month and
+            # clips values at the bounds; with only one year (~30 days per
+            # month) per call it badly inflates pr (+13…+118 % in a
+            # perfect-model test) and temperature variance. Each call therefore
+            # sees a multi-decade window (years split into equal chunks of
+            # about window_years), and results are still written one file per
+            # year so the on-disk layout and resume logic are unchanged.
             tc    = sim_coarse_cube.coord("time")
             years = np.array([d.year for d in tc.units.num2date(tc.points)])
             unique_years = np.unique(years)
-            print(f"  Processing {len(unique_years)} years: {unique_years[0]}–{unique_years[-1]}")
+            n_win   = max(1, int(np.ceil(len(unique_years) / self.window_years)))
+            windows = np.array_split(unique_years, n_win)
+            print(f"  Processing {len(unique_years)} years: {unique_years[0]}–{unique_years[-1]} "
+                  f"in {n_win} windows of ~{len(windows[0])} years")
+
+            def _yr_path(yr):
+                return (out_dir / f"BCSD_{self.variable}_{_model_tag}_{_scenario_tag}_{yr}.nc").resolve()
 
             try:
                 from tqdm import tqdm as _tqdm
-                yr_iter = _tqdm(unique_years, desc="  Downscaling", unit="yr", dynamic_ncols=True)
+                win_iter = _tqdm(windows, desc="  Downscaling", unit="win", dynamic_ncols=True)
             except Exception:
-                yr_iter = unique_years
+                win_iter = windows
 
             yearly_result_paths = []
-            for yr in yr_iter:
-                idx      = np.where(years == yr)[0]
-                yr_path  = (out_dir / f"BCSD_{self.variable}_{_model_tag}_{_scenario_tag}_{yr}.nc").resolve()
-
-                if yr_path.exists():
-                    yearly_result_paths.append(yr_path)
+            for win in win_iter:
+                todo = [yr for yr in win if not _yr_path(yr).exists()]
+                if not todo:
+                    yearly_result_paths += [_yr_path(yr) for yr in win]
                     continue
 
-                # Per-year npy_stack
-                yr_npy_root     = tmpdir / f"npy_{yr}"
-                yr_npy_root.mkdir(parents=True, exist_ok=True)
-                yr_npy_sentinel = str(yr_npy_root / "sim_fine.nc")
-                uf.setup_npy_stack(yr_npy_sentinel, (len(idx),) + obs_fine_cube.shape[1:])
+                idx = np.where(np.isin(years, win))[0]
+                win_npy_root     = tmpdir / f"npy_{win[0]}_{win[-1]}"
+                win_npy_root.mkdir(parents=True, exist_ok=True)
+                win_npy_sentinel = str(win_npy_root / "sim_fine.nc")
+                uf.setup_npy_stack(win_npy_sentinel, (len(idx),) + obs_fine_cube.shape[1:])
 
-                # Slice and prepare per-year cubes
-                sc_yr    = _ensure_rectilinear_iris_cube(sim_coarse_cube[idx])
+                sc_win   = _ensure_rectilinear_iris_cube(sim_coarse_cube[idx])
                 # Vendor uf.remapbil bilinearly interpolates coarse → fine grid.
                 # iris Linear regrid realizes the data to a numpy MaskedArray, but
                 # the vendor sd.downscale calls .compute() on every cube's
                 # core_data(), so re-wrap as a dask masked array (as _xda_to_cube does).
-                remap_yr = uf.remapbil(sc_yr, obs_fine_cube)
-                remap_yr.data = da.ma.masked_invalid(remap_yr.core_data())
-                _stamp_geogcs(remap_yr)
+                #
+                # Both arrays are realized and masked once, here, then wrapped
+                # with da.from_array: a worker's .compute() of its block is then
+                # just a slice. Wrapping with da.ma.masked_invalid instead leaves
+                # one whole-window task in the graph, so every forked worker
+                # re-masks the full window (~10 GB for 28 years at 0.1°) to read
+                # its block — 40 workers OOM-killed and the pool hung.
+                sc_win.data = da.from_array(
+                    np.ma.masked_invalid(np.ma.asarray(sc_win.core_data().compute()
+                                                       if hasattr(sc_win.core_data(), "compute")
+                                                       else sc_win.core_data())),
+                    chunks=-1, asarray=False)
+                remap_win = uf.remapbil(sc_win, obs_fine_cube)
+                _r = remap_win.core_data()
+                _r = _r.compute() if hasattr(_r, "compute") else _r
+                remap_win.data = da.from_array(np.ma.masked_invalid(_r), chunks=-1, asarray=False)
+                del _r
+                _stamp_geogcs(remap_win)
 
                 t0 = __import__("time").time()
                 sd.downscale(
                     obs_fine=obs_fine_cube,
-                    sim_coarse=sc_yr,
-                    sim_coarse_remapbil=remap_yr,
-                    sim_fine_path=yr_npy_sentinel,
+                    sim_coarse=sc_win,
+                    sim_coarse_remapbil=remap_win,
+                    sim_fine_path=win_npy_sentinel,
                     n_processes=self.n_processes,
                     n_iterations=self.n_iterations,
                     randomization_seed=self.randomization_seed,
@@ -896,31 +954,39 @@ class StatisticalDownscaling:
                     **kwargs, **self.kwargs,
                 )
                 elapsed = __import__("time").time() - t0
+                del remap_win
 
-                # npy_stack → contiguous array → yearly NetCDF. Assemble each
-                # {flat}.npy (one fine location's (n_time, 1) series; flat is the
-                # row-major spatial index) into a contiguous numpy array. This
-                # replaces da.from_npy_stack(...).reshape(...) fed straight to
-                # iris.save, which produced thousands of tiny HDF5 chunks (~1 GB,
-                # very slow). A contiguous array writes a compact ~MB file quickly.
-                sim_fine_yr = obs_fine_cube[:len(idx)].copy()
-                npy_dir = uf.npy_stack_dir(yr_npy_sentinel)
-                arr = np.full(sim_fine_yr.shape, np.nan, dtype=np.float32)
-                flat_view = arr.reshape(sim_fine_yr.shape[0], -1)
+                # npy_stack → contiguous array. Each {flat}.npy holds one fine
+                # location's (n_time, 1) series; flat is the row-major spatial
+                # index. A contiguous array writes compact files quickly, unlike
+                # da.from_npy_stack fed straight to iris.save.
+                npy_dir = uf.npy_stack_dir(win_npy_sentinel)
+                arr = np.full((len(idx),) + obs_fine_cube.shape[1:], np.nan, dtype=np.float32)
+                flat_view = arr.reshape(len(idx), -1)
                 for flat in range(flat_view.shape[1]):
                     fp = f"{npy_dir}{flat}.npy"
                     if os.path.exists(fp):
                         flat_view[:, flat] = np.load(fp).squeeze()
-                sim_fine_yr.data = np.ma.masked_invalid(arr)
-                # Output carries the (application) sim_coarse times, not obs_fine's.
-                _t = sim_fine_yr.coord("time")
-                _t.points, _t.units = sc_yr.coord("time").points, sc_yr.coord("time").units
-                iris.save(sim_fine_yr, str(yr_path),
-                          saver=iris.fileformats.netcdf.save,
-                          unlimited_dimensions=["time"], zlib=True, complevel=1)
-                yearly_result_paths.append(yr_path)
-                shutil.rmtree(str(yr_npy_root), ignore_errors=True)
-                print(f"  {yr} → {yr_path.name}  ({elapsed:.1f}s)")
+                shutil.rmtree(str(win_npy_root), ignore_errors=True)
+
+                # Split the window into yearly NetCDFs (only years still missing).
+                win_years = years[idx]
+                for yr in win:
+                    yr_path = _yr_path(yr)
+                    yearly_result_paths.append(yr_path)
+                    if yr_path.exists():
+                        continue
+                    k = np.where(win_years == yr)[0]
+                    sim_fine_yr = obs_fine_cube[:len(k)].copy()
+                    sim_fine_yr.data = np.ma.masked_invalid(arr[k])
+                    # Output carries the (application) sim_coarse times, not obs_fine's.
+                    _t, _src = sim_fine_yr.coord("time"), sc_win.coord("time")
+                    _t.points, _t.units = _src.points[k], _src.units
+                    iris.save(sim_fine_yr, str(yr_path),
+                              saver=iris.fileformats.netcdf.save,
+                              unlimited_dimensions=["time"], zlib=True, complevel=1)
+                del arr
+                print(f"  {win[0]}–{win[-1]} → {len(todo)} yearly files  ({elapsed:.0f}s)", flush=True)
 
             print("  Statistical downscaling complete.")
 
@@ -940,16 +1006,35 @@ class BCSD:
     Combines BiasCorrection and StatisticalDownscaling in a single pipeline
     following the ISIMIP3BASD methodology.
 
+    Passing a list of variables runs the bias-correction stage **multivariately**
+    (MBCn over the joint distribution, so inter-variable dependence — e.g. the
+    temperature/precipitation correlation, or tasmax ≥ tasmin — is carried into
+    the corrected fields), then downscales each corrected variable
+    **univariately**, one at a time.  This asymmetry is deliberate: the vendored
+    ISIMIP3BASD downscaling routine is single-variable by construction.
+
     Args:
-        variable (str): Climate variable name.
+        variable (str or list of str): Climate variable name(s). A list enables
+            multivariate (MBCn) bias correction across all of them at once.
         bias_correction_kwargs (dict, optional): Forwarded to BiasCorrection.
-        downscaling_kwargs (dict, optional): Forwarded to StatisticalDownscaling.
+        downscaling_kwargs (dict, optional): Forwarded to every per-variable
+            StatisticalDownscaling. Variable-specific bounds and thresholds are
+            not needed here — they come from
+            :attr:`BiasCorrection.DEFAULT_CONFIGS` per variable.
         regridding_method (str): xESMF method for obs_fine→coarse regridding (default
             'conservative').
         regridding_tool (str): 'xesmf' (default) or 'cdo'.
         cdo_method (str): CDO operator when regridding_tool='cdo'.
         cdo_env (str): Conda environment with CDO.
         weights_dir (str, optional): Directory to cache regridding weights.
+
+    Attributes:
+        variables (list of str): Every variable this pipeline handles.
+        variable (str or None): The single variable, or None for a multivariate
+            pipeline.
+        downscalers (dict): Variable name → its StatisticalDownscaling instance.
+        downscaling (StatisticalDownscaling or None): The single downscaler, or
+            None for a multivariate pipeline (use :attr:`downscalers`).
 
     Example:
         >>> bcsd = BCSD(variable='tas',
@@ -958,11 +1043,21 @@ class BCSD:
         >>> paths = bcsd.run(obs_fine=obs_025deg,
         ...                  sim_hist_coarse=gcm_hist_1deg,
         ...                  sim_fut_coarse=gcm_fut_1deg)
+
+        Multivariate bias correction, univariate downscaling:
+
+        >>> bcsd = BCSD(variable=['pr', 'tas', 'tasmax', 'tasmin'],
+        ...             bias_correction_kwargs={'n_iterations': 20})
+        >>> paths = bcsd.run(obs_fine=obs_025deg,
+        ...                  sim_hist_coarse=gcm_hist_1deg,
+        ...                  sim_fut_coarse=gcm_fut_1deg)     # doctest: +SKIP
+        >>> sorted(paths)                                      # doctest: +SKIP
+        ['pr', 'tas', 'tasmax', 'tasmin']
     """
 
     def __init__(
         self,
-        variable: str,
+        variable: Union[str, List[str]],
         bias_correction_kwargs: Optional[Dict] = None,
         downscaling_kwargs: Optional[Dict] = None,
         regridding_method: str = 'conservative',
@@ -978,22 +1073,70 @@ class BCSD:
         is rejected now rather than partway through :meth:`run`.
 
         Raises:
+            ValueError: If no variable, or a duplicated variable, is given.
             ImportError: If ``iris`` is not installed.
         """
-        self.variable          = variable
+        self.variables = [variable] if isinstance(variable, str) else list(variable)
+        if not self.variables:
+            raise ValueError("BCSD needs at least one variable.")
+        if len(set(self.variables)) != len(self.variables):
+            raise ValueError(f"Duplicate variables in {self.variables}.")
+        # None for a multivariate pipeline, mirroring BiasCorrection.variable
+        self.variable          = self.variables[0] if len(self.variables) == 1 else None
         self.regridding_method = regridding_method
         self.regridding_tool   = regridding_tool
         self.cdo_method        = cdo_method
         self.cdo_env           = cdo_env
         self.weights_dir       = weights_dir
 
-        self.bias_correction = BiasCorrection(variable=variable, **(bias_correction_kwargs or {}))
-        self.downscaling     = StatisticalDownscaling(variable=variable, **(downscaling_kwargs or {}))
+        # One bias corrector over all variables jointly (MBCn when >1) ...
+        self.bias_correction = BiasCorrection(variable=self.variables,
+                                              **(bias_correction_kwargs or {}))
+        # ... but one downscaler per variable: ISIMIP3BASD downscaling is
+        # single-variable, and each needs its own bounds from DEFAULT_CONFIGS.
+        self.downscalers = {
+            v: StatisticalDownscaling(variable=v, **(downscaling_kwargs or {}))
+            for v in self.variables
+        }
+        self.downscaling = self.downscalers[self.variable] if self.variable else None
 
+        mode = ('multivariate (MBCn) bias correction + univariate downscaling'
+                if len(self.variables) > 1 else 'univariate')
         print(f"\n{'='*60}")
-        print(f"BCSD Pipeline initialized for {variable}")
+        print(f"BCSD Pipeline initialized for {self.variables}")
+        print(f"Mode: {mode}")
         print(f"Regridding: {regridding_tool} ({regridding_method})")
         print(f"{'='*60}")
+
+    # ------------------------------------------------------------------ helpers
+
+    def _as_dataset(self, data, name: str) -> xr.Dataset:
+        """Accept a DataArray for a single-variable pipeline; require a Dataset
+        otherwise, since a bare array cannot name several variables."""
+        if isinstance(data, xr.DataArray):
+            if self.variable is None:
+                raise TypeError(
+                    f"{name} must be an xr.Dataset holding {self.variables} — a "
+                    "DataArray only carries one variable."
+                )
+            return data.to_dataset(name=self.variable)
+        return data
+
+    def _select(self, ds: xr.Dataset, name: str) -> xr.Dataset:
+        """Subset to this pipeline's variables, failing loudly on a missing one."""
+        missing = [v for v in self.variables if v not in ds.data_vars]
+        if missing:
+            raise KeyError(
+                f"{name} is missing variable(s) {missing} — BCSD is configured for "
+                f"{self.variables}, and multivariate bias correction needs every one "
+                f"of them on the same time axis. Present: {sorted(ds.data_vars)}."
+            )
+        return ds[self.variables]
+
+    @property
+    def _tag(self) -> str:
+        """Filename stem for intermediate files: the variable, or all of them."""
+        return "_".join(self.variables)
 
     def run(
         self,
@@ -1002,8 +1145,10 @@ class BCSD:
         sim_fut_coarse: xr.Dataset,
         obs_hist_coarse: Optional[xr.Dataset] = None,
         output_path: Optional[Union[str, Path]] = None,
-        save_intermediate: bool = False
-    ) -> list:
+        save_intermediate: bool = False,
+        model: Optional[str] = None,
+        scenario: Optional[str] = None,
+    ) -> Union[list, Dict[str, list]]:
         """Run the complete BCSD workflow.
 
         Three steps, of which the first is conditional:
@@ -1011,9 +1156,10 @@ class BCSD:
         0. If ``obs_hist_coarse`` is not supplied, regrid ``obs_fine`` onto the
            simulation's coarse grid by conservative remapping.
         1. Bias-correct the coarse simulation against the coarse observations
-           using ISIMIP3BASD.
-        2. Downscale the corrected coarse field onto the fine grid, again with
-           ISIMIP3BASD, writing one NetCDF per year.
+           using ISIMIP3BASD — jointly over every variable (MBCn) when the
+           pipeline was built with a list.
+        2. Downscale each corrected coarse field onto the fine grid, again with
+           ISIMIP3BASD, writing one NetCDF per variable per year.
 
         Args:
             obs_fine (xr.Dataset): Historical observations at fine resolution.
@@ -1024,14 +1170,28 @@ class BCSD:
                 coarse resolution. When None, derived automatically via conservative
                 regridding.
             output_path (str or Path, optional): Directory for per-year downscaled
-                NetCDF files.
+                NetCDF files. Per-year filenames carry the variable name, so all
+                variables of a multivariate run can share one directory.
             save_intermediate (bool): Save intermediate bias-corrected output alongside
                 final results.
+            model (str, optional): Model tag used in output filenames.
+            scenario (str, optional): Scenario tag used in output filenames.
 
         Returns:
-            list[Path]: Path of the downscaled NetCDF written for each year.
+            list[Path] for a single-variable pipeline: the downscaled NetCDF
+            written for each year. dict[str, list[Path]] for a multivariate one:
+            that same per-year list, keyed by variable.
+
+        Raises:
+            KeyError: If any input is missing one of the pipeline's variables.
         """
         print(f"\n{'='*60}\nStarting BCSD Workflow\n{'='*60}\n")
+
+        obs_fine        = self._select(self._as_dataset(obs_fine, "obs_fine"), "obs_fine")
+        sim_hist_coarse = self._select(self._as_dataset(sim_hist_coarse, "sim_hist_coarse"),
+                                       "sim_hist_coarse")
+        sim_fut_coarse  = self._select(self._as_dataset(sim_fut_coarse, "sim_fut_coarse"),
+                                       "sim_fut_coarse")
 
         # Step 0: Derive coarse observations if not supplied
         if obs_hist_coarse is None:
@@ -1046,17 +1206,20 @@ class BCSD:
                 weights_dir=self.weights_dir,
             )
             if save_intermediate and output_path:
-                p = Path(output_path) / f"{self.variable}_obs_coarse.nc"
+                p = Path(output_path) / f"{self._tag}_obs_coarse.nc"
                 obs_hist_coarse.to_netcdf(p)
                 print(f"  Saved coarse obs to: {p}")
         else:
             print("Using provided coarse observations.\n")
+        obs_hist_coarse = self._select(self._as_dataset(obs_hist_coarse, "obs_hist_coarse"),
+                                       "obs_hist_coarse")
 
-        # Step 1: Bias correction
+        # Step 1: Bias correction — one call over all variables at once, so MBCn
+        # sees the joint distribution rather than each variable in isolation.
         print("\nSTEP 1: BIAS CORRECTION\n" + "-" * 60)
         bc_output = None
         if save_intermediate and output_path:
-            bc_output = Path(output_path) / f"{self.variable}_bias_corrected.nc"
+            bc_output = Path(output_path) / f"{self._tag}_bias_corrected.nc"
 
         sim_fut_corrected = self.bias_correction.correct(
             obs_hist=obs_hist_coarse,
@@ -1065,13 +1228,19 @@ class BCSD:
             output_path=bc_output,
         )
 
-        # Step 2: Statistical downscaling
+        # Step 2: Statistical downscaling — univariate, one variable at a time.
         print("\nSTEP 2: STATISTICAL DOWNSCALING\n" + "-" * 60)
-        result = self.downscaling.downscale(
-            obs_fine=obs_fine,
-            sim_coarse=sim_fut_corrected,
-            output_path=output_path,
-        )
+        results: Dict[str, list] = {}
+        for i, var in enumerate(self.variables, start=1):
+            if len(self.variables) > 1:
+                print(f"\n  [{i}/{len(self.variables)}] {var}")
+            results[var] = self.downscalers[var].downscale(
+                obs_fine=obs_fine[[var]],
+                sim_coarse=sim_fut_corrected[[var]],
+                output_path=output_path,
+                model=model,
+                scenario=scenario,
+            )
 
         print(f"\n{'='*60}\nBCSD Workflow Complete!\n{'='*60}\n")
-        return result
+        return results[self.variable] if self.variable else results

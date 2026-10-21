@@ -11,6 +11,7 @@ regression is recognisable rather than merely red.
 """
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -301,7 +302,7 @@ def test_to_csv_default_is_tab_separated(extractor, gridded_ds, tmp_path):
     df = extractor.to_dataframe(gridded_ds)
     out = tmp_path / "out.csv"
 
-    extractor.to_csv(df, filename=str(out))
+    extractor.to_csv(df, filename=str(out), fair=False)
 
     assert out.exists()
     assert "\t" in out.read_text().splitlines()[0]
@@ -312,7 +313,7 @@ def test_to_csv_creates_missing_parent_directories(extractor, gridded_ds, tmp_pa
     df = extractor.to_dataframe(gridded_ds)
     out = tmp_path / "deep" / "nested" / "out.csv"
 
-    extractor.to_csv(df, filename=str(out))
+    extractor.to_csv(df, filename=str(out), fair=False)
     assert out.exists()
 
 
@@ -332,7 +333,7 @@ def test_to_nc_without_a_dataset(extractor):
 
 def test_to_nc_round_trips(extractor, gridded_ds, tmp_path):
     out = tmp_path / "out.nc"
-    written = extractor.to_nc(gridded_ds, filename=str(out))
+    written = extractor.to_nc(gridded_ds, filename=str(out), fair=False)
 
     assert written == str(out)
     reopened = xr.open_dataset(out)
@@ -347,7 +348,7 @@ def test_gridded_format_splits_by_location(extractor, gridded_ds, tmp_path, fmt)
     extractor.ds = gridded_ds
     df = extractor.to_dataframe(gridded_ds)
 
-    base = extractor.to_csv(df, filename=str(tmp_path / fmt), format=fmt)
+    base = extractor.to_csv(df, filename=str(tmp_path / fmt), format=fmt, fair=False)
 
     written = sorted(p for p in (tmp_path / fmt).rglob("*.csv"))
     assert len(written) == 4                      # 2 lat x 2 lon
@@ -495,7 +496,7 @@ def test_upload_actions_validate_the_extension(extractor, action, bad):
 
 def test_actions_requiring_a_dataset_fail_clearly(extractor):
     extractor.current_ds = None
-    for action in ("calc_index", "to_csv", "to_nc", "to_fair", "impute"):
+    for action in ("calc_index", "to_csv", "to_nc", "impute"):
         with pytest.raises(ValueError, match="requires a dataset"):
             extractor.run_workflow(actions=[action])
 
@@ -523,32 +524,113 @@ def test_workflow_result_keys_reports_only_populated_fields():
 
 
 # --------------------------------------------------------------------------
-# to_fair
+# FAIR crates (written by to_nc / to_csv)
 # --------------------------------------------------------------------------
-def test_to_fair_without_a_dataset(extractor):
+CRATE_META = ["meta.json", "ro-crate-metadata.json", "ro-crate-preview.html"]
+
+
+def test_to_nc_writes_a_crate_by_default(extractor, gridded_ds, tmp_path):
+    written = Path(extractor.to_nc(gridded_ds, filename=str(tmp_path / "out.nc")))
+
+    crate = tmp_path / "out_crate"
+    assert written == crate / "out.nc"
+    assert extractor.crate_dir == str(crate)
+    assert sorted(p.name for p in crate.iterdir()) == sorted(["out.nc"] + CRATE_META)
+
+
+def test_csv_and_nc_share_one_crate(extractor, gridded_ds, tmp_path):
+    src = tmp_path / "in.nc"
+    gridded_ds.to_netcdf(src)
+    result = extractor.run_workflow(actions=["upload_netcdf", "to_csv", "to_nc"], file=str(src))
+
+    crate = Path(result.crate_dir)
+    assert crate.name.endswith("_crate")
+    assert "tasmax" in crate.name and "2014-01-01_2014-12-31" in crate.name
+    data = sorted(p.suffix for p in crate.iterdir() if p.name not in CRATE_META)
+    assert data == [".csv", ".nc"]
+
+    meta = json.loads((crate / "meta.json").read_text())
+    assert [s["action"] for s in meta["processing"]] == [
+        "upload_netcdf", "to_dataframe", "to_csv", "to_nc",
+    ]
+    assert {f["path"] for f in meta["files"] if f["role"] == "data"} == {
+        p.name for p in crate.iterdir() if p.suffix in (".csv", ".nc")
+    }
+
+
+def test_meta_json_records_every_step(extractor, gridded_ds, tmp_path):
+    src = tmp_path / "in.nc"
+    gridded_ds.to_netcdf(src)
+    extractor.upload_netcdf(str(src))
+    extractor.cfg.output.fair.creator = "Tester"
+    nc = Path(extractor.to_nc())
+    crate = nc.parent
+
+    meta = json.loads((crate / "meta.json").read_text())
+    upload, write = meta["processing"]
+    assert upload["action"] == "upload_netcdf" and upload["status"] == "completed"
+    assert upload["inputs"][0]["sha256"] and upload["parameters"]["file"].endswith("in.nc")
+    assert write["action"] == "to_nc" and write["results"] == [nc.name]
+    assert meta["data"]["variables"][0]["name"] == "tasmax"
+    assert meta["creator"] == "Tester"
+    assert "dsinfo" not in meta["config"]           # catalogues trimmed
+    assert meta["software"]["packages"]["xarray"]
+
+    # Checksums in meta.json match the files they describe.
+    from climdata.utils.provenance import sha256
+    for f in meta["files"]:
+        if f["role"] == "data":
+            assert f["sha256"] == sha256(crate / f["path"])
+
+    # One CreateAction per step; the write step's result is the NetCDF.
+    graph = json.loads((crate / "ro-crate-metadata.json").read_text())["@graph"]
+    actions = [e for e in graph if e.get("@type") == "CreateAction"]
+    assert len(actions) == 2 and actions[-1]["result"] == [{"@id": nc.name}]
+
+    # The history travels inside the NetCDF too, newest first.
+    with xr.open_dataset(nc) as out:
+        history = out.attrs["history"].splitlines()
+        assert out.attrs["climdata_crate_id"] == meta["crate_id"]
+    assert " to_nc" in history[0] and " upload_netcdf " in history[-1]
+
+
+def test_writing_twice_does_not_nest_crates(extractor, gridded_ds, tmp_path):
+    first = extractor.to_nc(gridded_ds, filename=str(tmp_path / "out.nc"))
+    second = extractor.to_nc(gridded_ds, filename=first)
+    assert first == second
+
+
+def test_fair_can_be_switched_off_in_config(extractor, gridded_ds, tmp_path):
+    extractor.cfg.output.fair.enabled = False
+    written = extractor.to_nc(gridded_ds, filename=str(tmp_path / "out.nc"))
+    assert written == str(tmp_path / "out.nc")
+    assert not (tmp_path / "out_crate").exists()
+
+
+def test_gridded_csv_goes_inside_the_crate(extractor, gridded_ds):
+    extractor.current_ds = gridded_ds
+    extractor.ds = gridded_ds
+    extractor._gen_fn_cfg()
+    df = extractor.to_dataframe(gridded_ds)
+    base = Path(extractor.to_csv(df, format="simplace"))
+
+    assert base.name == "simplace" and base.parent.name.endswith("_crate")
+    meta = json.loads((base.parent / "meta.json").read_text())
+    assert sum(f["role"] == "data" for f in meta["files"]) == 4
+
+
+def test_failed_step_is_recorded(extractor):
     extractor.current_ds = None
-    with pytest.raises(ValueError, match="No dataset available"):
-        extractor.to_fair()
+    with pytest.raises(FileNotFoundError):
+        extractor.upload_netcdf("/does/not/exist.nc")
+    assert extractor.provenance[-1]["status"] == "failed"
+    assert "FileNotFoundError" in extractor.provenance[-1]["error"]
 
 
-def test_to_fair_writes_a_complete_crate(extractor, gridded_ds, tmp_path):
-    crate = tmp_path / "crate"
-    path = extractor.to_fair(ds=gridded_ds, output_dir=str(crate), title="Test crate")
-
-    assert (crate / "data.nc").exists()
-    assert (crate / "ro-crate-metadata.json").exists()
-    assert (crate / "ro-crate-preview.html").exists()
-    assert path == str(crate)
-
-    meta = json.loads((crate / "ro-crate-metadata.json").read_text())
-    assert "@graph" in meta or "@context" in meta
-
-
-def test_to_fair_can_zip(extractor, gridded_ds, tmp_path):
-    path = extractor.to_fair(
-        ds=gridded_ds, output_dir=str(tmp_path / "crate"), zip_crate=True
-    )
-    assert path.endswith(".zip")
+def test_crate_can_be_zipped(extractor, gridded_ds, tmp_path):
+    extractor.cfg.output.fair.zip = True
+    extractor.to_nc(gridded_ds, filename=str(tmp_path / "out.nc"))
+    assert (tmp_path / "out_crate.zip").exists()
 
 
 # --------------------------------------------------------------------------

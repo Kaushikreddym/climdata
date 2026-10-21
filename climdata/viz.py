@@ -68,7 +68,11 @@ def _spatial_dim_names(da: xr.DataArray):
 
 def _reduce_to_2d(da: xr.DataArray, x, y, time, reduce):
     """Collapse non-spatial dims to obtain a single 2D (y, x) field."""
-    spatial = {x, y}
+    # On a projected grid (HYRAS, HOSTRADA, anything from reproject()) the
+    # lat/lon coordinates are 2-D and the dimensions are called x/y, so the
+    # coordinate names alone do not identify the spatial dims — take the dims
+    # the coordinates span instead.
+    spatial = {x, y} | set(da[x].dims) | set(da[y].dims)
     other_dims = [d for d in da.dims if d not in spatial]
 
     for dim in other_dims:

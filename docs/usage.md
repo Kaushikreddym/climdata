@@ -103,7 +103,6 @@ The available actions are:
 | `reproject` | Regrid onto a target CRS/resolution | a dataset, a target set |
 | `to_csv` | Convert to long form and write CSV | a dataset |
 | `to_nc` | Write NetCDF | a dataset |
-| `to_fair` | Write an RO-Crate | a dataset |
 
 Steps that are configured as no-ops are skipped rather than failing:
 `calc_index` with no `index=` returns `None` and leaves the dataset alone, as
@@ -212,14 +211,33 @@ values of its own cannot be recovered from its neighbours. `SoftImpute`,
     extractor.to_csv(df, filename="./mon", format="monica")
     ```
 
-=== "FAIR RO-Crate"
+!!! info "Every file is written into a FAIR crate"
 
-    A self-describing directory with the data, a JSON-LD manifest and an HTML
-    preview:
+    `to_nc()` and `to_csv()` write their file into a folder named after it, for
+    example `hyras_tasmax_LAT52.3-52.7_LON13.0-13.8_2014-01-01_2014-12-31_crate/`.
+    The folder also holds a record of every processing step that produced the
+    file. The NetCDF and the CSV share a name stem, so both go into one crate:
+
+    | File | Content |
+    |------|---------|
+    | `<stem>.nc` / `<stem>.csv` | The data. The NetCDF's CF `history` attribute lists each step. |
+    | `meta.json` | The full provenance record: each step with its parameters, input files, timings and the files it wrote; the configuration used; software versions; and checksums. |
+    | `ro-crate-metadata.json` | RO-Crate 1.1 JSON-LD, with one `CreateAction` per step. |
+    | `ro-crate-preview.html` | A human-readable summary to open in a browser. |
+
+    Crate settings live under `output.fair`: `title`, `creator`, `license`
+    (defaults to the source dataset's licence), and `zip` (also write a `.zip`).
+    To write a bare file, set `output.fair.enabled=false` or pass `fair=False`:
 
     ```python
-    extractor.to_fair(title="HYRAS Berlin 2014", creator="Your Name")
+    extractor = ClimData(overrides=[..., "output.fair.creator=Your_Name"])
+    extractor.to_nc()                   # -> <stem>_crate/<stem>.nc + metadata
+    extractor.to_nc(fair=False)         # -> <stem>.nc only
     ```
+
+    The steps are recorded as they run. `extractor.provenance_record()` returns
+    them at any point. See the
+    [FAIR crate example](examples/fair/fair_provenance.ipynb).
 
 Output filenames are generated from the configuration and the current dataset,
 so they follow the data through the workflow — after `calc_index()` the filename

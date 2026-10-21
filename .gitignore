@@ -118,6 +118,9 @@ outputs
 *.csv
 *.zarr
 *.nc
+# FAIR crates written by to_nc / to_csv
+*_crate/
+*_crate.zip
 
 usecase/*
 # climdata_gui

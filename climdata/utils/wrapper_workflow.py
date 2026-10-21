@@ -19,6 +19,7 @@ Example:
 
 import os
 import json
+import time
 import pandas as pd
 import numpy as np
 import xarray as xr
@@ -34,6 +35,7 @@ import climdata
 from climdata.utils.config import _ensure_local_conf
 from climdata.extremes.indices import extreme_index
 from climdata.impute.impute_xarray import Imputer
+from climdata.utils import provenance as prov
     
 from hydra import initialize_config_dir, compose
 from hydra.core.global_hydra import GlobalHydra
@@ -70,8 +72,15 @@ CF_TO_DWD_NAMES = {
 #: ``conf/mappings/actions.yaml``, which is what ``get_actions()`` reports.
 _WORKFLOW_ACTIONS = (
     "upload_netcdf", "upload_csv", "extract", "calc_index",
-    "impute", "reproject", "to_csv", "to_nc", "to_fair",
+    "impute", "reproject", "to_csv", "to_nc",
 )
+
+#: ``output.fair`` defaults, mirrored from ``conf/config.yaml`` for configs
+#: copied before the key existed.
+_FAIR_DEFAULTS = {
+    "enabled": True, "title": None, "description": None,
+    "creator": None, "license": None, "zip": False,
+}
 
 #: Providers ``ClimateExtractor.extract()`` knows how to drive, for error messages.
 _EXTRACTABLE = (
@@ -101,6 +110,7 @@ class WorkflowResult:
         impute_filename (str | None): Path of the written imputed dataset.
         reprojected_ds (xr.Dataset | None): Regridded dataset.
         reprojected_filename (str | None): Path of the written regridded dataset.
+        crate_dir (str | None): FAIR crate folder the last write went into.
     """
 
     cfg: DictConfig
@@ -113,6 +123,7 @@ class WorkflowResult:
     impute_filename: Optional[str] = None
     reprojected_ds: Optional[xr.Dataset] = None
     reprojected_filename: Optional[str] = None
+    crate_dir: Optional[str] = None
 
     def keys(self):
         """Name the fields that were actually populated.
@@ -191,6 +202,42 @@ def update_df(attr_name=None):
             return df
         return wrapper
     return decorator
+def track_step(func):
+    """Record each call of a processing method in ``self.provenance``.
+
+    Logs the step name, UTC start/end time, duration, status, the parameters
+    the method declared via :meth:`ClimateExtractor._note`, any input files
+    declared via :meth:`ClimateExtractor._note_input`, and a structural summary
+    of the return value. A method returning ``None`` is logged as ``skipped``;
+    one that raises is logged as ``failed`` and the exception re-raised.
+
+    Apply it beneath :func:`update_ds` / :func:`update_df` so the summary
+    describes what the method itself returned.
+
+    Args:
+        func (Callable): A ``ClimateExtractor`` method.
+
+    Returns:
+        Callable: The wrapped method.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if getattr(self, "provenance", None) is None:
+            # Instance built without __init__ (e.g. in tests): nothing to log to.
+            return func(self, *args, **kwargs)
+        outer = self._step
+        self._step = {"action": func.__name__, "started": prov.now_iso(),
+                      "t0": time.perf_counter(), "parameters": {}, "inputs": [], "results": []}
+        try:
+            out = func(self, *args, **kwargs)
+        except Exception as exc:
+            self._log_step("failed", error=f"{type(exc).__name__}: {exc}")
+            raise
+        finally:
+            step, self._step = self._step, outer
+        self._log_step("skipped" if out is None else "completed", output=out, step=step)
+        return out
+    return wrapper
 # ----------------------------
 # ClimateExtractor Class
 # ----------------------------
@@ -253,12 +300,83 @@ class ClimateExtractor:
         # Optional shared Dask distributed client (created lazily by extract())
         self._dask_client = None
 
+        # Processing record: one dict per tracked step (see track_step).
+        self.provenance: List[dict] = []
+        self._step = None
+        self._crates: Dict[str, dict] = {}     # crate folder -> id, created, files
+        self.crate_dir: Optional[str] = None
+
         # Automatically load config on init
         self.load_config(overrides)
         self.cfg = self.preprocess_aoi(self.cfg)
 
         # instance logger for this extractor
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+
+    # ----------------------------
+    # Provenance
+    # ----------------------------
+    def _note(self, **params):
+        """Attach parameters to the step currently being recorded.
+
+        Called from inside a :func:`track_step` method; a no-op outside one.
+        """
+        if self._step is not None:
+            self._step["parameters"].update(prov.jsonable(params))
+
+    def _note_input(self, path):
+        """Record a file the current step read, with its size and checksum."""
+        if self._step is not None:
+            self._step["inputs"].append(prov.file_record(path))
+
+    def _make_entry(self, status="completed", output=None, error=None, step=None):
+        """Build a provenance entry for ``step`` (default: the step now running).
+
+        Returns ``None`` outside a tracked step.
+        """
+        step = step if step is not None else self._step
+        if step is None:
+            return None
+        entry = {
+            "step": len(self.provenance) + 1,
+            "action": step["action"],
+            "status": status,
+            "started": step["started"],
+            "ended": prov.now_iso(),
+            "duration_s": round(time.perf_counter() - step["t0"], 3),
+            "parameters": dict(step["parameters"]),
+        }
+        if step["inputs"]:
+            entry["inputs"] = list(step["inputs"])
+        if step["results"]:
+            entry["results"] = list(step["results"])
+        if output is not None:
+            entry["output"] = prov.summarize_output(output)
+        if error:
+            entry["error"] = error
+        return entry
+
+    def _log_step(self, status, output=None, error=None, step=None):
+        """Append an entry for ``step`` (default: the step now running) to ``self.provenance``."""
+        entry = self._make_entry(status, output=output, error=error, step=step)
+        self.provenance.append(entry)
+        return entry
+
+    def provenance_record(self) -> List[dict]:
+        """The processing steps recorded so far, oldest first.
+
+        Each entry holds ``step``, ``action``, ``status`` (``completed``,
+        ``skipped`` or ``failed``), ``started``/``ended`` UTC timestamps,
+        ``duration_s``, the ``parameters`` that step used, ``inputs`` (files
+        read, with SHA-256), ``results`` (files written into a crate) and an
+        ``output`` summary. :meth:`to_nc` and :meth:`to_csv` write this list to
+        the crate's ``meta.json``.
+
+        Returns:
+            list[dict]: A copy of ``self.provenance``.
+        """
+        return [dict(e) for e in self.provenance]
+
     def _gen_fn(self, *, ds: xr.Dataset = None, df: pd.DataFrame = None):
         """Build output filenames from *data* metadata rather than from config.
 
@@ -462,6 +580,19 @@ class ClimateExtractor:
             lon_str = f"{lon_min}_{lon_max}"
             lat_range = f"{lat_min}-{lat_max}"
             lon_range = f"{lon_min}-{lon_max}"
+        elif (cfg.get("box") or {}).get("lat_min") is not None:
+            b = cfg.box
+            lat_str = f"{b.lat_min}_{b.lat_max}"
+            lon_str = f"{b.lon_min}_{b.lon_max}"
+            lat_range = f"{b.lat_min}-{b.lat_max}"
+            lon_range = f"{b.lon_min}-{b.lon_max}"
+        elif self.current_ds is not None and prov.spatial_coverage(self.current_ds):
+            # No spatial selection configured (e.g. an uploaded file): describe the data.
+            sc = prov.spatial_coverage(self.current_ds)
+            lat_min, lat_max = f"{sc['lat_min']:g}", f"{sc['lat_max']:g}"
+            lon_min, lon_max = f"{sc['lon_min']:g}", f"{sc['lon_max']:g}"
+            lat_str, lon_str = f"{lat_min}_{lat_max}", f"{lon_min}_{lon_max}"
+            lat_range, lon_range = f"{lat_min}-{lat_max}", f"{lon_min}-{lon_max}"
         else:
             # Fallback for undefined regions
             lat_str = "unknown"
@@ -515,6 +646,15 @@ class ClimateExtractor:
         GlobalHydra.instance().clear()
         with initialize_config_dir(config_dir=conf_dir_abs, version_base=None):
             self.cfg = compose(config_name=self.cfg_name, overrides=overrides)
+
+        # A conf/ copied into the working directory by an older climdata has no
+        # output.fair; fill in the defaults so FAIR output behaves the same.
+        from omegaconf import OmegaConf, open_dict
+        if self.cfg.get("output") is not None:
+            with open_dict(self.cfg):
+                self.cfg.output.fair = OmegaConf.merge(
+                    _FAIR_DEFAULTS, self.cfg.output.get("fair") or {}
+                )
         return self.cfg
 
     # ----------------------------
@@ -571,6 +711,7 @@ class ClimateExtractor:
     # Upload NetCDF
     # ----------------------------
     @update_ds(attr_name='ds')
+    @track_step
     def upload_netcdf(self, nc_file: str) -> xr.Dataset:
         """Load a NetCDF file into an xarray.Dataset and update file metadata.
 
@@ -583,6 +724,8 @@ class ClimateExtractor:
         if not os.path.exists(nc_file):
             raise FileNotFoundError(f"{nc_file} does not exist")
 
+        self._note(file=os.path.abspath(nc_file))
+        self._note_input(nc_file)
         ds = xr.open_dataset(nc_file)
 
         # Update cfg variables & varinfo
@@ -598,6 +741,7 @@ class ClimateExtractor:
     # Upload CSV → xarray.Dataset
     # ----------------------------
     @update_ds(attr_name='ds')
+    @track_step
     def upload_csv(self, csv_file: str) -> xr.Dataset:
         """Load a long-form CSV into an xarray.Dataset.
 
@@ -612,6 +756,8 @@ class ClimateExtractor:
         if not os.path.exists(csv_file):
             raise FileNotFoundError(f"{csv_file} does not exist")
 
+        self._note(file=os.path.abspath(csv_file))
+        self._note_input(csv_file)
         df = pd.read_csv(csv_file, parse_dates=["time"])
 
         lat_col = next((c for c in ["lat", "latitude"] if c in df.columns), None)
@@ -724,6 +870,7 @@ class ClimateExtractor:
             self._dask_client = None
 
     @update_ds(attr_name='ds')
+    @track_step
     def extract(self) -> xr.Dataset:
         """Extract data from the configured provider using ``self.cfg``.
 
@@ -846,8 +993,24 @@ class ClimateExtractor:
                 f"months to Zarr rather than extracting, so it is driven directly "
                 f"rather than through this workflow."
             )
+        units = {var: cfg.varinfo[var].units for var in cfg.variables}
         for var in cfg.variables:
-            ds[var] = xclim.core.units.convert_units_to(ds[var], cfg.varinfo[var].units)
+            ds[var] = xclim.core.units.convert_units_to(ds[var], units[var])
+
+        self._note(
+            dataset=cfg.dataset,
+            provider_class=type(self.dataset_class).__name__,
+            variables=list(cfg.variables),
+            start_date=str(cfg.time_range.start_date),
+            end_date=str(cfg.time_range.end_date),
+            selection=extract_kwargs,
+            region=cfg.region,
+            converted_units=units,
+            data_dir=os.path.abspath(cfg.data_dir),
+        )
+        if dataset_upper in ("CMIP", "CMIP_W5E5", "NEXGDDP"):
+            self._note(**{k: cfg.get(k) for k in ("source_id", "experiment_id", "table_id")
+                          if cfg.get(k) is not None})
 
         # ds = ds.compute()
 
@@ -856,6 +1019,7 @@ class ClimateExtractor:
     # Compute extreme index
     # ----------------------------
     @update_ds(attr_name='index_ds')
+    @track_step
     def calc_index(self, ds: xr.Dataset = None) -> xr.Dataset:
         """Calculate the configured extreme index using xclim indices.
 
@@ -890,6 +1054,9 @@ class ClimateExtractor:
             if n_years < 30:
                 warnings.warn(f"Index {cfg.index} usually requires ≥30 years, got {n_years}", UserWarning)
 
+        idx_def = cfg.extinfo.get("indices", {}).get(cfg.index, {})
+        self._note(index=cfg.index, function=idx_def.get("function"),
+                   input_variables=idx_def.get("variables"), args=idx_def.get("args"))
         indices = extreme_index(cfg, ds)
         index_ds = indices.calculate(cfg.index).compute()
         index_ds = index_ds.to_dataset(name=cfg.index)
@@ -922,6 +1089,7 @@ class ClimateExtractor:
         return plot_map(ds, variable=variable, **kwargs)
 
     @update_df()
+    @track_step
     def to_dataframe(self, ds: xr.Dataset = None) -> pd.DataFrame:
         """Convert a dataset to a long-form pandas DataFrame.
 
@@ -965,8 +1133,17 @@ class ClimateExtractor:
     # ----------------------------
     # Save CSV
     # ----------------------------
-    def to_csv(self, df: Optional[pd.DataFrame] = None, filename: Optional[str] = None, format: str = "default") -> str:
-        """Save a DataFrame to CSV with optional format specification.
+    @track_step
+    def to_csv(self, df: Optional[pd.DataFrame] = None, filename: Optional[str] = None,
+               format: str = "default", fair: Optional[bool] = None) -> str:
+        """Save a DataFrame to CSV, by default inside a FAIR crate.
+
+        With FAIR output on (the default, ``output.fair.enabled``), the file is
+        written into a crate folder named after it — ``out/x.csv`` becomes
+        ``out/x_crate/x.csv`` — next to ``meta.json`` (every processing step,
+        the configuration, software versions, checksums),
+        ``ro-crate-metadata.json`` and ``ro-crate-preview.html``. The NetCDF
+        from :meth:`to_nc` shares the stem, so both go into the same crate.
 
         Args:
             df (pd.DataFrame, optional): DataFrame to save. Defaults to ``self.current_df``.
@@ -976,36 +1153,51 @@ class ClimateExtractor:
                 - 'simplace': SIMPLACE format (splits by location, tab-separated)
                 - 'monica': MONICA format (splits by location, tab-separated)
                 Defaults to 'default'.
+            fair (bool, optional): Write into a FAIR crate. Defaults to
+                ``output.fair.enabled`` (``True``); ``False`` writes the bare
+                file at ``filename``.
 
         Returns:
-            str: The path of the written CSV file(s). For SIMPLACE/MONICA, returns base directory.
-            
+            str: The path of the written CSV file. For SIMPLACE/MONICA, the base directory.
+            The crate folder, when one is written, is in ``self.crate_dir``.
+
         Raises:
             ValueError: If format is not supported or required data is missing.
         """
         df = df if df is not None else self.current_df
         format_lower = format.lower()
+        fair = self._fair_enabled(fair)
+        self._note(format=format_lower, fair=fair)
+        if format_lower not in ("default", "simplace", "monica"):
+            raise ValueError(f"Unsupported format: {format}. Supported formats: 'default', 'simplace', 'monica'")
 
-        # Apply format conversion if requested
         if format_lower in ("simplace", "monica"):
-            return self._convert_to_gridded_format(df, filename, format=format_lower)
-        elif format_lower == "default":
+            crate = None
+            if fair:
+                if filename is not None:
+                    crate, filename = self._crate_paths(filename)
+                else:
+                    base = getattr(self, "filename_csv", None) or f"{format_lower}_{self.cfg.dataset}"
+                    crate, _ = self._crate_paths(base)
+                    filename = crate / format_lower
+            out = self._convert_to_gridded_format(df, None if filename is None else str(filename), format=format_lower)
+        else:
             filename = filename or getattr(self, "filename_csv", None)
             if filename is None:
                 raise ValueError("No filename provided and filename_csv is not set")
-
-            path = Path(filename)
+            crate, path = self._crate_paths(filename) if fair else (None, Path(filename))
             path.parent.mkdir(parents=True, exist_ok=True)
 
-            df.to_csv(filename, index=False, sep='\t')
+            df.to_csv(path, index=False, sep='\t')
             self.filename_csv = str(path)
             self.current_filename = str(path)
-            
             self.logger.info(f"DataFrame saved to CSV file ({format} format): {self.current_filename}")
+            out = str(path)
 
-            return filename
-        else:
-            raise ValueError(f"Unsupported format: {format}. Supported formats: 'default', 'simplace', 'monica'")
+        if crate is not None:
+            variables = sorted(map(str, df["variable"].dropna().unique())) if "variable" in df else []
+            self._finalize_crate(crate, Path(out), variables, ds=self.current_ds, df=df)
+        return out
 
     def _convert_to_gridded_format(self, df: pd.DataFrame, filename: Optional[str] = None, format: str = "simplace") -> str:
         """Convert long-form DataFrame to gridded SIMPLACE/MONICA format by row/column indices.
@@ -1148,8 +1340,26 @@ class ClimateExtractor:
 
         return str(base_dir)
 
-    def to_nc(self, ds: Optional[xr.Dataset] = None, filename: Optional[str] = None) -> str:
-        """Save an xarray Dataset to NetCDF.
+    @track_step
+    def to_nc(self, ds: Optional[xr.Dataset] = None, filename: Optional[str] = None,
+              fair: Optional[bool] = None) -> str:
+        """Save an xarray Dataset to NetCDF, by default inside a FAIR crate.
+
+        With FAIR output on (the default, ``output.fair.enabled``), the file is
+        written into a crate folder named after it:
+
+        .. code-block:: text
+
+            <provider>_<variables>_LAT…_LON…_<start>_<end>_crate/
+                <provider>_<variables>_….nc   # CF `history` lists every step
+                meta.json                     # full provenance record
+                ro-crate-metadata.json        # RO-Crate 1.1, one CreateAction per step
+                ro-crate-preview.html         # human-readable summary
+
+        ``meta.json`` holds every step recorded in :attr:`provenance` with its
+        parameters, inputs, timings and output; the configuration the run used;
+        software versions; and checksums of the data files. Title, creator,
+        licence and zipping come from ``output.fair`` in the configuration.
 
         Notes:
             - If ``ds`` is ``None``: save ``current_ds``.
@@ -1159,9 +1369,13 @@ class ClimateExtractor:
         Args:
             ds (xr.Dataset, optional): Dataset to save. If ``None``, uses ``self.current_ds``.
             filename (str, optional): Output filename. Defaults to ``self.filename_nc``.
+            fair (bool, optional): Write into a FAIR crate. Defaults to
+                ``output.fair.enabled`` (``True``); ``False`` writes the bare
+                file at ``filename``.
 
         Returns:
-            str: The path of the written NetCDF file.
+            str: The path of the written NetCDF file. The crate folder, when one
+            is written, is in ``self.crate_dir``.
         """
 
         # -------------------------------
@@ -1178,13 +1392,21 @@ class ClimateExtractor:
         if filename is None:
             raise ValueError("No filename provided and filename_nc is not set")
 
-        path = Path(filename)
+        fair = self._fair_enabled(fair)
+        self._note(fair=fair)
+        crate, path = self._crate_paths(filename) if fair else (None, Path(filename))
         path.parent.mkdir(parents=True, exist_ok=True)
 
         # -------------------------------
         # 3. Save to NetCDF
         # -------------------------------
-        ds.to_netcdf(path)
+        if crate is not None:
+            variables = list(ds.data_vars)
+            fields = self._fair_fields(variables)
+            self._nc_with_provenance(ds, self._crate_entry(crate)["id"], fields).to_netcdf(path)
+            self._finalize_crate(crate, path, variables, ds=ds)
+        else:
+            ds.to_netcdf(path)
 
         # -------------------------------
         # 4. Track filenames
@@ -1198,351 +1420,171 @@ class ClimateExtractor:
         return str(path)
 
     # ----------------------------
-    # FAIR data object (RO-Crate)
+    # FAIR crate (written by to_nc / to_csv)
     # ----------------------------
-    def to_fair(
-        self,
-        ds: Optional[xr.Dataset] = None,
-        output_dir: Optional[str] = None,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        license_url: str = "https://creativecommons.org/licenses/by/4.0/",
-        creator: Optional[str] = None,
-        zip_crate: bool = False,
-    ) -> str:
-        """Export the dataset as a FAIR Research Object Crate (RO-Crate).
+    def _fair_enabled(self, fair: Optional[bool]) -> bool:
+        """Whether a write goes into a FAIR crate: the call's ``fair``, else ``output.fair.enabled``."""
+        if fair is not None:
+            return bool(fair)
+        from omegaconf import OmegaConf
+        return bool(OmegaConf.select(self.cfg, "output.fair.enabled", default=True))
 
-        Packages the dataset into a self-describing directory that satisfies
-        the FAIR principles (Findable, Accessible, Interoperable, Reusable):
+    @staticmethod
+    def _crate_paths(path):
+        """Map an output path to ``(crate_dir, path inside the crate)``.
 
-        * **Findable** – unique dataset identifier & rich JSON-LD metadata
-        * **Accessible** – standard CF-compliant NetCDF + open JSON-LD manifest
-        * **Interoperable** – CF conventions in NetCDF; Schema.org / RO-Crate vocab
-        * **Reusable** – license, provenance, variable descriptions embedded
+        ``out/x.nc`` becomes ``out/x_crate/x.nc``. A path already inside its
+        crate is returned unchanged, so writing twice never nests crates. The
+        ``.nc`` and ``.csv`` filenames share a stem, so both land in one crate.
+        """
+        p = Path(path)
+        if p.parent.name == f"{p.stem}_crate":
+            return p.parent, p
+        crate = p.parent / f"{p.stem}_crate"
+        return crate, crate / p.name
 
-        The output folder contains:
+    def _crate_entry(self, crate_dir: Path) -> dict:
+        """The crate's identity for this extractor: ID, creation time, files written."""
+        import uuid
+        key = str(Path(crate_dir).resolve())
+        if key not in self._crates:
+            self._crates[key] = {"id": str(uuid.uuid4()), "created": prov.now_iso(), "files": []}
+        return self._crates[key]
 
-        .. code-block:: text
+    def _fair_fields(self, variables: List[str]) -> dict:
+        """Title, description, creator and licence for a crate, from ``output.fair``."""
+        from omegaconf import OmegaConf
+        cfg = self.cfg
+        dataset_name = str(getattr(cfg, "dataset", None) or "unknown")
+        try:
+            dsinfo = dict(cfg.dsinfo[dataset_name.upper()])
+        except Exception:
+            dsinfo = {}
+        fair = lambda key: OmegaConf.select(cfg, f"output.fair.{key}", default=None)
+        tc = prov.temporal_coverage(self.current_ds) if self.current_ds is not None else None
+        title = fair("title") or f"{dataset_name.upper()} {', '.join(variables)}"
+        description = fair("description") or (
+            f"{', '.join(variables)} derived from {dataset_name.upper()} with climdata"
+            + (f", {tc['start']} to {tc['end']}" if tc else "")
+            + ". See meta.json for every processing step."
+        )
+        return {
+            "title": title,
+            "description": description,
+            "creator": fair("creator"),
+            # Derived data inherits the source's terms unless configured otherwise.
+            "license": fair("license") or dsinfo.get("license")
+                       or "https://creativecommons.org/licenses/by/4.0/",
+            "dataset_name": dataset_name,
+            "dsinfo": {k: v for k, v in dsinfo.items() if k not in ("variables", "params")},
+        }
 
-            <output_dir>/
-                data.nc                  # CF-compliant NetCDF dataset
-                ro-crate-metadata.json   # JSON-LD manifest (RO-Crate 1.1)
-                ro-crate-preview.html    # human-readable summary (optional)
+    def _nc_with_provenance(self, ds: xr.Dataset, crate_id: str, fields: dict) -> xr.Dataset:
+        """Copy of ``ds`` with CF global attributes and the processing history."""
+        version = getattr(climdata, "__version__", "unknown")
+        steps = self.provenance_record()
+        inflight = self._make_entry()
+        if inflight:
+            steps.append(inflight)
+        out = ds.copy()
+        out.attrs.setdefault("Conventions", "CF-1.8")
+        out.attrs.setdefault("institution", fields["creator"] or "climdata")
+        out.attrs.setdefault("source", fields["dataset_name"])
+        out.attrs["title"] = fields["title"]
+        out.attrs["license"] = fields["license"]
+        out.attrs["climdata_version"] = version
+        out.attrs["climdata_crate_id"] = crate_id
+        out.attrs["provenance"] = "Full processing record in meta.json in the same folder."
+        # CF convention: newest entry first, prepended to any existing history.
+        new = list(reversed(prov.history_lines(steps, version)))
+        old = ds.attrs.get("history")
+        out.attrs["history"] = "\n".join(new + ([old] if old else []))
+        return out
 
-        Uses the ``rocrate`` Python package when available; falls back to a
-        hand-written JSON-LD manifest so the method always works.
+    def _finalize_crate(self, crate_dir: Path, written: Path, variables: List[str],
+                        ds: Optional[xr.Dataset] = None, df: Optional[pd.DataFrame] = None) -> str:
+        """Register ``written`` in its crate and (re)write the crate metadata.
 
-        Args:
-            ds (xr.Dataset, optional): Dataset to package. Defaults to
-                ``self.current_ds``.
-            output_dir (str, optional): Destination folder. Defaults to
-                ``<filename_nc_stem>_fair_crate``.
-            title (str, optional): Human-readable dataset title.
-            description (str, optional): Free-text description of the dataset.
-            license_url (str): SPDX or Creative-Commons URL for the data
-                licence. Defaults to CC-BY-4.0.
-            creator (str, optional): Name of the person / organisation that
-                produced the data.
-            zip_crate (bool): If *True*, zip the crate directory and return
-                the ``.zip`` path. Defaults to *False*.
+        Writes ``meta.json`` (the full record), ``ro-crate-metadata.json`` and
+        ``ro-crate-preview.html``, all from the provenance log including the
+        step currently running. Called by :meth:`to_nc` and :meth:`to_csv`
+        after they write their data; a second write into the same crate adds
+        its file and refreshes the metadata.
 
         Returns:
-            str: Absolute path to the RO-Crate directory (or ``.zip`` file).
-
-        Raises:
-            ValueError: If no dataset is available.
-
-        Example:
-            >>> extractor = ClimData(overrides=["dataset=mswx", ...])
-            >>> ds = extractor.extract()
-            >>> crate_path = extractor.to_fair(title="MSWX Germany 2014")
-            >>> print(crate_path)      # …/mswx_fair_crate/
+            str: The crate folder.
         """
-        import datetime
         import zipfile
-        import uuid
+        from omegaconf import OmegaConf
 
-        ds = ds if ds is not None else self.current_ds
-        if ds is None:
-            raise ValueError(
-                "No dataset available. Run extract() or upload_netcdf() first."
-            )
+        crate_dir = Path(crate_dir)
+        entry = self._crate_entry(crate_dir)
+        new = [written] if written.is_file() else sorted(f for f in written.rglob("*") if f.is_file())
+        for f in new:
+            rel = str(f.relative_to(crate_dir))
+            if rel not in entry["files"]:
+                entry["files"].append(rel)
+            if self._step is not None and rel not in self._step["results"]:
+                self._step["results"].append(rel)
 
-        cfg = self.cfg
+        fields = self._fair_fields(variables)
+        steps = self.provenance_record()
+        inflight = self._make_entry()
+        if inflight:
+            steps.append(inflight)
 
-        # ── 1. Resolve output directory ─────────────────────────────────────
-        if output_dir is None:
-            base = getattr(self, "filename_nc", None)
-            stem = Path(base).stem if base else getattr(cfg, "dataset", "climdata")
-            output_dir = str(Path(base).parent / f"{stem}_fair_crate") if base else f"{stem}_fair_crate"
+        if ds is not None:
+            data = prov.summarize_dataset(ds)
+        else:
+            data = {"type": "pandas.DataFrame",
+                    "variables": [{"name": v} for v in variables],
+                    "rows": int(len(df)) if df is not None else None}
 
-        crate_dir = Path(output_dir)
-        crate_dir.mkdir(parents=True, exist_ok=True)
+        kinds = {".nc": ("application/x-netcdf", "NetCDF dataset (CF-1.8)"),
+                 ".csv": ("text/tab-separated-values", "Tab-separated table")}
+        files = []
+        for rel in entry["files"]:
+            fmt, desc = kinds.get(Path(rel).suffix, ("application/octet-stream", "Data file"))
+            files.append(dict(prov.file_record(crate_dir / rel, name=rel),
+                              role="data", encodingFormat=fmt, description=desc))
+        files += [
+            {"path": "meta.json", "role": "metadata", "description": "Full processing record"},
+            {"path": "ro-crate-metadata.json", "role": "metadata", "description": "RO-Crate 1.1 JSON-LD manifest"},
+            {"path": "ro-crate-preview.html", "role": "metadata", "description": "Human-readable summary"},
+        ]
 
-        # ── 2. Write the NetCDF payload ──────────────────────────────────────
-        nc_path = crate_dir / "data.nc"
+        meta = {
+            "schema_version": prov.META_SCHEMA_VERSION,
+            "crate_id": entry["id"],
+            "title": fields["title"],
+            "description": fields["description"],
+            "created": entry["created"],
+            "updated": prov.now_iso(),
+            "creator": fields["creator"],
+            "license": fields["license"],
+            "source_dataset": fields["dataset_name"].upper(),
+            "source_dataset_info": prov.jsonable(fields["dsinfo"]),
+            "data": data,
+            "files": files,
+            "processing": steps,
+            "config": prov.config_snapshot(self.cfg),
+            "software": prov.software_environment(),
+        }
+        (crate_dir / "meta.json").write_text(
+            json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+        (crate_dir / "ro-crate-metadata.json").write_text(
+            json.dumps(prov.build_ro_crate(meta), indent=2, ensure_ascii=False), encoding="utf-8")
+        (crate_dir / "ro-crate-preview.html").write_text(prov.render_preview(meta), encoding="utf-8")
 
-        # Embed CF global attributes before saving
-        ds_out = ds.copy()
-        ds_out.attrs.setdefault("Conventions", "CF-1.8")
-        ds_out.attrs.setdefault("institution", creator or "climdata")
-        ds_out.attrs.setdefault(
-            "source",
-            getattr(cfg, "dataset", "unknown"),
-        )
-        ds_out.attrs.setdefault(
-            "history",
-            f"{datetime.datetime.utcnow().isoformat()}Z climdata to_fair()",
-        )
-        ds_out.to_netcdf(nc_path)
-        self.logger.info("FAIR payload written to %s", nc_path)
-
-        # ── 3. Collect metadata from cfg ────────────────────────────────────
-        dataset_name = getattr(cfg, "dataset", "unknown")
-        variables = list(getattr(cfg, "variables", list(ds.data_vars)))
-
-        t_start = getattr(getattr(cfg, "time_range", None), "start_date", None)
-        t_end = getattr(getattr(cfg, "time_range", None), "end_date", None)
-        if t_start is None and "time" in ds.coords:
-            t_start = str(ds.time.values[0])[:10]
-        if t_end is None and "time" in ds.coords:
-            t_end = str(ds.time.values[-1])[:10]
-
-        # spatial extent
-        lat_min = lat_max = lon_min = lon_max = None
-        try:
-            box = getattr(cfg, "box", None)
-            if box and getattr(box, "lat_min", None) is not None:
-                lat_min = float(box.lat_min)
-                lat_max = float(box.lat_max)
-                lon_min = float(box.lon_min)
-                lon_max = float(box.lon_max)
-            elif getattr(cfg, "lat", None) is not None:
-                lat_min = lat_max = float(cfg.lat)
-                lon_min = lon_max = float(cfg.lon)
-            elif "lat" in ds.coords:
-                lat_min = float(ds.lat.values.min())
-                lat_max = float(ds.lat.values.max())
-                lon_min = float(ds.lon.values.min())
-                lon_max = float(ds.lon.values.max())
-        except Exception:
-            pass
-
-        # variable-level metadata
-        var_descriptions = []
-        varinfo = getattr(cfg, "varinfo", {})
-        for v in variables:
-            info = varinfo.get(v, {}) if varinfo else {}
-            units = getattr(info, "units", None) or ds[v].attrs.get("units", "1") if v in ds else "1"
-            long_name = ds[v].attrs.get("long_name", v) if v in ds else v
-            var_descriptions.append({"@type": "PropertyValue", "name": v,
-                                      "description": long_name, "unitText": units})
-
-        title = title or f"{dataset_name.upper()} climate data extract"
-        description = description or (
-            f"Climate dataset extracted by climdata v{climdata.__version__} "
-            f"from {dataset_name.upper()}. "
-            f"Variables: {', '.join(variables)}. "
-            f"Period: {t_start} to {t_end}."
-        )
-        crate_id = str(uuid.uuid4())
-        now_iso = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        # ── 4. Try rocrate library; fall back to hand-crafted JSON-LD ────────
-        metadata_path = crate_dir / "ro-crate-metadata.json"
-        try:
-            from rocrate.rocrate import ROCrate  # type: ignore
-            from rocrate.model import ContextEntity  # type: ignore
-
-            crate = ROCrate()
-            crate.name = title
-            crate.description = description
-
-            crate.add_file(
-                str(nc_path),
-                dest_path="data.nc",
-                properties={
-                    "name": "data.nc",
-                    "description": "CF-compliant NetCDF dataset",
-                    "encodingFormat": "application/x-netcdf",
-                    "variableMeasured": var_descriptions,
-                },
-            )
-
-            if t_start:
-                crate.root_dataset["temporalCoverage"] = f"{t_start}/{t_end}"
-            if lat_min is not None:
-                crate.root_dataset["spatialCoverage"] = {
-                    "@type": "Place",
-                    "geo": {
-                        "@type": "GeoShape",
-                        "box": f"{lat_min} {lon_min} {lat_max} {lon_max}",
-                    },
-                }
-            if creator:
-                person = crate.add(
-                    ContextEntity(crate, f"#{creator.replace(' ', '_')}",
-                                  properties={"@type": "Person", "name": creator})
-                )
-                crate.root_dataset["creator"] = person
-            crate.root_dataset["license"] = license_url
-            crate.root_dataset["datePublished"] = now_iso
-            crate.root_dataset["identifier"] = crate_id
-            crate.root_dataset["keywords"] = variables
-            crate.root_dataset["producer"] = {
-                "@type": "SoftwareApplication",
-                "name": "climdata",
-                "version": climdata.__version__,
-                "url": "https://github.com/climdata/climdata",
-            }
-            crate.write(str(crate_dir))
-            self.logger.info("RO-Crate written via rocrate library.")
-
-        except ImportError:
-            # ── fallback: hand-craft the JSON-LD ────────────────────────────
-            self.logger.warning(
-                "'rocrate' package not found. Writing plain JSON-LD metadata. "
-                "Install with: pip install rocrate"
-            )
-            geo_shape: Optional[Dict] = None
-            if lat_min is not None:
-                geo_shape = {
-                    "@type": "GeoShape",
-                    "box": f"{lat_min} {lon_min} {lat_max} {lon_max}",
-                }
-
-            metadata = {
-                "@context": [
-                    "https://w3id.org/ro/crate/1.1/context",
-                    {"climdata": "https://climdata.readthedocs.io/"},
-                ],
-                "@graph": [
-                    # ── RO-Crate metadata descriptor ────────────────────
-                    {
-                        "@id": "ro-crate-metadata.json",
-                        "@type": "CreativeWork",
-                        "conformsTo": {"@id": "https://w3id.org/ro/crate/1.1"},
-                        "about": {"@id": "./"},
-                    },
-                    # ── Root data entity (the crate itself) ─────────────
-                    {
-                        "@id": "./",
-                        "@type": "Dataset",
-                        "identifier": crate_id,
-                        "name": title,
-                        "description": description,
-                        "datePublished": now_iso,
-                        "license": {"@id": license_url},
-                        "keywords": variables,
-                        **({
-                            "creator": {
-                                "@type": "Person",
-                                "name": creator,
-                            }
-                        } if creator else {}),
-                        **({
-                            "temporalCoverage": f"{t_start}/{t_end}"
-                        } if t_start else {}),
-                        **({
-                            "spatialCoverage": {
-                                "@type": "Place",
-                                "geo": geo_shape,
-                            }
-                        } if geo_shape else {}),
-                        "producer": {
-                            "@type": "SoftwareApplication",
-                            "name": "climdata",
-                            "version": climdata.__version__,
-                            "url": "https://github.com/Kaushikreddym/climdata",
-                        },
-                        "hasPart": [{"@id": "data.nc"}],
-                    },
-                    # ── File entity (the NetCDF) ─────────────────────────
-                    {
-                        "@id": "data.nc",
-                        "@type": "File",
-                        "name": "data.nc",
-                        "description": "CF-compliant NetCDF dataset",
-                        "encodingFormat": "application/x-netcdf",
-                        "variableMeasured": var_descriptions,
-                        **({
-                            "temporalCoverage": f"{t_start}/{t_end}"
-                        } if t_start else {}),
-                    },
-                    # ── License entity ───────────────────────────────────
-                    {
-                        "@id": license_url,
-                        "@type": "CreativeWork",
-                        "name": "CC-BY 4.0" if "creativecommons" in license_url else license_url,
-                        "url": license_url,
-                    },
-                ],
-            }
-            with open(metadata_path, "w", encoding="utf-8") as f:
-                json.dump(metadata, f, indent=2, ensure_ascii=False)
-
-        # ── 5. Write a simple HTML preview ──────────────────────────────────
-        html_path = crate_dir / "ro-crate-preview.html"
-        var_rows = "".join(
-            f"<tr><td><code>{v['name']}</code></td>"
-            f"<td>{v['description']}</td>"
-            f"<td>{v['unitText']}</td></tr>"
-            for v in var_descriptions
-        )
-        spatial_str = (
-            f"{lat_min:.3f}°N – {lat_max:.3f}°N, {lon_min:.3f}°E – {lon_max:.3f}°E"
-            if lat_min is not None
-            else "(not specified)"
-        )
-        html_content = f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8">
-<title>{title}</title>
-<style>
-  body{{font-family:sans-serif;max-width:900px;margin:2em auto;padding:0 1em}}
-  table{{border-collapse:collapse;width:100%}}
-  th,td{{border:1px solid #ccc;padding:.4em .8em;text-align:left}}
-  th{{background:#f0f0f0}}
-  .badge{{background:#0078d4;color:#fff;padding:.2em .6em;border-radius:4px;font-size:.85em}}
-</style>
-</head>
-<body>
-<h1>{title} <span class="badge">RO-Crate</span></h1>
-<p>{description}</p>
-<table>
-  <tr><th>Field</th><th>Value</th></tr>
-  <tr><td>Dataset</td><td>{dataset_name.upper()}</td></tr>
-  <tr><td>Period</td><td>{t_start} &#8594; {t_end}</td></tr>
-  <tr><td>Spatial coverage</td><td>{spatial_str}</td></tr>
-  <tr><td>License</td><td><a href="{license_url}">{license_url}</a></td></tr>
-  <tr><td>Produced by</td><td>climdata v{climdata.__version__}</td></tr>
-  <tr><td>Crate ID</td><td><code>{crate_id}</code></td></tr>
-</table>
-<h2>Variables</h2>
-<table>
-  <tr><th>CF name</th><th>Long name</th><th>Units</th></tr>
-  {var_rows}
-</table>
-<h2>Files</h2>
-<ul>
-  <li><a href="data.nc">data.nc</a> – CF-compliant NetCDF</li>
-  <li><a href="ro-crate-metadata.json">ro-crate-metadata.json</a> – JSON-LD metadata</li>
-</ul>
-</body>
-</html>
-"""
-        html_path.write_text(html_content, encoding="utf-8")
-
-        # ── 6. Optionally zip ────────────────────────────────────────────────
-        if zip_crate:
+        if OmegaConf.select(self.cfg, "output.fair.zip", default=False):
             zip_path = crate_dir.with_suffix(".zip")
             with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                for file in crate_dir.rglob("*"):
-                    zf.write(file, file.relative_to(crate_dir.parent))
-            self.logger.info("RO-Crate zipped to %s", zip_path)
-            return str(zip_path)
+                for f in crate_dir.rglob("*"):
+                    zf.write(f, f.relative_to(crate_dir.parent))
+            self.logger.info("Crate zipped to %s", zip_path)
 
-        self.logger.info("FAIR RO-Crate ready at %s", crate_dir)
+        self.crate_dir = str(crate_dir)
+        self.logger.info("FAIR crate updated at %s", crate_dir)
         return str(crate_dir)
 
     # ----------------------------
@@ -1555,7 +1597,7 @@ class ClimateExtractor:
 
         Args:
             overrides (list[str], optional): Hydra overrides to apply (not all actions will use these).
-            actions (list[str], optional): Ordered list of actions to perform. Supported actions include: 'upload_netcdf', 'upload_csv', 'extract', 'calc_index', 'to_dataframe', 'to_csv', 'to_nc', 'to_fair'.
+            actions (list[str], optional): Ordered list of actions to perform. Supported actions include: 'upload_netcdf', 'upload_csv', 'extract', 'calc_index', 'impute', 'reproject', 'to_csv', 'to_nc'. 'to_csv' and 'to_nc' write into a FAIR crate unless ``output.fair.enabled=false``.
             file (str, optional): File path used for upload actions when required.
 
         Returns:
@@ -1627,6 +1669,7 @@ class ClimateExtractor:
                     self.to_dataframe()
                     result.dataframe = self.current_df
                     result.filename = self.to_csv()
+                    result.crate_dir = getattr(self, "crate_dir", None)
 
                 elif action == "to_nc":
                     if self.current_ds is None:
@@ -1635,6 +1678,7 @@ class ClimateExtractor:
                             "Upload or extract a dataset before saving to NetCDF."
                         )
                     result.filename = self.to_nc()
+                    result.crate_dir = getattr(self, "crate_dir", None)
 
                 elif action == "impute":
                     if self.current_ds is None:
@@ -1652,14 +1696,6 @@ class ClimateExtractor:
                     self.reproject()
                     result.dataset = self.current_ds
                     result.reprojected_ds = getattr(self, "reprojected_ds", None)
-
-                elif action == "to_fair":
-                    if self.current_ds is None:
-                        raise ValueError(
-                            "Action 'to_fair' requires a dataset, but no dataset is available. "
-                            "Upload or extract a dataset before exporting a FAIR crate."
-                        )
-                    result.filename = self.to_fair()
 
                 else:
                     raise ValueError(
@@ -1783,6 +1819,7 @@ class ClimateExtractor:
     # Imputation
     # ----------------------------
     @update_ds(attr_name='impute_ds')
+    @track_step
     def impute(self, ds: xr.Dataset = None) -> xr.Dataset:
         """Impute missing values using the configured imputation method.
 
@@ -1833,6 +1870,8 @@ class ClimateExtractor:
             method=method,
             normalize=normalize,
         )
+        self._note(method=method, normalize=normalize,
+                   dims=[time_dim, lat_dim, lon_dim], method_config=impute_cfg[method])
         recovered = imputer.impute()
 
         # merge imputed variables back into original dataset if we operated on a subset
@@ -1843,6 +1882,7 @@ class ClimateExtractor:
         return ds_out
 
     @update_ds("reprojected_ds")
+    @track_step
     def reproject(self, ds: xr.Dataset = None, **overrides) -> xr.Dataset:
         """Reproject / resample the dataset onto the configured target grid.
 
@@ -1915,6 +1955,8 @@ class ClimateExtractor:
         if isinstance(kwargs.get("method"), DictConfig):
             kwargs["method"] = dict(kwargs["method"])
 
+        self._note(target_projection=target_projection, target_resolution=target_resolution,
+                   **{k: v for k, v in kwargs.items() if k != "like"})
         self.logger.info(
             "Reprojecting to %s at %s", target_projection or "source CRS", target_resolution
         )

@@ -56,3 +56,13 @@ output:
   filename_zarr: "{provider}_{parameter}_LAT{lat_or_lat_range}_LON{lon_or_lon_range}_{start}_{end}.zarr"
   filename_nc: "{provider}_{parameter}_LAT{lat_or_lat_range}_LON{lon_or_lon_range}_{start}_{end}.nc"
   fmt: "standard"
+  # to_nc / to_csv write into a FAIR crate: <stem>_crate/ holding the data,
+  # meta.json (every processing step, config, software, checksums),
+  # ro-crate-metadata.json and ro-crate-preview.html.
+  fair:
+    enabled: true
+    title: null         # default: "<DATASET> <variables>"
+    description: null
+    creator: null
+    license: null       # default: the source dataset's licence, else CC-BY-4.0
+    zip: false          # also write <stem>_crate.zip

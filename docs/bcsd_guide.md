@@ -135,6 +135,55 @@ bcsd = BCSD(
 result = bcsd.run(...)
 ```
 
+### Example 3b: Multivariate (MBCn) Bias Correction
+
+Pass a **list** of variables and the bias-correction stage runs MBCn over their
+joint distribution, so the inter-variable dependence structure (the
+temperature/precipitation correlation, the ordering of `tasmax`/`tas`/`tasmin`,
+...) is carried into the corrected fields instead of each variable being
+adjusted in isolation. Statistical downscaling then runs **univariately**, one
+variable at a time — ISIMIP3BASD's downscaling routine is single-variable by
+construction.
+
+```python
+from climdata.sdba import BCSD
+
+bcsd = BCSD(
+    variable=['pr', 'tas', 'tasmax', 'tasmin'],   # a list ⇒ MBCn
+    bias_correction_kwargs={'n_iterations': 20, 'randomization_seed': 42},
+    downscaling_kwargs={'n_iterations': 20, 'randomization_seed': 42},
+)
+
+# Every input must be a Dataset carrying all four variables on a common time axis
+paths = bcsd.run(
+    obs_fine=obs_fine,               # xr.Dataset with pr, tas, tasmax, tasmin
+    sim_hist_coarse=gcm_hist,
+    sim_fut_coarse=gcm_fut,
+    output_path='./downscaled/',
+    model='GFDL-ESM4', scenario='historical',
+)
+
+paths['pr']    # list of per-year NetCDF paths for pr
+paths['tas']   # ... and so on, one key per variable
+```
+
+Notes:
+
+- `run()` returns a `dict[variable, list[Path]]` for a multivariate pipeline and
+  a plain `list[Path]` for a single-variable one, so existing single-variable
+  code is unaffected.
+- Per-year filenames carry the variable name
+  (`BCSD_{var}_{model}_{scenario}_{year}.nc`), so all variables can share one
+  `output_path`.
+- Per-variable bounds, distributions and trend-preservation modes still come
+  from `BiasCorrection.DEFAULT_CONFIGS`; an explicit override in
+  `bias_correction_kwargs` applies to *every* variable in the list.
+- A variable missing from any input raises `KeyError` — MBCn corrects the joint
+  distribution in one pass, so it cannot skip a variable for one input only.
+- Because downscaling is univariate, the joint structure is preserved by the
+  correction stage but not enforced afterwards; a hard constraint such as
+  `tasmax >= tasmin` should still be checked on the final fine-grid output.
+
 ### Example 3: Bias Correction Only
 6
 ```python

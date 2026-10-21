@@ -98,8 +98,12 @@ nav:
         - Datasets:
             - MSWX: examples/datasets/mswx_example.ipynb
             - CMIP6 bias-adjusted (0.5 deg): examples/datasets/cmip_w5e5_example.ipynb
+        - Extreme Indices:
+            - Heat Waves over Germany: examples/indices/heatwave_germany.ipynb
         - Grids:
             - Resolution & Projection Transformation: examples/grid/reprojection.ipynb
+        - Provenance:
+            - FAIR Data Crates: examples/fair/fair_provenance.ipynb
         - Advanced:
             - Multi-Dataset Comparison: examples/datasets/multi_dataset_comparison.ipynb
             - CMIP vs Observations: examples/advanced/cmip_obs_comparison.ipynb
