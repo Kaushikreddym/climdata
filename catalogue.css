@@ -1,0 +1,119 @@
+/* ---- Dataset catalogue page ------------------------------------------ */
+
+:root {
+  --cat-obs:  #2e7d32;
+  --cat-rean: #00838f;
+  --cat-proj: #6a1b9a;
+  --cat-crop: #ef6c00;
+  --cat-crop-bg: rgba(104, 159, 56, 0.08);
+  --cat-key-bg:  rgba(255, 179, 0, 0.08);
+}
+
+.md-typeset .cat-lead {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--md-default-fg-color--light);
+  border-left: 4px solid var(--md-primary-fg-color);
+  padding-left: 0.9rem;
+  margin: 0.5rem 0 1.5rem;
+}
+
+/* Kind pills */
+.md-typeset .cat-tag {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #fff;
+  vertical-align: middle;
+}
+.md-typeset .cat-tag.obs  { background: var(--cat-obs); }
+.md-typeset .cat-tag.rean { background: var(--cat-rean); }
+.md-typeset .cat-tag.proj { background: var(--cat-proj); }
+.md-typeset .cat-tag.crop { background: var(--cat-crop); }
+
+/* Access pills */
+.md-typeset .cat-open,
+.md-typeset .cat-key {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.md-typeset .cat-open { color: var(--cat-obs);  border: 1px solid var(--cat-obs); }
+.md-typeset .cat-key  { color: #b26a00;          border: 1px solid #b26a00; }
+
+/* Per-dataset card */
+.md-typeset .cat-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-top: 4px solid var(--md-primary-fg-color);
+  border-radius: 8px;
+  padding: 0.4rem 1.1rem 0.9rem;
+  margin: 0.6rem 0 2rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.md-typeset .cat-card .cat-sub {
+  margin: 0.5rem 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--md-default-fg-color--light);
+}
+.md-typeset .cat-card > table:first-of-type,
+.md-typeset .cat-card .md-typeset__table:first-of-type table {
+  font-size: 0.78rem;
+}
+.md-typeset .cat-card table th:empty { display: none; }
+.md-typeset .cat-card table thead { display: none; }
+.md-typeset .cat-card table td:first-child { white-space: nowrap; width: 11rem; }
+
+/* Custom admonition: crop modelling */
+.md-typeset .admonition.crop,
+.md-typeset details.crop {
+  border-color: #689f38;
+  background: var(--cat-crop-bg);
+}
+.md-typeset .crop > .admonition-title,
+.md-typeset .crop > summary {
+  background-color: rgba(104, 159, 56, 0.15);
+}
+.md-typeset .crop > .admonition-title::before,
+.md-typeset .crop > summary::before {
+  background-color: #689f38;
+  -webkit-mask-image: var(--md-admonition-icon--crop);
+          mask-image: var(--md-admonition-icon--crop);
+}
+
+/* Custom admonition: credentials */
+.md-typeset .admonition.key,
+.md-typeset details.key {
+  border-color: #ffb300;
+  background: var(--cat-key-bg);
+}
+.md-typeset .key > .admonition-title,
+.md-typeset .key > summary {
+  background-color: rgba(255, 179, 0, 0.15);
+}
+.md-typeset .key > .admonition-title::before,
+.md-typeset .key > summary::before {
+  background-color: #ffb300;
+  -webkit-mask-image: var(--md-admonition-icon--key);
+          mask-image: var(--md-admonition-icon--key);
+}
+
+:root {
+  /* material: sprout, key-variant */
+  --md-admonition-icon--crop: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 22v-2h9v-5.2q-2.375-.25-4.187-1.975T5 8V7h1q1.475 0 2.825.575T11 9.25V8q0-2.825 2.088-4.913T18 1h1v1q0 2.4-1.512 4.237T13 8.775v.475q.825-.85 2.175-1.55T18 7h1v1q0 2.4-1.812 4.125T13 14.8V20h9v2z"/></svg>');
+  --md-admonition-icon--key: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 18v4h-4v-3h-3v-3h-3l-2.26-2.26c-.55.17-1.13.26-1.74.26a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6c0 .61-.09 1.19-.26 1.74L22 18M7 5a2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2z"/></svg>');
+}
+
+/* Grid cards: subtle lift on hover */
+.md-typeset .grid.cards > ul > li {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.md-typeset .grid.cards > ul > li:hover {
+  transform: translateY(-2px);
+}
