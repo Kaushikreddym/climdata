@@ -384,6 +384,13 @@ class BiasCorrection:
             'distribution': 'normal', 'trend_preservation': 'additive',
             'detrend': True, 'adjust_p_values': False,
         },
+        # Diurnal temperature range, tasmax - tasmin (see climdata.sdba.temperature).
+        # Corrected in place of tasmax so the corrected tasmax can never fall
+        # below tasmin; settings are ISIMIP3BASD's for its 'tasrange'.
+        'dtr': {
+            'distribution': 'rice', 'trend_preservation': 'mixed',
+            'lower_bound': 0, 'lower_threshold': 0.01, 'adjust_p_values': True,
+        },
         'pr': {
             'distribution': 'gamma', 'trend_preservation': 'mixed',
             'lower_bound': 0, 'lower_threshold': 0.1, 'adjust_p_values': True,
@@ -1008,10 +1015,15 @@ class BCSD:
 
     Passing a list of variables runs the bias-correction stage **multivariately**
     (MBCn over the joint distribution, so inter-variable dependence — e.g. the
-    temperature/precipitation correlation, or tasmax ≥ tasmin — is carried into
-    the corrected fields), then downscales each corrected variable
+    temperature/precipitation correlation — is carried into the corrected
+    fields), then downscales each corrected variable
     **univariately**, one at a time.  This asymmetry is deliberate: the vendored
     ISIMIP3BASD downscaling routine is single-variable by construction.
+
+    Neither stage guarantees ``tasmin <= tas <= tasmax`` (MBCn ends with a
+    univariate quantile mapping per variable, and downscaling is univariate).
+    To keep that ordering, correct ``dtr`` in place of ``tasmax`` and reconcile
+    the result with :func:`climdata.sdba.temperature.enforce_temperature_order`.
 
     Args:
         variable (str or list of str): Climate variable name(s). A list enables

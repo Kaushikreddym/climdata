@@ -11,6 +11,7 @@ Example:
 """
 
 from .bcsd import BCSD, BiasCorrection, StatisticalDownscaling, regrid_to_coarse
+from .temperature import add_dtr, enforce_temperature_order
 from .utils import compute_daily_climatology, smooth_fft
 
 __all__ = [
@@ -18,6 +19,8 @@ __all__ = [
     "BiasCorrection",
     "StatisticalDownscaling",
     "regrid_to_coarse",
+    "add_dtr",
+    "enforce_temperature_order",
     "compute_daily_climatology",
     "smooth_fft",
 ]
