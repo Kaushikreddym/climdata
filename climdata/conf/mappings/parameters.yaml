@@ -635,7 +635,7 @@ AGRI_ISIMIP:
     type: Simulated (Impact Model)
     coverage: Global
     resolution: 0.5°
-    frequency: daily
+    frequency: annual (per growing season)
     time_range: varies by experiment (1986-2100)
     source: ISIMIP repository
     notes: >

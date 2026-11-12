@@ -43,8 +43,10 @@ theme:
         - navigation.top
         - search.highlight
         - search.share
-    extra_css:
+
+extra_css:
     - overrides/assets.css
+    - overrides/catalogue.css
 
 plugins:
     - search
@@ -81,6 +83,9 @@ markdown_extensions:
           alternate_style: true
     - pymdownx.highlight:
           linenums: true
+    - pymdownx.emoji:
+          emoji_index: !!python/name:material.extensions.emoji.twemoji
+          emoji_generator: !!python/name:material.extensions.emoji.to_svg
     - toc:
           permalink: true
 
@@ -90,6 +95,7 @@ nav:
     - Usage: usage.md
     - Datasets:
         - Overview: datasets.md
+        - Dataset Catalogue: dataset_catalogue.md
         - MSWX Guide: MSWX_guide.md
         - DWD Export Format: dwd_format_guide.md
     - Bias Correction: bcsd_guide.md
